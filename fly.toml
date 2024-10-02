@@ -1,0 +1,13 @@
+app = "headlines-proud-mountain-2720"
+primary_region = "lhr"
+
+[build]
+
+[processes]
+  app = "node /usr/src/app/app.js"
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
+
