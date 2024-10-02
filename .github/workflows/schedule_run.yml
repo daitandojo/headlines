@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "*/10 * * * *" # Every 10 minutes
   workflow_dispatch: # Allow manual triggering as well
-  
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -21,4 +21,3 @@ jobs:
       - name: Run Fly.io Machine
         run: |
           flyctl machine run registry.fly.io/headlines-proud-mountain-2720:deployment-01J96JD6WQEMA5R33K5T3NZ2T2 --app headlines-proud-mountain-2720 --command "node /usr/src/app/app.js" --region lhr
-
