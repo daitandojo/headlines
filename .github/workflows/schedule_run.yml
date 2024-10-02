@@ -8,10 +8,21 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
+
+      - name: Check if FLY_API_TOKEN is Set
+        run: |
+          if [ -z "${{ secrets.FLY_API_TOKEN }}" ]; then
+            echo "FLY_API_TOKEN is not set or cannot be accessed!"
+            exit 1
+          else
+            echo "FLY_API_TOKEN is set and available."
+          fi
 
       - name: Display Environment Variables
         run: printenv
