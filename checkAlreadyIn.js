@@ -2,10 +2,11 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { readJSONsFromFile, extractField } from 'daitanjs/jsonstore';  // Import readJSONsFromFile from jsonStore
 import { fuzzyCompare } from 'daitanjs/intelligence';
+import { memoryPath } from './src/config/config.js'
 
 dotenv.config({ path: path.resolve('/home/mark/Repos/.env') });
 
-const FILE_PATH = './output/articles.data';
+const FILE_PATH = `${memoryPath}/articles.data`;
 
 async function main(headline) {
   try {

@@ -48,6 +48,7 @@ export async function sendWealthEventsEmail(articleObjects) {
 
   try {
     logger.info('Attempting to send email...');
+    console.log(SMTP_CONFIG)
     await sendMail({
       emailObject: email,
       mailerConfig: SMTP_CONFIG,

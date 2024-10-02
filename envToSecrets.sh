@@ -22,6 +22,11 @@ while IFS='=' read -r key value || [ -n "$key" ]; do
     # Remove any potential surrounding quotes from value
     value=$(echo "$value" | sed 's/^"//;s/"$//')
 
+    # Override NODE_ENV to "production" for deployment
+    if [[ "$key" == "NODE_ENV" ]]; then
+        value="production"
+    fi
+
     # Append key-value pair to secrets array, ensuring proper quoting
     SECRETS+=("$key=$value")
 done < "$ENV_FILE"
@@ -30,4 +35,4 @@ done < "$ENV_FILE"
 echo "Setting all secrets..."
 flyctl secrets set "${SECRETS[@]}"
 
-echo "All secrets have been set."       
+echo "All secrets have been set."

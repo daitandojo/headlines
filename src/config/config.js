@@ -10,6 +10,11 @@
   export const __filename = fileURLToPath(import.meta.url);
   export const __dirname = dirname(__filename);
 
+  export const memoryPath = 
+    (process.env.NODE_ENV === "development")
+    ? "./output"
+    : "/data"
+
   // Application Constants
   export const RELEVANCE_THRESHOLD = 59;
 
@@ -96,6 +101,16 @@
     cardBackgroundColor: '#FFFFFF',
     cardBorderColor: '#AAAAAA'
   };
+
+  console.log(process.env.GMAIL_PASS)
+  console.log(process.env.GMAIL_PASS)
+  console.log(process.env.GMAIL_PASS)
+  console.log(process.env.GMAIL_PASS)
+  console.log(process.env.GMAIL_PASS)
+  console.log(process.env.GMAIL_PASS)
+  console.log(process.env.GMAIL_PASS)
+  console.log(process.env.GMAIL_PASS)
+  console.log(process.env.GMAIL_PASS)
 
   // SMTP Server Configuration for Sending Emails
   export const SMTP_CONFIG = {
