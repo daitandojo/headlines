@@ -1,5 +1,4 @@
 // File: src/modules/jsonStore/storeArticles.js
-import { ARTICLES_PATH } from '../../config/config.js';
 import { jsonStore } from 'daitanjs/jsonstore';
 import { getLogger } from 'daitanjs/development';
 
@@ -12,7 +11,7 @@ export async function storeRelevantArticles(articleObjects) {
         try {
           jsonStore({
             object: articleObject,
-            filePath: ARTICLES_PATH,
+            filePath: "../../../output/articles.data",
           });
         } catch (error) {
           logger.error(`Error storing article: ${articleObject.headline}`, {

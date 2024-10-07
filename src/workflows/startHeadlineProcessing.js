@@ -50,9 +50,13 @@ export async function startHeadlineProcessing() {
       logger.info(step.message);
 
       // Log the current state of articles before the function call
-      logger.debug(`${articles.length} articles before step "${step.message}":`);
-      console.log(articles)
-
+      if (articles.length) {
+        logger.debug(`${articles.length} articles before step "${step.message}":`);
+        articles.forEach(a => {
+          if (a.relevance_headline) console.log(`${a.relevance_headline}/${a.relevance_headline} - ${a.topic}`)
+        })
+      }
+      
       // Execute the function and pass in the current articles
       articles = await step.func(articles);
 
@@ -80,4 +84,4 @@ export async function startHeadlineProcessing() {
       stack: error instanceof Error ? error.stack : 'No stack available',
     });
   }
-}
+};

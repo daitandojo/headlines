@@ -8,25 +8,14 @@ const limit = pLimit(5); // Concurrency limit
 
 export async function fetchAllHeadlines() {
   try {
-    logger.info("Fetching all headlines...");
-
     const allHeadlines = await Promise.all(
       SOURCES.map((source) =>
         limit(async () => {
           try {
             const { BASE_URL, BASE_DIRECTORY, LINK_CLASS, LINK_POSITION, NEWSPAPER, PARSER_TYPE } = source;
             const url = `${BASE_URL}${BASE_DIRECTORY}`;
-            logger.info(`Fetching headlines from ${url}`);
-
-            // Detailed logging for download and extraction setup
-            logger.info(`Using PARSER_TYPE: ${PARSER_TYPE}`);
-            logger.info(`Options for downloadAndExtract: ${JSON.stringify({
-              url,
-              className: LINK_CLASS,
-              parserType: PARSER_TYPE || 'jsdom',
-              extractLinks: true,
-            })}`);
-
+            logger.info(`Fetching headlines from ${url} (through ${PARSER_TYPE || 'jsdom'}/${LINK_CLASS}...`);
+       
             // Utilize the downloadAndExtract function
             const extractedData = await downloadAndExtract({
               url,
@@ -64,7 +53,8 @@ export async function fetchAllHeadlines() {
     );
 
     const flattenedHeadlines = allHeadlines.flat();
-    logger.info(`${flattenedHeadlines.length} headlines found across ${SOURCES.length} newspapers.`);
+    logger.info(`TOTAL OF ${flattenedHeadlines.length} headlines found across ${SOURCES.length} newspapers.`);
+    logger.info(`====================================================`)
     return flattenedHeadlines;
   } catch (error) {
     // Properly log any unexpected error during the headline fetching process
@@ -78,4 +68,4 @@ export async function fetchAllHeadlines() {
 
 // SSL/TLS Handling (Optional but recommended for avoiding SSL/TLS issues)
 // This line is only for development and not recommended for production use as it ignores SSL issues.
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';

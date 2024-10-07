@@ -26,7 +26,7 @@ export const shotsOutput = [
         { relevance_headline: 0, assessment_headline: "sports is not relevant" },
         { relevance_headline: 15, assessment_headline: "startups generate wealth later" },
         { relevance_headline: 50, assessment_headline: "wealthy individual mentioned" },
-        { relevance_headline: 80, assessment_headline: "private wealth increase" },
+        { relevance_headline: 80, assessment_headline: "liquid wealth increase" },
         { relevance_headline: 100, assessment_headline: "the sale will lead to investible liquidity" },
         { relevance_headline: 50, assessment_headline: "wealth event, but size doubtable" }
     ]},

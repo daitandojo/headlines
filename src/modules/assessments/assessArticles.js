@@ -85,9 +85,13 @@ async function assessArrayOfArticles(articleObjects) {
       articleObjects.map((articleObject) =>
         limit(() =>
           safeExecute(async () => {
-            logger.info(`Assessing article body for: "${articleObject.headline || 'No headline provided'}"`);
             const articleBodyAnalysis = await analyzeArticleObjectBody(articleObject);
-            logger.info(`Article body assessed: Relevance - ${articleBodyAnalysis.relevance_article}`);
+            logger.info(`Article body assessed: Relevance - ${
+              articleBodyAnalysis.relevance_article
+            } ${
+              articleObject.headline || 'No headline provided'
+            }`
+          );
             return { ...articleObject, ...articleBodyAnalysis };
           }, (error) => {
             logger.error(`Error analyzing article for: ${articleObject.headline}`, { error });
@@ -100,9 +104,9 @@ async function assessArrayOfArticles(articleObjects) {
     // Filter articles based on relevance threshold
     const relevantArticles = assessedArticles.filter((article) => article.relevance_article > RELEVANCE_THRESHOLD);
 
-    logger.info(`Assessment completed. ${relevantArticles.length} articles deemed relevant out of ${assessedArticles.length}.`);
+    logger.info(`Assessment completed. ${relevantArticles.length}/${assessedArticles.length} articles relevant.`);
 
-    return assessedArticles; // Return all articles, including those that failed analysis
+    return relevantArticles; // Return only relevant articles
   } catch (error) {
     logger.error('Unhandled error in assessArrayOfArticles', { error });
     return []; // Ensure an empty array is returned in case of failure

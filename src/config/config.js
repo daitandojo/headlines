@@ -10,18 +10,13 @@
   export const __filename = fileURLToPath(import.meta.url);
   export const __dirname = dirname(__filename);
 
-  export const memoryPath = 
-    (process.env.NODE_ENV === "development")
-    ? "./output"
-    : "/data"
-
   // Application Constants
-  export const RELEVANCE_THRESHOLD = 59;
+  export const RELEVANCE_THRESHOLD = 70;
 
   // Email Recipients List
   export const EMAIL_RECIPIENTS = [
     'reconozco@gmail.com', 
-    'christiansenalexandra@gmail.com'
+    // 'christiansenalexandra@gmail.com'
   ];
 
   // Sources Configuration for Headline Extraction
@@ -85,8 +80,8 @@
   ];
 
   // Paths to store headlines and articles data
-  export const HEADLINES_PATH = './output/headlines.data';
-  export const ARTICLES_PATH = './output/articles.data';
+  export const HEADLINES_PATH = '/home/mark/Repos/projects/headlines/output/headlines.data';
+  export const ARTICLES_PATH = '/home/mark/Repos/projects/headlines/output/articles.data';
 
   // Email Template Configuration
   export const EMAIL_CONFIG = {
@@ -101,16 +96,6 @@
     cardBackgroundColor: '#FFFFFF',
     cardBorderColor: '#AAAAAA'
   };
-
-  console.log(process.env.GMAIL_PASS)
-  console.log(process.env.GMAIL_PASS)
-  console.log(process.env.GMAIL_PASS)
-  console.log(process.env.GMAIL_PASS)
-  console.log(process.env.GMAIL_PASS)
-  console.log(process.env.GMAIL_PASS)
-  console.log(process.env.GMAIL_PASS)
-  console.log(process.env.GMAIL_PASS)
-  console.log(process.env.GMAIL_PASS)
 
   // SMTP Server Configuration for Sending Emails
   export const SMTP_CONFIG = {

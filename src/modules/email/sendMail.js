@@ -33,7 +33,10 @@ export async function sendWealthEventsEmail(articleObjects) {
     throw new Error('articleObjects input must be a valid array');
   }
 
-  logger.debug(`articleObjects received for email: ${JSON.stringify(articleObjects)}`);
+  logger.debug(`articleObjects received for email:`);
+  articleObjects.forEach(a => {
+    console.log(`${a.relevance_article} - ${a.topic}`)
+  })
 
   setupEmailTemplate(articleObjects);
 
@@ -48,7 +51,6 @@ export async function sendWealthEventsEmail(articleObjects) {
 
   try {
     logger.info('Attempting to send email...');
-    console.log(SMTP_CONFIG)
     await sendMail({
       emailObject: email,
       mailerConfig: SMTP_CONFIG,
@@ -64,9 +66,6 @@ export async function sendWealthEventsEmail(articleObjects) {
   }
 }
 
-/* ----------- Modularized Reusable Components ----------- */
-
-// Helper function to generate HTML for an article card
 function formatArticleForEmail(articleObject, config = EMAIL_CONFIG) {
   const {
     link,
@@ -75,6 +74,7 @@ function formatArticleForEmail(articleObject, config = EMAIL_CONFIG) {
     headline,
     articleContent,
     assessment_article,
+    relevance_article,
     amount,
     contacts,
     background,
@@ -98,7 +98,7 @@ function formatArticleForEmail(articleObject, config = EMAIL_CONFIG) {
     </div>
     ${createBlock({
       content: createParagraph({
-        text: `<strong>Expert Insight:</strong> ${assessment_article}`,
+        text: `<strong>Expert Insight:</strong> ${assessment_article} (${relevance_article})`,
         fontSize: 16,
       }),
       customStyles: {
@@ -145,7 +145,6 @@ function formatArticleForEmail(articleObject, config = EMAIL_CONFIG) {
   return createCard({ content: formattedArticle });
 }
 
-// Helper function to create an email template
 function createEmailTemplate(articleObjects, config = EMAIL_CONFIG) {
   logger.debug(`Creating email template for ${articleObjects.length}`);
 
@@ -160,7 +159,7 @@ function createEmailTemplate(articleObjects, config = EMAIL_CONFIG) {
         `
         <div style="max-width: ${config.maxWidth}; margin: 0 auto; background-color: ${config.backgroundColor}; padding: 30px; font-family: ${config.fontFamily}; line-height: 1.6;">
           ${createHeading({
-            text: 'Dear Banking Expert,',
+            text: 'Dear Adviser,',
             level: 2,
             customStyles: { color: config.headingColor },
           })}

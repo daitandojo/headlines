@@ -23,7 +23,8 @@ export async function enrichWithArticleBody(articleObjects) {
     return []; // Return an empty array to maintain consistency
   }
 
-  logger.info(`Received ${articleObjects.length} articles for enrichment.`);
+  logger.info(`============================================================`)
+  logger.info(`Submitting ${articleObjects.length} articles for enrichment.`);
 
   try {
     const results = await Promise.all(
@@ -69,6 +70,8 @@ export async function enrichWithArticleBody(articleObjects) {
               .join(' ')
               .length;
 
+            logger.info(`Article found with length ${totalContentLength}.`)
+            
             if (totalContentLength < MIN_CONTENT_LENGTH) {
               throw new ShortArticleError(
                 `Content length (${totalContentLength} characters) below minimum threshold.`,
