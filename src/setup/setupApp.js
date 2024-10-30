@@ -1,12 +1,9 @@
+// File: src/setup/setupApp.js
 
-import { configureEnv } from 'daitanjs/development';
-import dotenv from 'dotenv';
-import path from 'path';
+import { setupEnvironment } from './setupEnvironment.js';
 
 export function setupApp() {
   console.clear();
-  console.log("STARTING APP: HEADLINES")
-  configureEnv();
-  dotenv.config({ path: path.resolve('/home/mark/Repos/.env') });
+  console.log("STARTING APP: HEADLINES");
+  setupEnvironment();
 }
-        

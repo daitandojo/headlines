@@ -1,3 +1,5 @@
+// File: src/modules/assessments/assessArticles.js
+
 import { construct, generateIntelligence } from 'daitanjs/intelligence';
 import { getLogger } from 'daitanjs/development';
 import { instructionArticle } from './instructionArticle.js';
@@ -7,23 +9,73 @@ import { RELEVANCE_THRESHOLD } from '../../config/config.js';
 import { safeExecute } from 'daitanjs/error';
 
 const logger = getLogger('article-assessment');
-const limit = pLimit(5);
+const limit = pLimit(5); // Limit concurrency to prevent overloading the system
 
-// Extract article content
-const extractArticleContent = ({ headlines = [], subheadings = [], captions = [], contents = [] }) =>
-  [headlines.join('. '), subheadings.join('. '), captions.join('. '), contents.join('. ')]
+export async function assessArrayOfArticles(articleObjects) {
+  logger.info(`Received ${articleObjects.length} articles for assessment.`);
+
+  if (!Array.isArray(articleObjects)) {
+    logger.error('Input is not an array', { input: articleObjects });
+    return []; // Return an empty array for invalid input
+  }
+
+  try {
+    const assessedArticles = await Promise.all(articleObjects.map((articleObject) =>
+      limit(() => assessArticle(articleObject))
+    ));
+
+    const relevantArticles = filterRelevantArticles(assessedArticles);
+    logAssessmentSummary(relevantArticles, assessedArticles);
+    
+    return relevantArticles;
+  } catch (error) {
+    logger.error('Unhandled error in assessArrayOfArticles', { error });
+    return []; // Return an empty array in case of failure
+  }
+}
+
+async function assessArticle(articleObject) {
+  const fullArticleContent = extractFullArticleContent(articleObject.articleContent);
+
+  if (isContentTooShort(fullArticleContent)) {
+    logger.warn('Article content is too short to analyze:', { fullArticleContent });
+    return createShortArticleAssessment(articleObject);
+  }
+
+  logger.info('Prompting OpenAI with article content for assessment...');
+  const analysisResult = await analyzeArticleBody(fullArticleContent);
+
+  return mergeArticleAssessment(articleObject, analysisResult);
+}
+
+function extractFullArticleContent({ headlines = [], subheadings = [], captions = [], contents = [] }) {
+  return [headlines.join('. '), subheadings.join('. '), captions.join('. '), contents.join('. ')]
     .filter(Boolean)
     .join('. ');
+}
 
-// Analyze the body of the article using OpenAI
-async function analyzeBody(textToAnalyse) {
+function isContentTooShort(content) {
+  return content.length < 10;
+}
+
+function createShortArticleAssessment(articleObject) {
+  return {
+    ...articleObject,
+    relevance_article: 0,
+    assessment_article: 'ARTICLE TOO SHORT TO ANALYZE',
+  };
+}
+
+async function analyzeArticleBody(articleContent) {
   return await safeExecute(async () => {
     const messages = construct({
       instructionArticle,
       shotsInput,
       shotsOutput,
-      prompt: textToAnalyse,
+      prompt: articleContent,
     });
+
+    console.log(messages);
 
     const response = await generateIntelligence({
       model: 'gpt-4o-mini',
@@ -36,81 +88,41 @@ async function analyzeBody(textToAnalyse) {
       throw new Error('No response from OpenAI service.');
     }
 
+    console.log(response)
+
     return { ...response, result: 'success' };
-  }, (error) => logger.error('Error occurred during body analysis', { error }));
+  }, (error) => logger.error('Error occurred during article body analysis', { error }));
 }
 
-async function analyzeArticleObjectBody(articleObject) {
-  const fullArticle = extractArticleContent(articleObject.articleContent);
-
-  if (fullArticle.length < 10) {
-    logger.warn('Article content is too short to analyze:', { fullArticle });
+function mergeArticleAssessment(articleObject, analysisResult) {
+  if (!analysisResult || typeof analysisResult !== 'object' || Array.isArray(analysisResult)) {
+    logger.error('Invalid or missing response from analyzeArticleBody.', { analysisResult });
     return {
-      relevance_article: 0,
-      assessment_article: 'ARTICLE TOO SHORT TO ANALYZE',
-    };
-  }
-
-  logger.info('Prompting OpenAI with the article content...');
-  const result = await analyzeBody(fullArticle);
-
-  if (!result || typeof result !== 'object' || Array.isArray(result)) {
-    logger.error('Invalid or missing response from analyzeBody function.', { result });
-    return {
+      ...articleObject,
       relevance_article: 0,
       assessment_article: 'INVALID OR MISSING ANALYSIS RESULT',
     };
   }
 
   return {
-    topic: result.topic || 'Unknown',
-    relevance_article: result.relevance_article || 0,
-    amount: parseFloat(result.amount) || 0,
-    assessment_article: result.assessment_article || 'No comment provided',
-    contacts: result.contacts || [],
-    background: result.background || '',
+    ...articleObject,
+    topic: analysisResult.topic || 'Unknown',
+    relevance_article: analysisResult.relevance_article || 0,
+    amount: parseFloat(analysisResult.amount) || 0,
+    assessment_article: analysisResult.assessment_article || 'No comment provided',
+    contacts: analysisResult.contacts || [],
+    background: analysisResult.background || '',
   };
 }
 
-async function assessArrayOfArticles(articleObjects) {
-  if (!Array.isArray(articleObjects)) {
-    logger.error('Input is not an array', { input: articleObjects });
-    return []; // Return an empty array to maintain consistency
-  }
-
-  logger.info(`Received ${articleObjects.length} articles for assessment.`);
-
-  try {
-    const assessedArticles = await Promise.all(
-      articleObjects.map((articleObject) =>
-        limit(() =>
-          safeExecute(async () => {
-            const articleBodyAnalysis = await analyzeArticleObjectBody(articleObject);
-            logger.info(`Article body assessed: Relevance - ${
-              articleBodyAnalysis.relevance_article
-            } ${
-              articleObject.headline || 'No headline provided'
-            }`
-          );
-            return { ...articleObject, ...articleBodyAnalysis };
-          }, (error) => {
-            logger.error(`Error analyzing article for: ${articleObject.headline}`, { error });
-            return { ...articleObject, relevance_article: 0, assessment_article: 'ANALYSIS FAILED' }; // Include default values to maintain consistency
-          })
-        )
-      )
-    );
-
-    // Filter articles based on relevance threshold
-    const relevantArticles = assessedArticles.filter((article) => article.relevance_article > RELEVANCE_THRESHOLD);
-
-    logger.info(`Assessment completed. ${relevantArticles.length}/${assessedArticles.length} articles relevant.`);
-
-    return relevantArticles; // Return only relevant articles
-  } catch (error) {
-    logger.error('Unhandled error in assessArrayOfArticles', { error });
-    return []; // Ensure an empty array is returned in case of failure
-  }
+function filterRelevantArticles(articles) {
+  return articles.filter((article) => article.relevance_article > RELEVANCE_THRESHOLD);
 }
 
-export { assessArrayOfArticles, analyzeArticleObjectBody };
+function logAssessmentSummary(relevantArticles, allArticles) {
+  logger.info('Article Assessment Summary:');
+  logger.info(`Total Articles Processed: ${allArticles.length}, Relevant Articles: ${relevantArticles.length}`);
+  relevantArticles.forEach((article) =>
+    logger.debug(`Relevant Article - Headline: "${article.headline}", Relevance: ${article.relevance_article}`)
+  );
+}

@@ -1,21 +1,13 @@
+// File: src/modules/scraping/enrichWithBody.js
+
 import { SOURCES } from '../../config/config.js';
 import { getLogger } from 'daitanjs/development';
-import { downloadAndExtract } from 'daitanjs/web'; // Updated to use downloadAndExtract
+import { downloadAndExtract } from 'daitanjs/web';
 import pLimit from 'p-limit';
 
 const logger = getLogger('enrichWithBody');
-const limit = pLimit(5);
-
+const limit = pLimit(5); // Limit concurrency to 5 at a time
 const MIN_CONTENT_LENGTH = 100;
-
-class ShortArticleError extends Error {
-  constructor(message, articleObject, contentLength) {
-    super(message);
-    this.name = 'ShortArticleError';
-    this.articleObject = articleObject;
-    this.contentLength = contentLength;
-  }
-}
 
 export async function enrichWithArticleBody(articleObjects) {
   if (!Array.isArray(articleObjects)) {
@@ -23,93 +15,128 @@ export async function enrichWithArticleBody(articleObjects) {
     return []; // Return an empty array to maintain consistency
   }
 
-  logger.info(`============================================================`)
-  logger.info(`Submitting ${articleObjects.length} articles for enrichment.`);
+  logger.info(`Starting enrichment for ${articleObjects.length} articles.`);
 
   try {
-    const results = await Promise.all(
-      articleObjects.map((articleObject, i) =>
-        limit(async () => {
-          if (!articleObject || typeof articleObject !== 'object') {
-            logger.error(`Invalid article object at index ${i}`, { articleObject });
-            return { ...articleObject, articleContent: {}, error: 'Invalid article object' };
-          }
+    const results = await Promise.all(articleObjects.map((article, i) =>
+      limit(() => processArticleForEnrichment(article, i))
+    ));
 
-          logger.info(`Processing article #${i + 1}: "${articleObject.headline || 'No headline provided'}"`);
+    const enrichedArticles = filterValidArticles(results);
+    logEnrichmentSummary(enrichedArticles, results);
 
-          try {
-            const source = SOURCES.find((src) => src.NEWSPAPER === articleObject.newspaper);
+    return enrichedArticles; // Return enriched articles
+  } catch (error) {
+    logger.error('Unhandled error in enrichWithArticleBody', { error });
+    return []; // Ensure an empty array is returned in case of failure
+  }
+}
 
-            if (!source) {
-              logger.warn(`Source configuration not found for newspaper: ${articleObject.newspaper}`, { articleObject });
-              return { ...articleObject, articleContent: {}, error: 'Source configuration not found' };
-            }
+async function processArticleForEnrichment(articleObject, index) {
+  if (!articleObject || typeof articleObject !== 'object') {
+    logger.error(`Invalid article object at index ${index}`, { articleObject });
+    return createInvalidArticleResponse(articleObject, 'Invalid article object');
+  }
 
-            if (!articleObject.link) {
-              logger.error(`Article link is missing for headline: "${articleObject.headline || 'No headline provided'}"`, { articleObject });
-              return { ...articleObject, articleContent: {}, error: 'Missing link' };
-            }
+  logger.info(`Processing article #${index + 1}: "${articleObject.headline || 'No headline provided'}"`);
 
-            const { ARTICLE_STRUCTURE, PARSER_TYPE } = source;
-
-            // Utilize the downloadAndExtract function
-            const res = await downloadAndExtract({
-              url: articleObject.link,
-              options: {
-                articleStructure: ARTICLE_STRUCTURE,
-                parserType: PARSER_TYPE || 'jsdom',
-              },
-            });
-
-            if (!res || Object.keys(res).length === 0) {
-              throw new Error('No content extracted from the article');
-            }
-
-            const totalContentLength = Object.values(res)
-              .flat()
-              .join(' ')
-              .length;
-
-            logger.info(`Article found with length ${totalContentLength}.`)
-            
-            if (totalContentLength < MIN_CONTENT_LENGTH) {
-              throw new ShortArticleError(
-                `Content length (${totalContentLength} characters) below minimum threshold.`,
-                articleObject,
-                totalContentLength
-              );
-            }
-
-            return { ...articleObject, articleContent: res };
-          } catch (error) {
-            if (error instanceof ShortArticleError) {
-              logger.warn(`Article too short: ${error.message}`, {
-                articleObject: error.articleObject,
-                contentLength: error.contentLength,
-              });
-            } else {
-              logger.error(
-                `Error during article download for: "${articleObject.headline || 'No headline provided'}"`,
-                { error: error.message, articleObject }
-              );
-            }
-            return { ...articleObject, articleContent: {}, error: error.message };
-          }
-        })
-      )
-    );
-
-    const enrichedArticles = results.filter((article) => !article.error);
-    const failedArticles = results.filter((article) => article.error);
-
-    logger.info(`Enrichment completed for ${enrichedArticles.length} articles.`);
-    if (failedArticles.length > 0) {
-      logger.warn(`${failedArticles.length} articles could not be enriched.`);
+  try {
+    const source = getSourceConfiguration(articleObject.newspaper);
+    if (!source) {
+      return createInvalidArticleResponse(articleObject, 'Source configuration not found');
     }
 
-    return results; // Return all articles (both enriched and failed) to keep the workflow intact
+    return await enrichArticleContent(articleObject, source);
   } catch (error) {
-    logger.error('Unhandled error in enrichWithArticleBody', { error: error.message });
-    return []; // Ensure an empty array is returned in case of failure
+    logger.error(`Error processing article for enrichment: "${articleObject.headline || 'No headline provided'}"`, {
+      error: error.message,
+    });
+    return createInvalidArticleResponse(articleObject, error.message);
+  }
+}
+
+function getSourceConfiguration(newspaper) {
+  const source = SOURCES.find((src) => src.NEWSPAPER === newspaper);
+  if (!source) {
+    logger.warn(`Source configuration not found for newspaper: ${newspaper}`);
+  }
+  return source;
+}
+
+async function enrichArticleContent(articleObject, source) {
+  if (!articleObject.link) {
+    logger.error(`Missing link for headline: "${articleObject.headline || 'No headline provided'}"`);
+    return createInvalidArticleResponse(articleObject, 'Missing link');
+  }
+
+  const { ARTICLE_STRUCTURE, PARSER_TYPE } = source;
+
+  try {
+    const extractionResult = await downloadAndExtract({
+      url: articleObject.link,
+      options: {
+        articleStructure: ARTICLE_STRUCTURE,
+        parserType: PARSER_TYPE || 'jsdom',
+      },
+    });
+
+    if (!extractionResult || Object.keys(extractionResult).length === 0) {
+      throw new Error('No content extracted from the article');
+    }
+
+    if (isContentTooShort(extractionResult)) {
+      throw new ShortArticleError('Content length below minimum threshold', articleObject);
+    }
+
+    return { ...articleObject, articleContent: extractionResult };
+  } catch (error) {
+    handleEnrichmentError(error, articleObject);
+    return createInvalidArticleResponse(articleObject, error.message);
+  }
+}
+
+function isContentTooShort(content) {
+  const totalContentLength = Object.values(content).flat().join(' ').length;
+  return totalContentLength < MIN_CONTENT_LENGTH;
+}
+
+function handleEnrichmentError(error, articleObject) {
+  if (error instanceof ShortArticleError) {
+    logger.warn(`Article too short: ${error.message}`, {
+      articleObject: error.articleObject,
+    });
+  } else {
+    logger.error(`Error during article download for: "${articleObject.headline || 'No headline provided'}"`, {
+      error: error.message,
+    });
+  }
+}
+
+function createInvalidArticleResponse(articleObject, errorMessage) {
+  return {
+    ...articleObject,
+    articleContent: {},
+    error: errorMessage,
+  };
+}
+
+function filterValidArticles(articles) {
+  return articles.filter((article) => !article.error);
+}
+
+function logEnrichmentSummary(enrichedArticles, allArticles) {
+  logger.info('Enrichment Summary:');
+  logger.info(`Total Articles Processed: ${allArticles.length}, Successfully Enriched: ${enrichedArticles.length}`);
+  enrichedArticles.forEach((article) =>
+    logger.debug(`Enriched Article - Headline: "${article.headline}", Length: ${Object.values(article.articleContent).flat().join(' ').length}`)
+  );
+}
+
+// Custom Error Class for Short Articles
+class ShortArticleError extends Error {
+  constructor(message, articleObject) {
+    super(message);
+    this.name = 'ShortArticleError';
+    this.articleObject = articleObject;
   }
 }

@@ -82,7 +82,7 @@ function formatArticleForEmail(articleObject, config = EMAIL_CONFIG) {
 
   logger.debug(`Formatting article for email: ${headline}`);
 
-  const articleBody = articleContent.contents.join();
+  const articleBody = articleContent.headlines.join();
   const formattedArticle = `
     ${createHeading({
       text: `<a href="${link}">${topic || headline}</a>`,

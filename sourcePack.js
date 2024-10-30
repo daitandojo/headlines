@@ -10,10 +10,46 @@ const outputFile = 'project.txt';
 // Initialize progress bar
 const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
-// Utility to check if a file should be included (ignores `node_modules`, `project.txt`, and directories)
+// Read and parse .gitignore and .dockerignore
+function getIgnoredFiles() {
+  const ignoreFiles = ['.gitignore', '.dockerignore'];
+  const ignored = new Set([
+    outputFile,
+    'node_modules',
+    'package-lock.json',
+    'sourcePack.js',
+    'dist',
+    'build',
+    '.git',
+    'cron.log',
+    'project.txt',
+    'output',
+    'logs',
+    '.github'
+  ]);
+
+  ignoreFiles.forEach((file) => {
+    try {
+      const data = fs.readFileSync(file, 'utf-8');
+      data.split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'))
+        .forEach((line) => {
+          ignored.add(line);
+        });
+    } catch (error) {
+      console.warn(`Could not read ${file}: ${error.message}`);
+    }
+  });
+
+  return ignored;
+}
+
+const ignoredFiles = getIgnoredFiles();
+
+// Utility to check if a file should be included
 function shouldInclude(file) {
-  const excludedFiles = [outputFile, 'node_modules'];
-  return !excludedFiles.includes(file);
+  return !ignoredFiles.has(file);
 }
 
 function processDirectory(dir, output, filesList) {
@@ -28,7 +64,9 @@ function processDirectory(dir, output, filesList) {
           processDirectory(fullPath, output, filesList);
         }
       } else {
-        filesList.push(fullPath);
+        if (shouldInclude(fullPath)) {
+          filesList.push(fullPath);
+        }
       }
     });
   } catch (error) {
