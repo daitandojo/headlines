@@ -19,7 +19,7 @@ export const RELEVANCE_THRESHOLD = parseFloat(process.env.RELEVANCE_THRESHOLD) |
 export const EMAIL_RECIPIENTS = process.env.EMAIL_RECIPIENTS 
   ? process.env.EMAIL_RECIPIENTS.split(',')
   : ['reconozco@gmail.com', 
-//    'christiansenalexandra@gmail.com'
+    'christiansenalexandra@gmail.com'
   ];
 
 // Sources Configuration for Headline Extraction
