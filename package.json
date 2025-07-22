@@ -1,0 +1,43 @@
+{
+  "name": "headlines",
+  "version": "1.2.0",
+  "description": "Headlines Processing Application using the DaitanJS framework.",
+  "type": "module",
+  "scripts": {
+    "start": "node app.js",
+    "test": "jest",
+    "show": "node scripts/show.js",
+    "mail": "node scripts/mail.js",
+    "delete": "node scripts/delete.js",
+    "migrate": "node scripts/migrateToMongo.js"
+  },
+  "dependencies": {
+    "@daitanjs/apiqueries": "^1.0.3",
+    "@daitanjs/authentication": "^1.0.1",
+    "@daitanjs/communication": "^1.0.0",
+    "@daitanjs/config": "^1.0.0",
+    "@daitanjs/data": "^1.0.0",
+    "@daitanjs/development": "^1.0.0",
+    "@daitanjs/html": "^1.0.1",
+    "@daitanjs/intelligence": "^1.2.0",
+    "@daitanjs/queues": "^1.0.0",
+    "@daitanjs/utilities": "^1.0.0",
+    "@daitanjs/validation": "^1.0.1",
+    "@daitanjs/web": "^1.2.0",
+    "axios": "^1.7.2",
+    "cli-progress": "^3.12.0",
+    "dotenv": "^16.4.5",
+    "jsdom": "^24.1.0",
+    "lodash": "^4.17.21",
+    "mongoose": "^8.4.1",
+    "nodemailer": "^7.0.3",
+    "p-limit": "^3.1.0",
+    "puppeteer": "^22.10.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "random-useragent": "^0.5.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

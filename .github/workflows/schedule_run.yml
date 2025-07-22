@@ -1,0 +1,40 @@
+name: Scheduled Fly Machine Run
+
+on:
+  schedule:
+    - cron: "0 */- * * *" # Every 6 hours
+  workflow_dispatch: # Allow manual triggering as well
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Display Environment Variables
+        run: printenv
+
+      - name: Check if FLY_API_TOKEN is Set
+        run: |
+          if [ -z "${FLY_API_TOKEN}" ]; then
+            echo "FLY_API_TOKEN is not set or cannot be accessed!"
+            exit 1
+          else
+            echo "FLY_API_TOKEN is set and available."
+          fi
+
+      - name: Set up Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Verify Flyctl Installation
+        run: flyctl version
+
+      - name: Run Fly.io Machine
+        run: |
+          flyctl machine run registry.fly.io/headlines-proud-mountain-2720:deployment-01J96JD6WQEMA5R33K5T3NZ2T2 --app headlines-proud-mountain-2720 --command "node /usr/src/app/app.js" --region lhr
