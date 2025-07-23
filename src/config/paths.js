@@ -1,11 +1,14 @@
-// File: headlines_mongo/src/config/paths.js
+// File: src/config/paths.js (version 1.01)
 import { fileURLToPath } from 'url';
 import { dirname, resolve, join as pathJoin } from 'path';
 import {
   getLogger,
-  getEnvVariable as libGetEnvVariable,
+  getOptionalEnvVariable as libGetEnvVariable,
 } from '@daitanjs/development';
 import { ensureDirectoryExistsSync } from '@daitanjs/utilities';
+
+// --- FIX: Use console.log for initial path diagnostics before logger is fully trusted ---
+console.log('[PATHS] src/config/paths.js module loading...');
 
 const logger = getLogger('headlines-mongo-config-paths');
 
@@ -14,81 +17,59 @@ const __dirname = dirname(__filename);
 
 // --- Project Root for headlines_mongo ---
 export const PROJECT_ROOT = resolve(__dirname, '..', '..');
-logger.debug(`Project root for headlines_mongo resolved to: ${PROJECT_ROOT}`);
+console.log(`[PATHS] Project root resolved to: ${PROJECT_ROOT}`);
 
-// --- Directory Names (can be overridden by environment variables specific to paths) ---
+// --- Directory Names ---
 const OUTPUT_DIR_NAME_FROM_ENV = libGetEnvVariable(
   'APP_OUTPUT_DIR_NAME',
   'output',
   false,
-  'string',
-  'Output directory name for paths.js'
+  'string'
 );
 const LOG_DIR_NAME_FROM_ENV = libGetEnvVariable(
   'APP_LOG_DIR_NAME',
   'logs',
   false,
-  'string',
-  'Log directory name for paths.js'
+  'string'
 );
 
 // --- Base Directories ---
-// BASE_APP_DIR could be set if the entire app runs from a sub-directory of PROJECT_ROOT
-// For most cases, PROJECT_ROOT is the base.
-// EXPORTING THIS NOW
 export const BASE_APP_DIR = libGetEnvVariable(
   'BASE_APP_DIR_PATHS',
   PROJECT_ROOT,
   false,
-  'string',
-  'Base application directory for paths.js'
+  'string'
 );
 
-export const BASE_OUTPUT_DIR = libGetEnvVariable(
-  'APP_BASE_OUTPUT_DIR_PATHS',
-  pathJoin(BASE_APP_DIR, OUTPUT_DIR_NAME_FROM_ENV),
-  false,
-  'string',
-  'Base directory for application outputs (paths.js)'
-);
-export const BASE_LOG_DIR = libGetEnvVariable(
-  'APP_BASE_LOG_DIR_PATHS',
-  pathJoin(BASE_APP_DIR, LOG_DIR_NAME_FROM_ENV),
-  false,
-  'string',
-  'Base directory for application logs (paths.js)'
-);
+export const BASE_OUTPUT_DIR = pathJoin(BASE_APP_DIR, OUTPUT_DIR_NAME_FROM_ENV);
+export const BASE_LOG_DIR = pathJoin(BASE_APP_DIR, LOG_DIR_NAME_FROM_ENV);
+
+console.log(`[PATHS] Base output directory set to: ${BASE_OUTPUT_DIR}`);
+console.log(`[PATHS] Base log directory set to: ${BASE_LOG_DIR}`);
 
 // --- Specific File Paths ---
-export const HEADLINES_PATH = libGetEnvVariable(
-  'APP_HEADLINES_JSON_PATH',
-  pathJoin(BASE_OUTPUT_DIR, 'headlines.json'),
-  false,
-  'string',
-  'Path to legacy headlines JSON file'
-);
-export const ARTICLES_PATH = libGetEnvVariable(
-  'APP_ARTICLES_JSON_PATH',
-  pathJoin(BASE_OUTPUT_DIR, 'articles.json'),
-  false,
-  'string',
-  'Path to legacy articles JSON file'
-);
+export const HEADLINES_PATH = pathJoin(BASE_OUTPUT_DIR, 'headlines.json');
+export const ARTICLES_PATH = pathJoin(BASE_OUTPUT_DIR, 'articles.json');
 
 // --- Ensure directories exist ---
 try {
+  console.log(`[PATHS] Ensuring existence of output directory: ${BASE_OUTPUT_DIR}`);
   ensureDirectoryExistsSync(BASE_OUTPUT_DIR, { loggerInstance: logger });
-  ensureDirectoryExistsSync(BASE_LOG_DIR, { loggerInstance: logger });
+  console.log('[PATHS] Output directory check complete.');
 
-  logger.info(`Application paths configured and directories ensured:
-    - Project Root: ${PROJECT_ROOT}
-    - App Base Directory: ${BASE_APP_DIR}
-    - Base Output Dir: ${BASE_OUTPUT_DIR}
-    - Base Log Dir: ${BASE_LOG_DIR}
-  `);
+  console.log(`[PATHS] Ensuring existence of log directory: ${BASE_LOG_DIR}`);
+  ensureDirectoryExistsSync(BASE_LOG_DIR, { loggerInstance: logger });
+  console.log('[PATHS] Log directory check complete.');
+
+  logger.info(`Application paths configured and directories ensured.`);
 } catch (error) {
-  logger.error(
-    `❌ CRITICAL: Failed to ensure essential directories for paths.js: ${error.message}`
+  // --- FIX: Use console.error for critical path creation failures ---
+  console.error(
+    `[PATHS] ❌ CRITICAL: Failed to ensure essential directories: ${error.message}`,
+    error
   );
+  // Re-throw to halt application startup, which is the correct behavior.
   throw error;
 }
+
+console.log('[PATHS] src/config/paths.js module finished loading.');

@@ -1,19 +1,16 @@
-// File: headlines_mongo/src/config/sources.js
-
+// File: src/config/sources.js (version 1.01)
 export const SOURCES = [
   {
     name: 'Børsen',
     newspaper: 'Borsen',
     baseUrl: 'https://borsen.dk',
     startUrl: 'https://borsen.dk/nyheder',
-    // This part is correct and highly efficient for Borsen.
     parserType: 'json-attr',
     linkPosition: 'relative',
     jsonAttrConfig: {
       selector: 'continuous-scrolling-list',
       attribute: 'json_articles',
     },
-    // This is the individual article scraper, now with robust selectors.
     enrichmentParserType: 'jsdom',
     articleStructure: [
       {
@@ -42,7 +39,6 @@ export const SOURCES = [
     newspaper: 'Berlingske',
     baseUrl: 'https://www.berlingske.dk',
     startUrl: 'https://www.berlingske.dk/business',
-    // CORRECTED: Selectors that target the article containers directly.
     linkSelector: '.teaser__title-link, a.teaser__title-link',
     linkPosition: 'relative',
     parserType: 'jsdom',
@@ -74,7 +70,6 @@ export const SOURCES = [
     newspaper: 'Politiken',
     baseUrl: 'https://politiken.dk',
     startUrl: 'https://politiken.dk/danmark/oekonomi/',
-    // CORRECTED: Using more specific and combined selectors for Politiken's layout.
     linkSelector:
       'a.teaser__title-link, h3.font-serif-header-44 a, .teaser__title a, a.article-title',
     linkPosition: 'relative',
@@ -107,7 +102,6 @@ export const SOURCES = [
     newspaper: 'Finans.dk',
     baseUrl: 'https://finans.dk',
     startUrl: 'https://finans.dk/seneste-nyt/',
-    // CORRECTED: Targets the h3 within the link, which is a very stable pattern in the provided HTML.
     linkSelector: 'article a h3, a.fs-teaser-link',
     linkPosition: 'relative',
     parserType: 'jsdom',
@@ -123,7 +117,6 @@ export const SOURCES = [
       },
       {
         elementName: 'contents',
-        // CORRECTED: A more specific selector for the main article text container.
         selector:
           'div.c-article-text-container > div > p, .article-body p, div[data-cy="article-body"] p',
       },

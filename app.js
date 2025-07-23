@@ -1,56 +1,82 @@
-// app.js (version 1.01)
-// File: app.js
-import dotenv from 'dotenv';
-import path from 'path';
-import fs from 'fs';
+// File: app.js (version 1.31 - Final)
+import express from 'express';
+import { getLogger } from '@daitanjs/development';
+import { connectDatabase } from './src/config/database.js';
+import { setupApp } from './src/setup/setupApp.js';
+import { validateAllSourceConfigs } from './src/utils/configValidator.js';
+import { executePipeline } from './app-logic.js';
 
-// --- Environment Loading ---
-// This code executes before any other application logic. It establishes the configuration context.
+const bootLogger = getLogger('server-boot');
+bootLogger.info('[BOOT] app.js module execution started.');
 
-// 1. Load the project-specific .env file from the current directory.
-// This is the standard and most reliable method.
-console.log('[Launcher] Loading project-specific .env file...');
-dotenv.config();
+process.setMaxListeners(30);
 
-// 2. Load the global/shared .env file from a predictable, relative location.
-// By convention, we assume it's two levels up from the project directory.
-const globalEnvPath = path.resolve(process.cwd(), '../../.env');
-if (fs.existsSync(globalEnvPath)) {
-  console.log(`[Launcher] Loading global environment file: ${globalEnvPath}`);
-  // The 'override: true' ensures that if a variable exists in both the global
-  // and local .env, the global one takes precedence. Adjust if needed.
-  dotenv.config({ path: globalEnvPath, override: true });
-} else {
-  console.warn(
-    `[Launcher] Global environment file not found at expected location, skipping: ${globalEnvPath}`
-  );
-}
-
-// 3. For debugging, confirm that a critical variable is loaded before proceeding.
-const redisUrlStatus = process.env.REDIS_URL ? 'SET' : 'NOT SET';
-console.log(`[Launcher] REDIS_URL in process.env is now: ${redisUrlStatus}`);
-
-if (redisUrlStatus === 'NOT SET') {
-  console.error(
-    '[Launcher] CRITICAL: REDIS_URL was not loaded. The application will likely fail. Please ensure a .env file is available in the project root or in the directory two levels up.'
-  );
-}
-
-// --- Start the Main Application ---
-// Dynamically import the main application logic *after* the environment is fully configured.
-// This ensures that when the DaitanJS framework modules are imported inside app-logic.js,
-// they will see the environment variables that we have just loaded.
-console.log(
-  '[Launcher] Environment configured. Starting main application logic...'
-);
-
-import('./app-logic.js').catch((err) => {
-  console.error(
-    '💥 [Launcher] Failed to load or run the main application logic.',
-    {
-      errorMessage: err.message,
-      stack: err.stack,
-    }
-  );
-  process.exit(1);
+process.on('unhandledRejection', (reason, promise) => {
+  bootLogger.error('💥 FATAL: Unhandled Rejection at:', { promise, reason });
+  setTimeout(() => process.exit(1), 1000);
 });
+process.on('uncaughtException', (error) => {
+  bootLogger.error('💥 FATAL: Uncaught Exception:', error);
+  setTimeout(() => process.exit(1), 1000);
+});
+
+bootLogger.info('[BOOT] Global handlers are active.');
+
+async function startServer() {
+  bootLogger.info('[BOOT] startServer() entered.');
+  try {
+    bootLogger.info('[BOOT] Step 1: Validating source configurations...');
+    validateAllSourceConfigs();
+    bootLogger.info('[BOOT] Step 1: Source configurations are valid.');
+
+    bootLogger.info('[BOOT] Step 2: Performing application setup checks (env vars)...');
+    await setupApp();
+    bootLogger.info('[BOOT] Step 2: Application setup checks complete.');
+
+    bootLogger.info('[BOOT] Step 3: Connecting to database...');
+    await connectDatabase();
+    bootLogger.info('✅ [BOOT] Step 3: Database connection successful.');
+
+    const app = express();
+    const port = process.env.PORT || 3000;
+    const host = '0.0.0.0';
+    const pipelineTriggerKey = process.env.PIPELINE_TRIGGER_KEY;
+    let isPipelineRunning = false;
+
+    bootLogger.info('[BOOT] Step 4: Configuring Express server routes...');
+    app.get('/health', (req, res) => res.status(200).json({ status: 'ok', pipelineRunning: isPipelineRunning }));
+
+    app.post('/run-pipeline', async (req, res) => {
+      const serverLogger = getLogger('headlines-server');
+      serverLogger.info('[API] /run-pipeline endpoint hit.');
+      if (req.headers.authorization !== `Bearer ${pipelineTriggerKey}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      if (isPipelineRunning) {
+        return res.status(429).json({ message: 'Pipeline already running.' });
+      }
+      res.status(202).json({ message: 'Pipeline run accepted.' });
+      isPipelineRunning = true;
+      try {
+        await executePipeline();
+      } catch (error) {
+        serverLogger.error('[API] CRITICAL ERROR from executePipeline:', error);
+      } finally {
+        isPipelineRunning = false;
+        serverLogger.info('[API] Pipeline lock released.');
+      }
+    });
+    bootLogger.info('[BOOT] Step 4: Express routes configured.');
+
+    bootLogger.info('[BOOT] Step 5: Starting Express server listener...');
+    app.listen(port, host, () => {
+      bootLogger.info(`✅✅✅ [SERVER START] Express server is now listening on http://${host}:${port} ✅✅✅`);
+    });
+  } catch (error) {
+    bootLogger.error('💥💥💥 CRITICAL STARTUP FAILURE 💥💥💥', { error: error.message, stack: error.stack });
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();

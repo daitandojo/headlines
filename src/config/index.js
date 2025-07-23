@@ -17,8 +17,6 @@ export {
   FLY_API_TOKEN,
 } from './env.js';
 
-export { REDIS_URL, REDIS_CONFIG } from './env.js';
-
 // --- Path Configurations ---
 export {
   PROJECT_ROOT,

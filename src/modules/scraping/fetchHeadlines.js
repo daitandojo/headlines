@@ -1,4 +1,4 @@
-// File: headlines_mongo/src/modules/scraping/fetchHeadlines.js
+// File: src/modules/scraping/fetchHeadlines.js (version 1.02)
 import pLimit from 'p-limit';
 import {
   SOURCES,
@@ -12,6 +12,7 @@ import { isValidURL, formatScrapedLinkData } from '@daitanjs/utilities';
 const logger = getLogger('headlines-mongo-fetch');
 
 export async function fetchAllHeadlines() {
+  console.log('[PIPELINE-FETCH] fetchAllHeadlines entered.'); // <-- DIAGNOSTIC LOG
   logger.info(
     `📰 Starting headline fetching process for ${SOURCES.length} sources...`
   );
@@ -36,21 +37,27 @@ export async function fetchAllHeadlines() {
 
   const limit = pLimit(effectiveConcurrency);
 
+  console.log('[PIPELINE-FETCH] Creating source promises...'); // <-- DIAGNOSTIC LOG
   const headlinePromises = SOURCES.map((sourceConfig) =>
     limit(() => fetchHeadlinesFromSource(sourceConfig))
   );
 
+  console.log('[PIPELINE-FETCH] Awaiting all source promises to settle...'); // <-- DIAGNOSTIC LOG
   const results = await Promise.allSettled(headlinePromises);
+  console.log('[PIPELINE-FETCH] All source promises have settled.'); // <-- DIAGNOSTIC LOG
+
   const allFetchedHeadlines = results
     .filter((res) => res.status === 'fulfilled' && Array.isArray(res.value))
     .flatMap((res) => res.value);
 
   logHeadlineFetchSummary(results);
+  console.log(`[PIPELINE-FETCH] fetchAllHeadlines finished. Returning ${allFetchedHeadlines.length} headlines.`); // <-- DIAGNOSTIC LOG
   return allFetchedHeadlines;
 }
 
 async function fetchHeadlinesFromSource(sourceConfig) {
   const { name, baseUrl, startUrl, newspaper, ...parserOptions } = sourceConfig;
+  console.log(`[PIPELINE-FETCH] Starting fetch for source: ${name}`); // <-- DIAGNOSTIC LOG
 
   if (!isValidURL(startUrl) || !isValidURL(baseUrl)) {
     logger.error(`[${name}] Invalid startUrl or baseUrl. Skipping source.`);
@@ -72,12 +79,13 @@ async function fetchHeadlinesFromSource(sourceConfig) {
       `[${name}] Calling @daitanjs/web::downloadAndExtract with options:`,
       downloadOptions
     );
-
+    console.log(`[PIPELINE-FETCH] [${name}] Calling downloadAndExtract...`); // <-- DIAGNOSTIC LOG
     const extractedData = await downloadAndExtract(
       startUrl,
       downloadOptions,
       logger
     );
+    console.log(`[PIPELINE-FETCH] [${name}] downloadAndExtract returned.`); // <-- DIAGNOSTIC LOG
 
     logger.debug(`[${name}] Raw data returned from downloadAndExtract:`, {
       type: typeof extractedData,
@@ -92,7 +100,8 @@ async function fetchHeadlinesFromSource(sourceConfig) {
       logger.warn(`⚠️ [${name}] No raw items extracted from ${startUrl}.`);
       return [];
     }
-
+    
+    console.log(`[PIPELINE-FETCH] [${name}] Formatting ${extractedData.length} raw items...`); // <-- DIAGNOSTIC LOG
     const formattedData = formatScrapedLinkData(
       extractedData,
       baseUrl,
@@ -107,6 +116,7 @@ async function fetchHeadlinesFromSource(sourceConfig) {
       `[${name}] Formatted ${formattedData.length} valid headlines from ${extractedData.length} raw items.`
     );
 
+    console.log(`[PIPELINE-FETCH] Finished fetch for source: ${name}`); // <-- DIAGNOSTIC LOG
     return formattedData;
   } catch (error) {
     logger.error(

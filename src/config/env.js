@@ -1,168 +1,53 @@
-// File: headlines_mongo/src/config/env.js
-import { getEnvVariable, getLogger } from '@daitanjs/development';
-import { truncateString } from '@daitanjs/utilities';
+// File: src/config/env.js (version 1.05)
+// This module reads from the pre-populated process.env and exports constants.
+// It does NOT load any files itself. `dotenv.config()` should be called in `app.js`.
 
-const logger = getLogger('headlines-mongo-config-env');
+import { getLogger } from '@daitanjs/development';
 
-logger.debug(
-  'Reading environment variables into app configuration constants...'
-);
+const logger = getLogger('config-env');
+logger.debug('Reading environment variables into app configuration constants...');
 
-// --- Define and Export Application Environment Variables using getEnvVariable ---
-export const MONGO_URI = getEnvVariable(
-  'MONGO_URI',
-  null, // No sensible default for a connection URI
-  true, // It is absolutely required for the app to function
-  'string',
-  'MongoDB Connection URI'
-);
+// --- Helper Functions for robust type conversion ---
+const asNumber = (value, defaultValue) => {
+  if (value === undefined || value === null || value === '') return defaultValue;
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
+};
+const asBoolean = (value, defaultValue = false) => {
+    if (value === undefined || value === null) return defaultValue;
+    return String(value).toLowerCase() === 'true';
+};
+
+// --- Database Configuration ---
+export const MONGO_URI = process.env.MONGO_URI;
 
 // --- LLM Configuration ---
-export const APP_LLM_PROVIDER_HEADLINES = getEnvVariable(
-  'LLM_PROVIDER_HEADLINES',
-  'openai',
-  false, // Not strictly required, will fall back to intelligence lib defaults
-  'string',
-  'LLM Provider for headline assessments (e.g., openai, groq)'
-);
-
-export const APP_LLM_MODEL_HEADLINES = getEnvVariable(
-  'LLM_MODEL_HEADLINES',
-  'gpt-4o-mini',
-  false,
-  'string',
-  'LLM Model for headline assessments'
-);
-
-export const APP_LLM_PROVIDER_ARTICLES = getEnvVariable(
-  'LLM_PROVIDER_ARTICLES',
-  'openai',
-  false,
-  'string',
-  'LLM Provider for full article content assessments'
-);
-
-export const APP_LLM_MODEL_ARTICLES = getEnvVariable(
-  'LLM_MODEL_ARTICLES',
-  'gpt-4o-mini',
-  false,
-  'string',
-  'LLM Model for full article content assessments'
-);
-
-// --- NEW: Redis / Upstash Configuration (Optional) ---
-export const REDIS_URL = getEnvVariable(
-  'REDIS_URL',
-  null,
-  false,
-  'string',
-  'Redis connection string (Upstash or local) - Required if using queues'
-);
-
-export const REDIS_CONFIG = (() => {
-  if (!REDIS_URL) return null;
-  try {
-    const url = new URL(REDIS_URL);
-    return {
-      connection: {
-        host: url.hostname,
-        port: Number(url.port) || 6379,
-        username: url.username || undefined,
-        password: url.password || undefined,
-        tls: url.protocol === 'rediss:', // force TLS for Upstash
-      },
-    };
-  } catch (e) {
-    throw new Error(`Invalid REDIS_URL: ${e.message}`);
-  }
-})();
+export const APP_LLM_PROVIDER_HEADLINES = process.env.LLM_PROVIDER_HEADLINES || 'openai';
+export const APP_LLM_MODEL_HEADLINES = process.env.LLM_MODEL_HEADLINES || 'gpt-4o-mini';
+export const APP_LLM_PROVIDER_ARTICLES = process.env.LLM_PROVIDER_ARTICLES || 'openai';
+export const APP_LLM_MODEL_ARTICLES = process.env.LLM_MODEL_ARTICLES || 'gpt-4o-mini';
 
 // --- Email & SMTP Configuration ---
-export const SMTP_HOST = getEnvVariable('SMTP_HOST', null, false, 'string');
-export const SMTP_PORT = getEnvVariable('SMTP_PORT', 587, false, 'number');
-export const SMTP_SECURE = getEnvVariable(
-  'SMTP_SECURE',
-  true,
-  false,
-  'boolean'
-);
-export const SMTP_USER = getEnvVariable('SMTP_USER', null, false, 'string');
-export const SMTP_PASS = getEnvVariable('SMTP_PASS', null, false, 'string');
-export const SMTP_FROM_ADDRESS = getEnvVariable(
-  'SMTP_FROM_ADDRESS',
-  null,
-  false,
-  'string'
-);
-export const SMTP_FROM_NAME = getEnvVariable(
-  'SMTP_FROM_NAME',
-  'Headlines Bot',
-  false,
-  'string'
-);
-
-export const HEADLINE_RECIPIENTS_STR = getEnvVariable(
-  'HEADLINE_RECIPIENTS',
-  'reconozco@gmail.com,christiansenalexandra@gmail.com',
-  false,
-  'string',
-  'Headline Email Recipients (comma-separated)'
-);
-export const SUPERVISOR_EMAIL_ENV = getEnvVariable(
-  'SUPERVISOR_EMAIL',
-  '',
-  false,
-  'string',
-  'Supervisor Email Address'
-);
-export const SEND_TO_DEFAULT_SUPERVISOR_ENV = getEnvVariable(
-  'SEND_TO_DEFAULT_SUPERVISOR',
-  false,
-  false,
-  'boolean',
-  'Flag to send to default supervisor email if no specific one is set'
-);
+export const SMTP_HOST = process.env.SMTP_HOST;
+export const SMTP_PORT = asNumber(process.env.SMTP_PORT, 587);
+export const SMTP_SECURE = asBoolean(process.env.SMTP_SECURE, true);
+export const SMTP_USER = process.env.SMTP_USER;
+export const SMTP_PASS = process.env.SMTP_PASS;
+export const SMTP_FROM_ADDRESS = process.env.SMTP_FROM_ADDRESS;
+export const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME || 'Headlines Bot';
+export const HEADLINE_RECIPIENTS_STR = process.env.HEADLINE_RECIPIENTS || 'default@example.com';
+export const SUPERVISOR_EMAIL_ENV = process.env.SUPERVISOR_EMAIL || '';
+export const SEND_TO_DEFAULT_SUPERVISOR_ENV = asBoolean(process.env.SEND_TO_DEFAULT_SUPERVISOR);
 
 // --- General App Settings ---
-export const NODE_ENV = getEnvVariable('NODE_ENV', 'development', false);
+export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const IS_PRODUCTION = NODE_ENV === 'production';
-export const LOG_LEVEL = getEnvVariable(
-  'LOG_LEVEL',
-  IS_PRODUCTION ? 'info' : 'debug',
-  false
-);
-
-export const DEFAULT_USER_AGENT = getEnvVariable(
-  'DEFAULT_USER_AGENT',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-  false
-);
-export const CONCURRENCY_LIMIT = getEnvVariable(
-  'CONCURRENCY_LIMIT',
-  5,
-  false,
-  'number'
-);
-export const FLY_API_TOKEN = getEnvVariable(
-  'FLY_API_TOKEN',
-  null,
-  false,
-  'string'
-);
+export const LOG_LEVEL = process.env.LOG_LEVEL || (IS_PRODUCTION ? 'info' : 'debug');
+export const DEFAULT_USER_AGENT = process.env.DEFAULT_USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36';
+export const CONCURRENCY_LIMIT = asNumber(process.env.CONCURRENCY_LIMIT, 5);
+export const FLY_API_TOKEN = process.env.FLY_API_TOKEN || null;
 
 // --- Debug Flags ---
-export const AI_VERBOSE = getEnvVariable('AI_VERBOSE', false, false, 'boolean');
+export const AI_VERBOSE = asBoolean(process.env.AI_VERBOSE);
 
-// Log a confirmation that environment variables have been read.
-if (MONGO_URI) {
-  logger.debug(
-    `src/config/env.js: MONGO_URI confirmed as SET for export: ${truncateString(
-      MONGO_URI,
-      40
-    )}`
-  );
-} else {
-  logger.error(
-    'src/config/env.js: MONGO_URI IS UNDEFINED. The application will fail at database connection.'
-  );
-}
+logger.info(`Environment configuration loaded. NODE_ENV: ${NODE_ENV}, LOG_LEVEL: ${LOG_LEVEL}`);
