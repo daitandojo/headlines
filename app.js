@@ -79,7 +79,7 @@ async function startServer() {
 
     console.log('Step 5: Starting Express server listener...');
     app.listen(port, host, () => {
-      console.log(`✅✅✅ [SERVER START] Express server is now listening on http://${host}:${port} ✅✅✅`);
+      console.log(`✅✅✅ [SERVER STARTING NOW] Express server is now listening on http://${host}:${port} ✅✅✅`);
     });
   } catch (error) {
     bootLogger.error('💥💥💥 CRITICAL STARTUP FAILURE 💥💥💥', { error: error.message, stack: error.stack });
