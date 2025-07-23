@@ -1,4 +1,4 @@
-// File: app.js (version 1.31 - Final)
+// File: app.js (Final Version - Instrumented)
 import express from 'express';
 import { getLogger } from '@daitanjs/development';
 import { connectDatabase } from './src/config/database.js';
@@ -7,10 +7,9 @@ import { validateAllSourceConfigs } from './src/utils/configValidator.js';
 import { executePipeline } from './app-logic.js';
 
 const bootLogger = getLogger('server-boot');
-bootLogger.info('[BOOT] app.js module execution started.');
+bootLogger.info('app.js module execution started.');
 
 process.setMaxListeners(30);
-
 process.on('unhandledRejection', (reason, promise) => {
   bootLogger.error('💥 FATAL: Unhandled Rejection at:', { promise, reason });
   setTimeout(() => process.exit(1), 1000);
@@ -19,23 +18,22 @@ process.on('uncaughtException', (error) => {
   bootLogger.error('💥 FATAL: Uncaught Exception:', error);
   setTimeout(() => process.exit(1), 1000);
 });
-
-bootLogger.info('[BOOT] Global handlers are active.');
+bootLogger.info('Global handlers are active.');
 
 async function startServer() {
-  bootLogger.info('[BOOT] startServer() entered.');
+  bootLogger.info('startServer() entered.');
   try {
-    bootLogger.info('[BOOT] Step 1: Validating source configurations...');
+    bootLogger.info('Step 1: Validating source configurations...');
     validateAllSourceConfigs();
-    bootLogger.info('[BOOT] Step 1: Source configurations are valid.');
+    bootLogger.info('Step 1: Source configurations valid.');
 
-    bootLogger.info('[BOOT] Step 2: Performing application setup checks (env vars)...');
+    bootLogger.info('Step 2: Performing application setup checks...');
     await setupApp();
-    bootLogger.info('[BOOT] Step 2: Application setup checks complete.');
+    bootLogger.info('Step 2: Application setup checks complete.');
 
-    bootLogger.info('[BOOT] Step 3: Connecting to database...');
+    bootLogger.info('Step 3: Connecting to database...');
     await connectDatabase();
-    bootLogger.info('✅ [BOOT] Step 3: Database connection successful.');
+    bootLogger.info('✅ Step 3: Database connection successful.');
 
     const app = express();
     const port = process.env.PORT || 3000;
@@ -43,32 +41,38 @@ async function startServer() {
     const pipelineTriggerKey = process.env.PIPELINE_TRIGGER_KEY;
     let isPipelineRunning = false;
 
-    bootLogger.info('[BOOT] Step 4: Configuring Express server routes...');
+    bootLogger.info('Step 4: Configuring Express server routes...');
     app.get('/health', (req, res) => res.status(200).json({ status: 'ok', pipelineRunning: isPipelineRunning }));
-
     app.post('/run-pipeline', async (req, res) => {
       const serverLogger = getLogger('headlines-server');
       serverLogger.info('[API] /run-pipeline endpoint hit.');
-      if (req.headers.authorization !== `Bearer ${pipelineTriggerKey}`) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      if (isPipelineRunning) {
-        return res.status(429).json({ message: 'Pipeline already running.' });
-      }
+
+      if (req.headers.authorization !== `Bearer ${pipelineTriggerKey}`) return res.status(401).json({ error: 'Unauthorized' });
+      if (isPipelineRunning) return res.status(429).json({ message: 'Pipeline already running.' });
+      
       res.status(202).json({ message: 'Pipeline run accepted.' });
+      
+      // --- NEW DIAGNOSTIC LOG ---
+      console.log('[DIAGNOSTIC] Accepted pipeline run, preparing to execute.');
+      
       isPipelineRunning = true;
       try {
+        // --- NEW DIAGNOSTIC LOG ---
+        console.log('[DIAGNOSTIC] PRE-AWAIT executePipeline()');
         await executePipeline();
+        console.log('[DIAGNOSTIC] POST-AWAIT executePipeline() - Execution finished.');
       } catch (error) {
+        console.error('[DIAGNOSTIC] CATCH block in /run-pipeline handler:', error);
         serverLogger.error('[API] CRITICAL ERROR from executePipeline:', error);
       } finally {
         isPipelineRunning = false;
         serverLogger.info('[API] Pipeline lock released.');
+        console.log('[DIAGNOSTIC] Pipeline lock released in FINALLY block.');
       }
     });
-    bootLogger.info('[BOOT] Step 4: Express routes configured.');
+    bootLogger.info('Step 4: Express routes configured.');
 
-    bootLogger.info('[BOOT] Step 5: Starting Express server listener...');
+    bootLogger.info('Step 5: Starting Express server listener...');
     app.listen(port, host, () => {
       bootLogger.info(`✅✅✅ [SERVER START] Express server is now listening on http://${host}:${port} ✅✅✅`);
     });
