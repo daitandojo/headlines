@@ -1,32 +1,31 @@
 // File: bootstrap.js
-// This is the new main entry point for the application.
-// Its ONLY job is to set up the environment and logging BEFORE any other code runs.
+// This is the NEW and ONLY entry point for the application.
+// It sets up the environment and logging BEFORE any other module runs.
 
-import { initializeRootLogger, loadEnvironmentFiles, setGlobalLogLevel, getLogger } from '@daitanjs/development'; // <-- FIX IS HERE
+// --- THE FIX IS ON THIS LINE ---
+import { initializeRootLogger, loadEnvironmentFiles, setGlobalLogLevel, getLogger } from '@daitanjs/development';
 import { BASE_LOG_DIR } from './src/config/paths.js';
 
-// Use console.log for this initial phase as the logger isn't fully configured yet.
+// Use console.log for this initial phase
 console.log('[BOOTSTRAP] Starting application bootstrap...');
 
-// --- Add a final-resort exit logger ---
 process.on('exit', (code) => {
-  // This will run if the process exits for any reason.
   console.log(`[BOOTSTRAP] Process is about to exit with code: ${code}`);
 });
 
-// 1. Load all environment files. This populates process.env correctly.
+// 1. Load environment files with OVERRIDE set to TRUE.
 loadEnvironmentFiles({ overrideDotenv: true, debugDotenv: true });
 console.log('[BOOTSTRAP] Environment files loaded.');
 
-// 2. Initialize the root logger with the now-loaded environment variables.
+// 2. Initialize the root logger.
 initializeRootLogger({ logPath: BASE_LOG_DIR });
 console.log('[BOOTSTRAP] Root logger initialized.');
 
-// 3. Set the global log level from the environment.
+// 3. Set the global log level.
 setGlobalLogLevel(process.env.LOG_LEVEL || 'info');
-const bootLogger = getLogger('bootstrap'); // This will now work correctly
+const bootLogger = getLogger('bootstrap'); // This line will now work
 bootLogger.info(`Global log level set to "${process.env.LOG_LEVEL || 'info'}".`);
 
-// 4. Now that the environment is stable, dynamically import and run the main application logic.
+// 4. Hand off to the main application.
 bootLogger.info('Handing off to main application server...');
 import('./app.js');
