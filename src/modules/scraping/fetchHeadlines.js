@@ -67,12 +67,21 @@ async function fetchHeadlinesFromSource(sourceConfig) {
   logger.info(`🌐 [${name}] Fetching from: ${startUrl}`);
 
   try {
+    // --- DEFINITIVE FIX: Add production-safe Puppeteer arguments ---
     const downloadOptions = {
       ...parserOptions,
       strategy: parserOptions.parserType === 'jsdom' ? 'robust' : 'fast',
       outputFormat: 'structured',
       extractLinks: true,
       userAgent: DEFAULT_USER_AGENT,
+      puppeteerOptions: {
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage', // Crucial for constrained environments
+          '--single-process'
+        ]
+      }
     };
 
     logger.debug(
@@ -123,6 +132,8 @@ async function fetchHeadlinesFromSource(sourceConfig) {
       `❌ [${name}] Critical error fetching headlines from ${startUrl}: ${error.message}`,
       { error }
     );
+    // Add a console.error for maximum visibility
+    console.error(`[PIPELINE-FETCH] [${name}] CRITICAL ERROR:`, error);
     return [];
   }
 }
