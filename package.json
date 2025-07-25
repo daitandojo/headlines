@@ -23,7 +23,7 @@
     "@daitanjs/intelligence": "^1.2.4",
     "@daitanjs/utilities": "^1.0.4",
     "@daitanjs/validation": "^1.0.5",
-    "@daitanjs/web": "^1.2.4",
+    "@daitanjs/web": "^1.2.6",
     "axios": "^1.7.2",
     "cli-progress": "^3.12.0",
     "dotenv": "^16.4.5",
