@@ -1,4 +1,4 @@
-// src/config/env.js (version 1.01)
+// src/config/env.js (version 1.02)
 import { getEnvVariable, getLogger } from '@daitanjs/development';
 import { truncateString } from '@daitanjs/utilities';
 

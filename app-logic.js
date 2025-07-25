@@ -1,4 +1,4 @@
-// app-logic.js (version 1.01)
+// app-logic.js (version 1.02)
 // This file was formerly app.js. It contains the main application pipeline.
 import {
   getLogger,

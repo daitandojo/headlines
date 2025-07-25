@@ -1,5 +1,4 @@
-// File: headlines_mongo/src/config/index.js
-
+// src/config/index.js (version 1.01)
 // --- Environment Variable Sourced Configurations ---
 export {
   MONGO_URI,
@@ -16,8 +15,6 @@ export {
   AI_VERBOSE,
   FLY_API_TOKEN,
 } from './env.js';
-
-export { REDIS_URL, REDIS_CONFIG } from './env.js';
 
 // --- Path Configurations ---
 export {
