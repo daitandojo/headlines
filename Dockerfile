@@ -21,4 +21,5 @@ FROM base
 COPY --from=build --chown=node:node /app /app
 USER node
 EXPOSE 3000
-CMD [ "node", "bootstrap.js" ]
+# ... (everything else the same from the "No Puppeteer" version)
+CMD [ "node", "app.js" ]

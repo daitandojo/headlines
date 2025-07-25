@@ -1,75 +1,52 @@
-// File: app.js (Final Version)
 import express from 'express';
-import { getLogger } from '@daitanjs/development';
-import { connectDatabase } from './src/config/database.js';
-import { setupApp } from './src/setup/setupApp.js';
-import { validateAllSourceConfigs } from './src/utils/configValidator.js';
-import { executePipeline } from './app-logic.js';
 
-const bootLogger = getLogger('server-boot');
-bootLogger.info('app.js module execution started.');
+// We are NOT importing ANY DaitanJS libraries yet.
+// We are only using Express.
 
-process.setMaxListeners(30);
-process.on('unhandledRejection', (reason, promise) => {
-  bootLogger.error('💥 FATAL: Unhandled Rejection at:', { promise, reason });
-  setTimeout(() => process.exit(1), 1000);
+console.log('[MINIMAL TEST 1] app.js starting...');
+
+const app = express();
+const port = process.env.PORT || 3000;
+const host = '0.0.0.0';
+const pipelineTriggerKey = process.env.PIPELINE_TRIGGER_KEY;
+let isPipelineRunning = false;
+
+app.get('/health', (req, res) => {
+  console.log('[MINIMAL TEST 1] Health check hit.');
+  res.status(200).json({ status: 'ok', pipelineRunning: isPipelineRunning });
 });
-process.on('uncaughtException', (error) => {
-  bootLogger.error('💥 FATAL: Uncaught Exception:', error);
-  setTimeout(() => process.exit(1), 1000);
-});
-bootLogger.info('Global handlers are active.');
 
-async function startServer() {
-  bootLogger.info('startServer() entered.');
-  try {
-    bootLogger.info('Step 1: Validating source configurations...');
-    validateAllSourceConfigs();
-    bootLogger.info('Step 1: Source configurations valid.');
+app.post('/run-pipeline', (req, res) => {
+  console.log('[MINIMAL TEST 1] /run-pipeline endpoint hit.');
 
-    bootLogger.info('Step 2: Performing application setup checks...');
-    await setupApp();
-    bootLogger.info('Step 2: Application setup checks complete.');
-
-    bootLogger.info('Step 3: Connecting to database...');
-    await connectDatabase();
-    bootLogger.info('✅ Step 3: Database connection successful.');
-
-    const app = express();
-    const port = process.env.PORT || 3000;
-    const host = '0.0.0.0';
-    const pipelineTriggerKey = process.env.PIPELINE_TRIGGER_KEY;
-    let isPipelineRunning = false;
-
-    bootLogger.info('Step 4: Configuring Express server routes...');
-    app.get('/health', (req, res) => res.status(200).json({ status: 'ok', pipelineRunning: isPipelineRunning }));
-    app.post('/run-pipeline', (req, res) => {
-      const serverLogger = getLogger('headlines-server');
-      serverLogger.info('[API] /run-pipeline endpoint hit.');
-      if (req.headers.authorization !== `Bearer ${pipelineTriggerKey}`) return res.status(401).json({ error: 'Unauthorized' });
-      if (isPipelineRunning) return res.status(429).json({ message: 'Pipeline already running.' });
-      res.status(202).json({ message: 'Pipeline run accepted.' });
-      setTimeout(async () => {
-        isPipelineRunning = true;
-        try {
-          await executePipeline();
-        } catch (error) {
-          serverLogger.error('[API] CRITICAL ERROR from executePipeline:', error);
-        } finally {
-          isPipelineRunning = false;
-          serverLogger.info('[API] Pipeline lock released.');
-        }
-      }, 0);
-    });
-    bootLogger.info('Step 4: Express routes configured.');
-
-    bootLogger.info('Step 5: Starting Express server listener...');
-    app.listen(port, host, () => {
-      bootLogger.info(`✅✅✅ [SERVER START] Express server is now listening on http://${host}:${port} ✅✅✅`);
-    });
-  } catch (error) {
-    bootLogger.error('💥💥💥 CRITICAL STARTUP FAILURE 💥💥💥', { error: error.message, stack: error.stack });
-    process.exit(1);
+  if (req.headers.authorization !== `Bearer ${pipelineTriggerKey}`) {
+    console.log('[MINIMAL TEST 1] Unauthorized attempt.');
+    return res.status(401).json({ error: 'Unauthorized' });
   }
-}
-startServer();
+  if (isPipelineRunning) {
+    console.log('[MINIMAL TEST 1] Pipeline already running, rejecting.');
+    return res.status(429).json({ message: 'Pipeline already running.' });
+  }
+
+  res.status(202).json({ message: 'Pipeline run accepted.' });
+
+  // This is a simple, safe async task that does not import anything heavy.
+  setTimeout(async () => {
+    console.log('[MINIMAL TEST 1] setTimeout callback initiated. Starting FAKE pipeline.');
+    isPipelineRunning = true;
+    try {
+      // Simulate a long-running task by just waiting.
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds
+      console.log('[MINIMAL TEST 1] FAKE pipeline finished successfully.');
+    } catch (error) {
+      console.error('[MINIMAL TEST 1] FAKE pipeline error:', error);
+    } finally {
+      isPipelineRunning = false;
+      console.log('[MINIMAL TEST 1] FAKE pipeline lock released.');
+    }
+  }, 0);
+});
+
+app.listen(port, host, () => {
+  console.log(`✅✅✅ [MINIMAL TEST 1] Server is now listening on http://${host}:${port}`);
+});
