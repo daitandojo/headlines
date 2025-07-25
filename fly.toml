@@ -1,17 +1,14 @@
 app = 'headlines-polished-sea-1731'
 primary_region = 'lhr'
 
-[build]
+# We are no longer an HTTP service.
+# [http_service] section is removed.
 
-[http_service]
-  internal_port = 3000
-  force_https = true
-  auto_stop_machines = false
-  auto_start_machines = true
-  min_machines_running = 1
-  processes = ['app']
-
-[[vm]]
-  memory = '4gb'
-  cpu_kind = 'shared'
-  cpus = 2
+# We define a scheduled machine instead.
+[[machines]]
+  schedule = "0 */2 * * *" # This is the same cron schedule: every 2 hours
+  
+  [machines.vm]
+    memory = '4gb'
+    cpu_kind = 'shared'
+    cpus = 2
