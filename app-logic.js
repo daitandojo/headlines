@@ -1,15 +1,22 @@
-// This is the new, robust pipeline logic, based on the successful test-pipeline.js
-// It uses standard libraries to avoid the native crash from the DaitanJS framework.
+// This is the new, robust pipeline logic, based on the successful test-pipeline.
+// It uses standard libraries for scraping to avoid the native crash from the DaitanJS framework.
 import mongoose from 'mongoose';
 import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import nodemailer from 'nodemailer';
 import { getLogger } from '@daitanjs/development';
-import { SOURCES, HEADLINES_RELEVANCE_THRESHOLD, ARTICLES_RELEVANCE_THRESHOLD, SMTP_CONFIG, HEADLINE_RECIPIENTS, SUPERVISOR_EMAIL } from './src/config/index.js';
+import { 
+  SOURCES, 
+  HEADLINES_RELEVANCE_THRESHOLD, 
+  ARTICLES_RELEVANCE_THRESHOLD, 
+  SMTP_CONFIG, 
+  HEADLINE_RECIPIENTS, 
+  SUPERVISOR_EMAIL 
+} from './src/config/index.js';
 import { generateIntelligence } from '@daitanjs/intelligence';
-import { instructionHeadlines, shotsHeadlinesInput, shotsHeadlinesOutput } from './src/modules/assessments/instructionHeadlines.js'; // Assuming you want to keep these
-// You will need to re-create the assessment and enrichment logic using standard tools if you want to go further.
-// For now, we will use a simplified version.
+// --- DEFINITIVE FIX: Import from the correct files ---
+import { instructionHeadlines } from './src/modules/assessments/instructionHeadlines.js';
+import { shotsInput as shotsHeadlinesInput, shotsOutput as shotsHeadlinesOutput } from './src/modules/assessments/shotsHeadlines.js';
 
 const pipelineLogger = getLogger('headlines-mongo-pipeline');
 
@@ -38,29 +45,45 @@ async function fetchHeadlinesFromSource(source) {
     }
 }
 
-// MOCK AI Function - This is a placeholder. You would replace this with a real call to your AI library.
-// Since @daitanjs/intelligence seems to be one of the safe imports, we can try using it.
 async function assessHeadlinesWithAI(articles) {
     pipelineLogger.info(`Assessing ${articles.length} headlines with AI...`);
-    // This is a simplified version of your original logic.
+    if (articles.length === 0) return [];
+    
     const headlines = articles.map(a => a.headline);
     const userPromptString = `Please assess the following headlines:\n- ${headlines.join('\n- ')}`;
-
-    // This part might still be problematic if the intelligence lib is the issue,
-    // but we can test it. If it fails, we replace it with a direct API call.
-    const { response } = await generateIntelligence({
-        prompt: { system: instructionHeadlines, user: userPromptString },
-        config: { response: { format: 'json' } },
-    });
     
-    if (response && response.assessment && Array.isArray(response.assessment)) {
-        return articles.map((article, index) => ({
-            ...article,
-            relevance_headline: response.assessment[index]?.relevance_headline || 0,
-            assessment_headline: response.assessment[index]?.assessment_headline || 'AI assessment failed to return valid data.',
-        }));
+    const formattedShots = shotsHeadlinesInput.flatMap((input, index) => [
+        { role: 'user', content: `Please assess the following headlines:\n- ${input}` },
+        { role: 'assistant', content: shotsHeadlinesOutput[index] },
+    ]);
+
+    try {
+        const { response } = await generateIntelligence({
+            prompt: {
+                system: instructionHeadlines,
+                shots: formattedShots,
+                user: userPromptString,
+            },
+            config: {
+                response: { format: 'json' },
+                llm: {
+                  target: `${process.env.LLM_PROVIDER_HEADLINES || 'openai'}|${process.env.LLM_MODEL_HEADLINES || 'gpt-4o-mini'}`
+                }
+            },
+        });
+        
+        if (response && response.assessment && Array.isArray(response.assessment)) {
+            return articles.map((article, index) => ({
+                ...article,
+                relevance_headline: response.assessment[index]?.relevance_headline || 0,
+                assessment_headline: response.assessment[index]?.assessment_headline || 'AI assessment failed to return valid data.',
+            }));
+        }
+        throw new Error('AI response was invalid or missing the assessment array.');
+    } catch (error) {
+        pipelineLogger.error('Error during AI headline assessment', { message: error.message });
+        return articles.map(a => ({ ...a, relevance_headline: 0, assessment_headline: `AI Error: ${error.message}` }));
     }
-    return articles.map(a => ({ ...a, relevance_headline: 0, assessment_headline: 'AI response was invalid.' }));
 }
 
 export async function executePipeline() {
@@ -101,7 +124,12 @@ export async function executePipeline() {
         const relevantArticles = assessedArticles.filter(a => a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD);
         if (relevantArticles.length > 0) {
             pipelineLogger.info(`Found ${relevantArticles.length} relevant articles. Sending email...`);
-            const transporter = nodemailer.createTransport(SMTP_CONFIG);
+            const transporter = nodemailer.createTransport({
+                host: SMTP_CONFIG.host,
+                port: SMTP_CONFIG.port,
+                secure: SMTP_CONFIG.secure,
+                auth: SMTP_CONFIG.auth,
+            });
             await transporter.sendMail({
                 from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`,
                 to: HEADLINE_RECIPIENTS.join(','),
