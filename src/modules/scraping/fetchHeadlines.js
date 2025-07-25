@@ -1,4 +1,4 @@
-// File: src/modules/scraping/fetchHeadlines.js (Corrected)
+// File: headlines_mongo/src/modules/scraping/fetchHeadlines.js
 import pLimit from 'p-limit';
 import {
   SOURCES,
@@ -41,7 +41,6 @@ export async function fetchAllHeadlines() {
   );
 
   const results = await Promise.allSettled(headlinePromises);
-
   const allFetchedHeadlines = results
     .filter((res) => res.status === 'fulfilled' && Array.isArray(res.value))
     .flatMap((res) => res.value);
@@ -61,22 +60,9 @@ async function fetchHeadlinesFromSource(sourceConfig) {
   logger.info(`🌐 [${name}] Fetching from: ${startUrl}`);
 
   try {
-    // --- DEFINITIVE FIX: Map parserType directly to a non-Puppeteer strategy ---
-    let strategy;
-    switch (parserOptions.parserType) {
-      case 'jsdom':
-        strategy = 'jsdom'; // Explicitly use the jsdom strategy
-        break;
-      case 'json-attr':
-        strategy = 'fast'; // Use the fast (axios) strategy
-        break;
-      default:
-        strategy = 'fast'; // Default to the safest, fastest option
-    }
-
     const downloadOptions = {
       ...parserOptions,
-      strategy: strategy, // Use the correctly determined strategy
+      strategy: parserOptions.parserType === 'jsdom' ? 'robust' : 'fast',
       outputFormat: 'structured',
       extractLinks: true,
       userAgent: DEFAULT_USER_AGENT,
@@ -86,17 +72,27 @@ async function fetchHeadlinesFromSource(sourceConfig) {
       `[${name}] Calling @daitanjs/web::downloadAndExtract with options:`,
       downloadOptions
     );
+
     const extractedData = await downloadAndExtract(
       startUrl,
       downloadOptions,
       logger
     );
 
+    logger.debug(`[${name}] Raw data returned from downloadAndExtract:`, {
+      type: typeof extractedData,
+      isArray: Array.isArray(extractedData),
+      length: Array.isArray(extractedData) ? extractedData.length : undefined,
+      preview: Array.isArray(extractedData)
+        ? extractedData.slice(0, 2)
+        : extractedData,
+    });
+
     if (!Array.isArray(extractedData) || extractedData.length === 0) {
       logger.warn(`⚠️ [${name}] No raw items extracted from ${startUrl}.`);
       return [];
     }
-    
+
     const formattedData = formatScrapedLinkData(
       extractedData,
       baseUrl,
@@ -110,6 +106,7 @@ async function fetchHeadlinesFromSource(sourceConfig) {
     logger.info(
       `[${name}] Formatted ${formattedData.length} valid headlines from ${extractedData.length} raw items.`
     );
+
     return formattedData;
   } catch (error) {
     logger.error(

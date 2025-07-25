@@ -1,4 +1,4 @@
-# docker-compose.yml (version 1.02)
+# docker-compose.yml (version 1.03)
 # This file is for LOCAL DEVELOPMENT and TESTING ONLY.
 # It allows us to reliably run the application in a container,
 # mimicking the production environment.
@@ -11,8 +11,6 @@ services:
     # docker-compose has a robust parser that handles special characters correctly.
     env_file:
       - .env
-    # Map port 3000 on your local machine to port 3000 inside the container.
-    ports:
-      - "3000:3000"
+    # The application is a script, not a web server, so no port mapping is needed.
     # Give the container a friendly name.
     container_name: headlines_local

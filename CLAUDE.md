@@ -1,32 +1,32 @@
-# File: CLAUDE.md (version 1.01)
+# File: CLAUDE.md (version 1.02)
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-**Headlines-Mongo** is a news processing application that scrapes Danish business news (Børsen, Berlingske, Politiken, Finans.dk), assesses relevance using AI/LLM, and sends curated newsletters via email. The application is deployed on Fly.io and is designed to be triggered by a scheduled GitHub Action.
+**Headlines-Mongo** is a news processing application that scrapes Danish business news (Børsen, Berlingske, Politiken, Finans.dk), assesses relevance using AI/LLM, and sends curated newsletters via email. The application is deployed on Fly.io and is designed to be triggered by a scheduler.
 
 ## Architecture
 
-The application is architected as a **long-running web server** with a **data pipeline** triggered by an HTTP endpoint.
+The application is architected as a **script-based, scheduled task** that runs its data pipeline once and then exits. It is not a web server.
 
-1.  **Trigger**: A scheduled GitHub Action sends a `POST` request to the `/run-pipeline` endpoint.
+1.  **Trigger**: The application is triggered directly by a scheduler (e.g., Fly.io's `schedule` attribute in `fly.toml` or a local cron job) which executes the `npm start` command.
 2.  **Scraping**: Fetch headlines from configured sources.
 3.  **Filtering**: Skip articles already in the database.
 4.  **AI Assessment (Headlines)**: LLM evaluates headline relevance (threshold: 10).
 5.  **Enrichment**: Extract full article content for relevant headlines.
 6.  **AI Assessment (Content)**: LLM evaluates article content quality (threshold: 10).
 7.  **Storage**: Store relevant articles in MongoDB.
-8.  **Email**: Send curated newsletters and a supervisor report via a configured SMTP service.
+8.  **Email**: Send curated newsletters and a supervisor report directly via a configured SMTP service.
 
-**Note:** This application does **not** use Redis or background workers. All processing is done within the `executePipeline` function call.
+All processing is done within the `runPipeline` function call.
 
 ## Core Components
 
 ### Key Files
-- `app.js`: Main application entry point. Sets up the Express server and the `/run-pipeline` trigger endpoint.
-- `app-logic.js`: Contains the `executePipeline` function which orchestrates the entire data processing flow from start to finish.
+- `app.js`: Main application entry point. Sets up the environment and triggers the pipeline.
+- `app-logic.js`: Contains the `runPipeline` function which orchestrates the entire data processing flow from start to finish.
 - `src/config/sources.js`: Web scraping configuration for Danish news sites.
 - `src/config/env.js`: Centralized module for reading and exporting all environment variables.
 - `src/config/email.js`: SMTP and email content configuration.
@@ -46,5 +46,5 @@ The application is architected as a **long-running web server** with a **data pi
 
 ### Core Operations
 ```bash
-npm start          # Run the Express server locally (waits for triggers)
+npm start          # Run the pipeline script locally
 npm test           # Run Jest test suite

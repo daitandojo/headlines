@@ -1,5 +1,5 @@
-// File: src/modules/email/mailer.js (version 1.01)
-import nodemailer from 'nodemailer';
+// File: headlines_mongo/src/modules/email/mailer.js
+import { sendMail } from '@daitanjs/communication';
 import { getLogger } from '@daitanjs/development';
 import { safeExecute } from '@daitanjs/utilities';
 import {
@@ -21,7 +21,7 @@ const RECIPIENTS_UNCONFIGURED_MSG = 'Email recipients not configured.';
 const EMAIL_BODY_FAILED_MSG = 'HTML email body generation failed.';
 
 /**
- * Sends the main "Wealth Events" email directly using nodemailer.
+ * Sends the main "Wealth Events" email.
  * @param {Array<Object>} articlesForThisEmail - Pre-filtered articles to include.
  * @returns {Promise<Array<Object>>} The articles array with updated email status fields.
  */
@@ -57,20 +57,26 @@ export async function performActualEmailSend(articlesForThisEmail) {
     }));
   }
 
-  // --- REFACTOR: Use nodemailer directly ---
-  const transporter = nodemailer.createTransport({
-    host: SMTP_CONFIG.host,
-    port: SMTP_CONFIG.port,
-    secure: SMTP_CONFIG.secure, // true for 465, false for other ports
-    auth: SMTP_CONFIG.auth,
-  });
-
-  const mailOptions = {
-    to: HEADLINE_RECIPIENTS,
-    subject: EMAIL_CONFIG.subject,
-    html: emailBodyHtml,
-    from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`,
+  // --- REFACTOR: Use the new single-parameter object API for sendMail ---
+  const sendMailParams = {
+    message: {
+      to: HEADLINE_RECIPIENTS,
+      subject: EMAIL_CONFIG.subject,
+      html: emailBodyHtml,
+      from: SMTP_CONFIG.fromAddress,
+      name: SMTP_CONFIG.fromName,
+    },
+    config: {
+      host: SMTP_CONFIG.host,
+      port: SMTP_CONFIG.port,
+      secure: SMTP_CONFIG.secure,
+      auth: {
+        user: SMTP_CONFIG.auth.user,
+        pass: SMTP_CONFIG.auth.pass,
+      },
+    },
   };
+  // --- END REFACTOR ---
 
   if (!IS_PRODUCTION && !process.env.FORCE_EMAIL_SEND_DEV) {
     logger.warn(`[${emailType} Mailer] DEV MODE: Skipping actual email send.`);
@@ -81,17 +87,22 @@ export async function performActualEmailSend(articlesForThisEmail) {
   }
 
   logger.info(
-    `📤 [${emailType} Mailer] Sending email to: ${mailOptions.to.join(', ')}.`
+    `📤 [${emailType} Mailer] Sending email to: ${sendMailParams.message.to.join(
+      ', '
+    )}.`
   );
-  const sendResult = await safeExecute(() => transporter.sendMail(mailOptions), {
-    errorHandler: (error) => {
-      logger.error(`❌ [${emailType} Mailer] SMTP error:`, {
-        message: error.message,
-        code: error.code,
-      });
-      return { errorOccurred: true, details: error.message };
-    },
-  });
+  const sendResult = await safeExecute(
+    () => sendMail(sendMailParams), // Pass the single object
+    {
+      errorHandler: (error) => {
+        logger.error(`❌ [${emailType} Mailer] SMTP error:`, {
+          message: error.message,
+          code: error.code,
+        });
+        return { errorOccurred: true, details: error.message };
+      },
+    }
+  );
 
   if (sendResult && sendResult.errorOccurred) {
     const errorDetail = `SMTP Error: ${sendResult.details}`;
@@ -109,7 +120,7 @@ export async function performActualEmailSend(articlesForThisEmail) {
 }
 
 /**
- * Sends the supervisor report email directly using nodemailer.
+ * Sends the supervisor report email.
  * @param {Array<Object>} allAssessedFreshHeadlines
  * @param {Object} runStats
  * @returns {Promise<{sent: boolean, reason?: string}>}
@@ -145,19 +156,26 @@ export async function performActualSupervisorEmailSend(
     return { sent: false, reason: EMAIL_BODY_FAILED_MSG };
   }
 
-  const transporter = nodemailer.createTransport({
-    host: SMTP_CONFIG.host,
-    port: SMTP_CONFIG.port,
-    secure: SMTP_CONFIG.secure,
-    auth: SMTP_CONFIG.auth,
-  });
-
-  const mailOptions = {
-    to: [SUPERVISOR_EMAIL],
-    subject: SUPERVISOR_EMAIL_CONFIG.subject,
-    html: emailBodyHtml,
-    from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`,
+  // --- REFACTOR: Use the new single-parameter object API for sendMail ---
+  const sendMailParams = {
+    message: {
+      to: [SUPERVISOR_EMAIL],
+      subject: SUPERVISOR_EMAIL_CONFIG.subject,
+      html: emailBodyHtml,
+      from: SMTP_CONFIG.fromAddress,
+      name: SMTP_CONFIG.fromName,
+    },
+    config: {
+      host: SMTP_CONFIG.host,
+      port: SMTP_CONFIG.port,
+      secure: SMTP_CONFIG.secure,
+      auth: {
+        user: SMTP_CONFIG.auth.user,
+        pass: SMTP_CONFIG.auth.pass,
+      },
+    },
   };
+  // --- END REFACTOR ---
 
   if (!IS_PRODUCTION && !process.env.FORCE_EMAIL_SEND_DEV) {
     logger.warn(
@@ -167,17 +185,22 @@ export async function performActualSupervisorEmailSend(
   }
 
   logger.info(
-    `📤 [${emailType} Mailer] Sending email to: ${mailOptions.to.join(', ')}.`
+    `📤 [${emailType} Mailer] Sending email to: ${sendMailParams.message.to.join(
+      ', '
+    )}.`
   );
-  const sendResult = await safeExecute(() => transporter.sendMail(mailOptions), {
-    errorHandler: (error) => {
-      logger.error(`❌ [${emailType} Mailer] SMTP error:`, {
-        message: error.message,
-        code: error.code,
-      });
-      return { errorOccurred: true, details: error.message };
-    },
-  });
+  const sendResult = await safeExecute(
+    () => sendMail(sendMailParams), // Pass the single object
+    {
+      errorHandler: (error) => {
+        logger.error(`❌ [${emailType} Mailer] SMTP error:`, {
+          message: error.message,
+          code: error.code,
+        });
+        return { errorOccurred: true, details: error.message };
+      },
+    }
+  );
 
   if (sendResult && sendResult.errorOccurred) {
     const errorDetail = `SMTP Error: ${sendResult.details}`;

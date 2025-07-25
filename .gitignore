@@ -3,6 +3,7 @@ node_modules/
 assistant/
 sourcePack.txt
 botTeacher.txt
+.git
 
 # Logs
 logs/

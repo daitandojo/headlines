@@ -1,19 +1,44 @@
 {
-  "name": "headlines",
-  "version": "1.5.0",
-  "description": "Headlines Processing Application",
+  "name": "headlines-mongo",
+  "version": "1.2.0",
+  "description": "Headlines Processing Application using the DaitanJS framework.",
   "type": "module",
-  "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "test": "jest",
+    "show": "node scripts/show.js",
+    "mail": "node scripts/mail.js",
+    "delete": "node scripts/delete.js",
+    "migrate": "node scripts/migrateToMongo.js"
   },
   "dependencies": {
+    "@daitanjs/apiqueries": "file:../../packages/daitanjs/apiqueries",
+    "@daitanjs/authentication": "file:../../packages/daitanjs/authentication",
+    "@daitanjs/communication": "file:../../packages/daitanjs/src/communication",
+    "@daitanjs/config": "file:../../packages/daitanjs/src/config",
+    "@daitanjs/data": "file:../../packages/daitanjs/src/data",
+    "@daitanjs/development": "file:../../packages/daitanjs/src/development",
+    "@daitanjs/html": "file:../../packages/daitanjs/src/html",
+    "@daitanjs/intelligence": "file:../../packages/daitanjs/src/intelligence",
+    "@daitanjs/queues": "file:../../packages/daitanjs/src/queues",
+    "@daitanjs/utilities": "file:../../packages/daitanjs/src/utilities",
+    "@daitanjs/validation": "file:../../packages/daitanjs/src/validation",
+    "@daitanjs/web": "file:../../packages/daitanjs/src/web",
     "axios": "^1.7.2",
+    "cli-progress": "^3.12.0",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "ioredis": "^5.6.1",
     "jsdom": "^24.1.0",
+    "lodash": "^4.17.21",
     "mongoose": "^8.4.1",
-    "nodemailer": "^7.0.3"
+    "nodemailer": "^7.0.3",
+    "p-limit": "^3.1.0",
+    "puppeteer": "^22.10.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "random-useragent": "^0.5.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
 }

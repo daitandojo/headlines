@@ -1,4 +1,4 @@
-# File: Dockerfile (Final Worker Version)
+# File: Dockerfile (version 1.01)
 # syntax = docker/dockerfile:1
 
 ARG NODE_VERSION=20.15.1
@@ -20,4 +20,4 @@ USER node
 
 # This is no longer a web server, so no EXPOSE needed.
 # It runs the pipeline script once and then exits.
-CMD [ "node", "--max-old-space-size=3584", "run.js" ]
+CMD [ "node", "--max-old-space-size=3584", "app.js" ]

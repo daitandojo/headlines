@@ -1,7 +1,12 @@
-// models/Article.js
-// --- KEY CHANGE: Import mongoose directly ---
-import mongoose from 'mongoose';
+// headlines_mongo/models/Article.js
+// --- KEY CHANGE: Do NOT import mongoose directly ---
+// import mongoose from 'mongoose';
 
+// --- KEY CHANGE: Import the mongoose instance getter from the data library ---
+import { getMongooseInstance } from '@daitanjs/data';
+
+// Use the instance provided by the library to ensure a single connection is used.
+const mongoose = getMongooseInstance();
 const { Schema, model, models } = mongoose;
 
 const ArticleSchema = new Schema(
@@ -61,7 +66,7 @@ const ArticleSchema = new Schema(
   },
   {
     timestamps: true,
-    collection: 'articles',
+    collection: 'articles', // Explicitly setting collection name is good practice
   }
 );
 
@@ -70,5 +75,6 @@ ArticleSchema.index({ newspaper: 1, createdAt: -1 });
 ArticleSchema.index({ relevance_article: -1, createdAt: -1 });
 ArticleSchema.index({ relevance_headline: -1, createdAt: -1 });
 
-// Use the standard Mongoose `models` object to prevent OverwriteModelError.
+// Use the `models` object from the library's mongoose instance to prevent
+// "OverwriteModelError" in hot-reloading environments.
 export default models.Article || model('Article', ArticleSchema);
