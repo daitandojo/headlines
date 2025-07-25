@@ -1,10 +1,12 @@
 import express from 'express';
-import { getLogger } from '@daitanjs/development'; // Logger is safe, we'll keep it.
+import { getLogger } from '@daitanjs/development';
 import { connectDatabase } from './src/config/database.js';
-import './models/Article.js'; // CRITICAL: This line registers the Mongoose schema.
-import { executeTestPipeline } from './test-pipeline.js';
+import { setupApp } from './src/setup/setupApp.js';
+import { validateAllSourceConfigs } from './src/utils/configValidator.js';
+import { executePipeline } from './app-logic.js'; // This now points to our new, robust file
 
 const bootLogger = getLogger('server-boot');
+
 bootLogger.info('BAREBONES TEST: app.js module execution started.');
 
 async function startServer() {
