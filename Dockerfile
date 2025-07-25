@@ -11,6 +11,7 @@ WORKDIR /app
 FROM base AS build
 RUN apt-get update -qq && apt-get install --no-install-recommends -y build-essential python-is-python3
 COPY package-lock.json package.json ./
+# No longer need to skip chromium download, as puppeteer is not a dependency
 RUN npm ci
 COPY . .
 
