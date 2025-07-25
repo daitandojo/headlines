@@ -18,7 +18,7 @@ async function startServer() {
 
   app.get('/health', (req, res) => res.status(200).json({ status: 'ok', pipelineRunning: isPipelineRunning }));
 
-  app.post('/run-pipeline', (req, res) => {
+app.post('/run-pipeline', (req, res) => {
     const serverLogger = getLogger('headlines-server');
     serverLogger.info('[API] /run-pipeline endpoint hit.');
 
@@ -31,26 +31,26 @@ async function startServer() {
 
     res.status(202).json({ message: 'Pipeline run accepted.' });
 
-    // --- TEST 1: A simple async task that does nothing but wait and log ---
+    // --- TEST 2: Just try to import the module ---
     setTimeout(async () => {
-      console.log('[DIAGNOSTIC] setTimeout callback initiated. Starting FAKE pipeline.');
-      serverLogger.info('FAKE PIPELINE: Starting...');
+      console.log('[DIAGNOSTIC] setTimeout callback initiated. Preparing to IMPORT pipeline.');
       isPipelineRunning = true;
       try {
-        // Simulate a long-running task
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds
-        serverLogger.info('FAKE PIPELINE: Task finished successfully.');
-        console.log('[DIAGNOSTIC] FAKE pipeline finished.');
+        console.log('[DIAGNOSTIC] PRE-AWAIT dynamic import of app-logic.');
+        const { executePipeline } = await import('./app-logic.js');
+        console.log('[DIAGNOSTIC] POST-AWAIT dynamic import of app-logic. IMPORT SUCCEEDED.');
+        serverLogger.info('IMPORT TEST: Successfully imported executePipeline. NOT running it.');
       } catch (error) {
-        serverLogger.error('FAKE PIPELINE: Error occurred:', error);
+        console.error('[DIAGNOSTIC] CATCH block during import:', error);
+        serverLogger.error('IMPORT TEST: Error during import:', error);
       } finally {
         isPipelineRunning = false;
-        serverLogger.info('FAKE PIPELINE: Lock released.');
-        console.log('[DIAGNOSTIC] FAKE pipeline lock released.');
+        serverLogger.info('IMPORT TEST: Lock released.');
+        console.log('[DIAGNOSTIC] IMPORT TEST lock released.');
       }
     }, 0);
   });
-
+  
   app.listen(port, host, () => {
     bootLogger.info(`✅✅✅ [SERVER START] Express server is now listening on http://${host}:${port} ✅✅✅`);
   });
