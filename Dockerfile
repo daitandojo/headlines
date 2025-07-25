@@ -1,4 +1,4 @@
-# File: Dockerfile (version 1.04 - No Puppeteer)
+# File: Dockerfile (Final Version)
 # syntax = docker/dockerfile:1
 
 ARG NODE_VERSION=20.15.1
@@ -11,15 +11,15 @@ WORKDIR /app
 FROM base AS build
 RUN apt-get update -qq && apt-get install --no-install-recommends -y build-essential python-is-python3
 COPY package-lock.json package.json ./
-# No longer need to skip chromium download, as puppeteer is not a dependency
 RUN npm ci
 COPY . .
 
 # --- Final Production Image ---
 FROM base
-# No more apt-get needed for Chromium!
 COPY --from=build --chown=node:node /app /app
 USER node
 EXPOSE 3000
-# ... (everything else the same from the "No Puppeteer" version)
-CMD [ "node", "app.js" ]
+
+# --- DEFINITIVE FIX: Increase the memory available to the Node.js process ---
+# Set the heap size to 3.5GB, leaving some room for the rest of the system on a 4GB VM.
+CMD [ "node", "--max-old-space-size=3584", "bootstrap.js" ]
