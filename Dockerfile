@@ -1,4 +1,4 @@
-# File: Dockerfile (version 1.05 - No DaitanJS)
+# File: Dockerfile (Final Corrected Version)
 # syntax = docker/dockerfile:1
 
 ARG NODE_VERSION=20.15.1
@@ -19,4 +19,7 @@ FROM base
 COPY --from=build --chown=node:node /app /app
 USER node
 EXPOSE 3000
-CMD [ "node", "app.js" ]
+
+# --- THE FIX IS HERE ---
+# We must run the self-contained app.js, not the old bootstrap.js
+CMD [ "node", "--max-old-space-size=3584", "app.js" ]
