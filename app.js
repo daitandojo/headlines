@@ -13,14 +13,15 @@ import './models/Article.js'; // Registers the Mongoose schema.
 async function startServer() {
   console.log('[BOOT] startServer() entered.');
   try {
-    // --- Database Connection ---
     const MONGO_URI = process.env.MONGO_URI;
     if (!MONGO_URI) throw new Error('MONGO_URI is not defined in environment variables.');
     console.log('[BOOT] Connecting to MongoDB...');
     await mongoose.connect(MONGO_URI);
     console.log('✅ [BOOT] MongoDB connection successful.');
     
-    // --- Express Server ---
+    mongoose.connection.on('error', (err) => console.error('Mongoose connection error:', err));
+    mongoose.connection.on('disconnected', () => console.warn('Mongoose connection disconnected.'));
+
     const app = express();
     const port = process.env.PORT || 3000;
     const host = '0.0.0.0';

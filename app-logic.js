@@ -18,6 +18,7 @@ async function fetchHeadlinesFromSource(source) {
             timeout: 30000,
             headers: { 'User-Agent': DEFAULT_USER_AGENT }
         });
+
         const dom = new JSDOM(html);
         const document = dom.window.document;
         const links = [...document.querySelectorAll(source.linkSelector)];
@@ -29,8 +30,8 @@ async function fetchHeadlinesFromSource(source) {
                 link: new URL(href, source.baseUrl).href,
                 newspaper: source.newspaper,
                 source: source.name,
-                relevance_headline: 0, // Default value
-                assessment_headline: 'Not assessed', // Default value
+                relevance_headline: 0,
+                assessment_headline: 'Not assessed',
             };
         }).filter(h => h && h.headline && h.headline.length > 15);
         
