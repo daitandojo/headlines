@@ -12,10 +12,13 @@ async function startServer() {
   console.log('[BOOT] startServer() entered.');
   try {
     const MONGO_URI = process.env.MONGO_URI;
-    if (!MONGO_URI) throw new Error('MONGO_URI is not defined.');
+    if (!MONGO_URI) throw new Error('MONGO_URI is not defined in environment variables.');
     console.log('[BOOT] Connecting to MongoDB...');
     await mongoose.connect(MONGO_URI);
     console.log('✅ [BOOT] MongoDB connection successful.');
+    
+    mongoose.connection.on('error', (err) => console.error('Mongoose connection error:', err));
+    mongoose.connection.on('disconnected', () => console.warn('Mongoose connection disconnected.'));
 
     const app = express();
     const port = process.env.PORT || 3000;
@@ -25,19 +28,17 @@ async function startServer() {
 
     app.get('/health', (req, res) => res.status(200).json({ status: 'ok', pipelineRunning: isPipelineRunning }));
 
-    // --- DEFINITIVE FIX: Make the handler async and await the pipeline ---
     app.post('/run-pipeline', async (req, res) => {
       console.log('[API] /run-pipeline endpoint hit.');
       if (req.headers.authorization !== `Bearer ${pipelineTriggerKey}`) return res.status(401).json({ error: 'Unauthorized' });
       if (isPipelineRunning) return res.status(429).json({ message: 'Pipeline already running.' });
-
+      
       isPipelineRunning = true;
-      console.log('[API] Pipeline lock acquired. Starting execution...');
+      console.log('[API] Pipeline lock acquired. Executing and holding request...');
       
       try {
         await executePipeline();
         console.log('[API] Pipeline execution finished successfully.');
-        // Now that it's done, send the final response.
         res.status(200).json({ message: 'Pipeline finished successfully.' });
       } catch (error) {
         console.error('[API] CRITICAL ERROR from executePipeline:', error);

@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import nodemailer from 'nodemailer';
-import { SOURCES, HEADLINES_RELEVANCE_THRESHOLD, SMTP_CONFIG, HEADLINE_RECIPIENTS, SUPERVISOR_EMAIL, DEFAULT_USER_AGENT, MIN_ARTICLE_CHARS } from './src/config/index.js';
+import pLimit from 'p-limit';
+import { SOURCES, HEADLINES_RELEVANCE_THRESHOLD, SMTP_CONFIG, HEADLINE_RECIPIENTS, SUPERVISOR_EMAIL, CONCURRENCY_LIMIT, DEFAULT_USER_AGENT } from './src/config/index.js';
 import Article from './models/Article.js';
 
 const log = (level, message, data) => {
@@ -56,11 +57,8 @@ async function sendEmail(articles, isSupervisorReport = false, stats = {}) {
         return;
     }
     const recipients = isSupervisorReport ? SUPERVISOR_EMAIL : (HEADLINE_RECIPIENTS || []).join(',');
-    if (!recipients) {
-        log('warn', `No recipients configured for ${isSupervisorReport ? 'supervisor' : 'main'} email.`);
-        return;
-    }
-    const subject = isSupervisorReport ? `Pipeline Supervisor Report: ${stats.freshCount || 0} New` : 'Relevant Headlines Found';
+    if (!recipients) return;
+    const subject = isSupervisorReport ? `Pipeline Report: ${stats.freshCount || 0} New` : 'Relevant Headlines Found';
     let html = `<h1>${subject}</h1>`;
     if (isSupervisorReport) {
         html += `<p>Run finished. Fetched: ${stats.fetchedCount}, Fresh: ${stats.freshCount}, Relevant: ${stats.relevantCount}.</p>`;
@@ -68,28 +66,21 @@ async function sendEmail(articles, isSupervisorReport = false, stats = {}) {
     html += `<p>Found ${articles.length} articles.</p><ul>${articles.map(a => `<li><b>(${a.relevance_headline || 'N/A'})</b> ${a.headline}</li>`).join('')}</ul>`;
     const transporter = nodemailer.createTransport(SMTP_CONFIG);
     await transporter.sendMail({
-        from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`,
-        to: recipients,
-        subject: subject,
-        html: html,
+        from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`, to: recipients, subject, html,
     });
     log('info', `Email sent to ${recipients}.`);
 }
 
 export async function executePipeline() {
     const startTime = new Date();
-    log('info', '======= EXECUTION STARTED (NO-PLIMIT VERSION) =======');
+    log('info', '======= EXECUTION STARTED (NO DAITANJS) =======');
     let runStats = { fetchedCount: 0, freshCount: 0, relevantCount: 0 };
     let allProcessedArticles = [];
 
     try {
-        let allHeadlines = [];
-        // --- DEFINITIVE FIX: Replace p-limit with a simple, sequential loop ---
-        for (const source of SOURCES) {
-            const headlinesFromSource = await fetchHeadlinesFromSource(source);
-            allHeadlines.push(...headlinesFromSource);
-        }
-        
+        const limit = pLimit(CONCURRENCY_LIMIT);
+        const fetchPromises = SOURCES.map(source => limit(() => fetchHeadlinesFromSource(source)));
+        const allHeadlines = (await Promise.all(fetchPromises)).flat();
         runStats.fetchedCount = allHeadlines.length;
         if (allHeadlines.length === 0) return;
 
