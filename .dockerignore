@@ -1,4 +1,9 @@
+# File: .dockerignore (version 1.01)
 /.git
 /node_modules
 .dockerignore
 .env
+
+# Explicitly include package-lock.json to ensure it's in the build context,
+# overriding any other potential ignore rules.
+!package-lock.json

@@ -1,4 +1,4 @@
-# File: Dockerfile (version 1.01)
+# File: Dockerfile (version 1.02)
 # syntax = docker/dockerfile:1
 
 ARG NODE_VERSION=20.15.1
@@ -10,7 +10,12 @@ WORKDIR /app
 FROM base AS build
 RUN apt-get update -qq && apt-get install -y --no-install-recommends build-essential python-is-python3
 COPY package-lock.json package.json ./
-RUN npm ci
+
+# Switch to `npm install` which is more robust than `npm ci` in complex scenarios,
+# especially with `file:` dependencies that might exist locally but not in the build context.
+# Using --omit=dev is equivalent to --production, ensuring dev dependencies are not installed.
+RUN npm install --omit=dev
+
 COPY . .
 
 # --- Final Production Image ---
