@@ -2,8 +2,7 @@ import mongoose from 'mongoose';
 import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import nodemailer from 'nodemailer';
-import pLimit from 'p-limit';
-import { SOURCES, HEADLINES_RELEVANCE_THRESHOLD, SMTP_CONFIG, HEADLINE_RECIPIENTS, SUPERVISOR_EMAIL, CONCURRENCY_LIMIT, DEFAULT_USER_AGENT } from './src/config/index.js';
+import { SOURCES, HEADLINES_RELEVANCE_THRESHOLD, SMTP_CONFIG, HEADLINE_RECIPIENTS, SUPERVISOR_EMAIL, DEFAULT_USER_AGENT } from './src/config/index.js';
 import Article from './models/Article.js';
 
 const log = (level, message, data) => {
@@ -73,37 +72,49 @@ async function sendEmail(articles, isSupervisorReport = false, stats = {}) {
 
 export async function executePipeline() {
     const startTime = new Date();
-    log('info', '======= EXECUTION STARTED (NO DAITANJS) =======');
+    log('info', '======= EXECUTION STARTED (SUPER MINIMAL) =======');
     let runStats = { fetchedCount: 0, freshCount: 0, relevantCount: 0 };
     let allProcessedArticles = [];
 
     try {
-        const limit = pLimit(CONCURRENCY_LIMIT);
-        const fetchPromises = SOURCES.map(source => limit(() => fetchHeadlinesFromSource(source)));
-        const allHeadlines = (await Promise.all(fetchPromises)).flat();
+        log('info', 'Step 1: Fetching headlines from a single source...');
+        const singleSource = SOURCES[0]; // Just try the first source
+        const allHeadlines = await fetchHeadlinesFromSource(singleSource);
+        log('info', `Finished fetching. Found ${allHeadlines.length} headlines.`);
+        
         runStats.fetchedCount = allHeadlines.length;
         if (allHeadlines.length === 0) return;
 
+        log('info', 'Step 2: Filtering fresh articles...');
         const existingLinks = await Article.find({ link: { $in: allHeadlines.map(h => h.link) } }).select('link').lean();
         const existingLinkSet = new Set(existingLinks.map(a => a.link));
         const freshArticles = allHeadlines.filter(h => !existingLinkSet.has(h.link));
         runStats.freshCount = freshArticles.length;
+        log('info', `Finished filtering. Found ${freshArticles.length} fresh articles.`);
         if (freshArticles.length === 0) return;
 
+        log('info', 'Step 3: Assessing headlines (mock)...');
         allProcessedArticles = await assessHeadlinesWithMockAI(freshArticles);
+        log('info', 'Finished assessing.');
+
+        log('info', 'Step 4: Saving to database...');
         await Article.insertMany(allProcessedArticles, { ordered: false }).catch(() => {});
+        log('info', 'Finished saving.');
 
         const relevantArticles = allProcessedArticles.filter(a => a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD);
         runStats.relevantCount = relevantArticles.length;
         if (relevantArticles.length > 0) {
+            log('info', 'Step 5: Sending email...');
             await sendEmail(relevantArticles, false);
+            log('info', 'Finished sending email.');
         }
+
     } catch (error) {
         log('error', 'A critical error occurred in the pipeline.', { message: error.message, stack: error.stack });
     } finally {
         const endTime = new Date();
         const duration = ((endTime - startTime) / 1000).toFixed(2);
-        log('info', `Sending supervisor report.`);
+        log('info', `Finally block: Sending supervisor report.`);
         await sendEmail(allProcessedArticles, true, runStats);
         log('info', `======= EXECUTION FINISHED in ${duration} seconds =======`);
     }
