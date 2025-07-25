@@ -8,10 +8,10 @@ import { getLogger } from '@daitanjs/development';
 import { 
   SOURCES, 
   HEADLINES_RELEVANCE_THRESHOLD, 
-  ARTICLES_RELEVANCE_THRESHOLD, 
   SMTP_CONFIG, 
-  HEADLINE_RECIPIENTS, 
-  SUPERVISOR_EMAIL 
+  HEADLINE_RECIPIENTS,
+  APP_LLM_PROVIDER_HEADLINES,
+  APP_LLM_MODEL_HEADLINES
 } from './src/config/index.js';
 import { generateIntelligence } from '@daitanjs/intelligence';
 // --- DEFINITIVE FIX: Import from the correct files ---
@@ -67,7 +67,7 @@ async function assessHeadlinesWithAI(articles) {
             config: {
                 response: { format: 'json' },
                 llm: {
-                  target: `${process.env.LLM_PROVIDER_HEADLINES || 'openai'}|${process.env.LLM_MODEL_HEADLINES || 'gpt-4o-mini'}`
+                  target: `${APP_LLM_PROVIDER_HEADLINES}|${APP_LLM_MODEL_HEADLINES}`
                 }
             },
         });
@@ -117,8 +117,7 @@ export async function executePipeline() {
         const assessedArticles = await assessHeadlinesWithAI(freshArticles);
 
         // NOTE: Enrichment and Article Assessment steps are omitted for this robust test.
-        // They would be built here using axios/jsdom for enrichment and another AI call.
-
+        
         // 4. Send Email
         pipelineLogger.info('--- Step 4: Checking for relevant articles to email ---');
         const relevantArticles = assessedArticles.filter(a => a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD);
