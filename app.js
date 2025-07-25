@@ -1,20 +1,26 @@
 import express from 'express';
-import { getLogger } from '@daitanjs/development';
-import { connectDatabase } from './src/config/database.js';
-import { setupApp } from './src/setup/setupApp.js';
-import { validateAllSourceConfigs } from './src/utils/configValidator.js';
-import { executePipeline } from './app-logic.js'; // This now points to our new, robust file
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import { executePipeline } from './app-logic.js';
 
-const bootLogger = getLogger('server-boot');
+// --- Bootstrap Section ---
+console.log('[BOOT] Starting application...');
+dotenv.config();
+// ---
 
-bootLogger.info('BAREBONES TEST: app.js module execution started.');
+import './models/Article.js'; // Registers the Mongoose schema.
 
 async function startServer() {
-  bootLogger.info('BAREBONES TEST: startServer() entered.');
+  console.log('[BOOT] startServer() entered.');
   try {
-    await connectDatabase();
-    bootLogger.info('✅ BAREBONES TEST: Database connection successful.');
-
+    // --- Database Connection ---
+    const MONGO_URI = process.env.MONGO_URI;
+    if (!MONGO_URI) throw new Error('MONGO_URI is not defined in environment variables.');
+    console.log('[BOOT] Connecting to MongoDB...');
+    await mongoose.connect(MONGO_URI);
+    console.log('✅ [BOOT] MongoDB connection successful.');
+    
+    // --- Express Server ---
     const app = express();
     const port = process.env.PORT || 3000;
     const host = '0.0.0.0';
@@ -24,37 +30,32 @@ async function startServer() {
     app.get('/health', (req, res) => res.status(200).json({ status: 'ok', pipelineRunning: isPipelineRunning }));
 
     app.post('/run-pipeline', (req, res) => {
-      const serverLogger = getLogger('headlines-server');
-      serverLogger.info('[API] /run-pipeline endpoint hit.');
-
-      if (req.headers.authorization !== `Bearer ${pipelineTriggerKey}`) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      if (isPipelineRunning) {
-        return res.status(429).json({ message: 'Pipeline already running.' });
-      }
+      console.log('[API] /run-pipeline endpoint hit.');
+      if (req.headers.authorization !== `Bearer ${pipelineTriggerKey}`) return res.status(401).json({ error: 'Unauthorized' });
+      if (isPipelineRunning) return res.status(429).json({ message: 'Pipeline already running.' });
+      
       res.status(202).json({ message: 'Pipeline run accepted.' });
-
+      
       setTimeout(async () => {
         isPipelineRunning = true;
         try {
-          // Run our new, safe, self-contained pipeline
-          await executeTestPipeline();
+          await executePipeline();
         } catch (error) {
-          serverLogger.error('[API] CRITICAL ERROR from TEST pipeline:', error);
+          console.error('[API] CRITICAL ERROR from executePipeline:', error);
         } finally {
           isPipelineRunning = false;
-          serverLogger.info('[API] TEST Pipeline lock released.');
+          console.log('[API] Pipeline lock released.');
         }
       }, 0);
     });
 
     app.listen(port, host, () => {
-      bootLogger.info(`✅✅✅ [SERVER START] Express server is now listening on http://${host}:${port} ✅✅✅`);
+      console.log(`✅✅✅ [SERVER START] Express server is now listening on http://${host}:${port}`);
     });
   } catch (error) {
-    bootLogger.error('💥💥💥 BAREBONES TEST: CRITICAL STARTUP FAILURE 💥💥💥', { error: error.message });
+    console.error('💥💥💥 CRITICAL STARTUP FAILURE 💥💥💥', error);
     process.exit(1);
   }
 }
+
 startServer();

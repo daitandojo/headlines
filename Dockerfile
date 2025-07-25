@@ -1,4 +1,4 @@
-# File: Dockerfile (Final Version)
+# File: Dockerfile (version 1.05 - No DaitanJS)
 # syntax = docker/dockerfile:1
 
 ARG NODE_VERSION=20.15.1
@@ -19,7 +19,4 @@ FROM base
 COPY --from=build --chown=node:node /app /app
 USER node
 EXPOSE 3000
-
-# --- DEFINITIVE FIX: Increase the memory available to the Node.js process ---
-# Set the heap size to 3.5GB, leaving some room for the rest of the system on a 4GB VM.
-CMD [ "node", "--max-old-space-size=3584", "bootstrap.js" ]
+CMD [ "node", "app.js" ]
