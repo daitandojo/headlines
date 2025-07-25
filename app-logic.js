@@ -1,10 +1,9 @@
-// File: app-logic.js (Instrumented)
+// File: app-logic.js (Final Version)
 import { getLogger } from '@daitanjs/development';
 import { truncateString } from '@daitanjs/utilities';
 
 const pipelineLogger = getLogger('headlines-mongo-pipeline');
 
-// --- (logPipelineDuration and logFinalSummary functions remain the same) ---
 function logPipelineDuration(startTime, message) {
   const endTime = Date.now();
   const duration = ((endTime - startTime) / 1000).toFixed(2);
@@ -12,6 +11,7 @@ function logPipelineDuration(startTime, message) {
     `${message} Pipeline processing completed in ${duration} seconds.`
   );
 }
+
 function logFinalSummary(articles, articlesRelevanceThreshold, headlinesRelevanceThreshold) {
     if (!articles || !Array.isArray(articles) || articles.length === 0) {
         pipelineLogger.info('🏁 No articles available to summarize at the end of the pipeline.'); return;
@@ -36,11 +36,21 @@ export async function executePipeline() {
   console.log('[DIAGNOSTIC] TOP of executePipeline function entered.');
   const startTime = Date.now();
   pipelineLogger.info('🚀🚀🚀 Executing Headlines Processing Pipeline... 🚀🚀🚀');
-
+  
+  // --- DEFINITIVE FIX: Declare variables in the top-level scope ---
+  let articles = [];
+  let allFreshlyAssessedHeadlines = [];
+  let currentArticles = [];
+  let runStats = {};
   let pipelineModules;
 
   try {
-    console.log('[DIAGNOSTIC] executePipeline: PRE-AWAIT dynamic imports.');
+    const {
+      HEADLINES_RELEVANCE_THRESHOLD,
+      ARTICLES_RELEVANCE_THRESHOLD,
+    } = await import('./src/config/index.js');
+    
+    pipelineLogger.info('🔄 Loading pipeline modules...');
     pipelineModules = {
       fetchAllHeadlines: (await import('./src/modules/scraping/fetchHeadlines.js')).fetchAllHeadlines,
       filterFreshArticles: (await import('./src/modules/mongoStore/articleOperations.js')).filterFreshArticles,
@@ -52,14 +62,8 @@ export async function executePipeline() {
       sendWealthEventsEmail: (await import('./src/modules/email/index.js')).sendWealthEventsEmail,
       sendSupervisorReportEmail: (await import('./src/modules/email/index.js')).sendSupervisorReportEmail,
     };
-    console.log('[DIAGNOSTIC] executePipeline: POST-AWAIT dynamic imports. All modules loaded.');
+    pipelineLogger.info('✅ Modules loaded successfully.');
 
-    // ... (rest of the function, including runStats setup, remains the same)
-    let articles = [];
-    let allFreshlyAssessedHeadlines = [];
-    let currentArticles = [];
-    let runStats = {};
-    const { HEADLINES_RELEVANCE_THRESHOLD, ARTICLES_RELEVANCE_THRESHOLD } = await import('./src/config/index.js');
     runStats = { startTime: new Date().toISOString(), totalFetched: 0, totalFresh: 0, totalAssessedForHeadline: 0, passedHeadlineThreshold: 0, enrichedSuccessfully: 0, passedArticleThreshold: 0, sentInWealthEventsEmail: 0, dbInitialStoreSuccess: 0, dbFinalStoreSuccess: 0, pipelineError: null };
     
     const workflowSteps = [
@@ -74,10 +78,8 @@ export async function executePipeline() {
     ];
 
     for (const step of workflowSteps) {
-      console.log(`[DIAGNOSTIC] app-logic: PRE-AWAIT step: ${step.name}`);
       const stepInput = Array.isArray(currentArticles) ? currentArticles : [];
       const stepRawResult = await step.func(stepInput);
-      console.log(`[DIAGNOSTIC] app-logic: POST-AWAIT step: ${step.name}.`);
       
       if (step.name === 'Assess Headline Relevance') allFreshlyAssessedHeadlines = stepRawResult ? [...stepRawResult] : [];
       if (step.postProcess) {
@@ -88,14 +90,11 @@ export async function executePipeline() {
           }
       } else { currentArticles = stepRawResult; }
     }
-    console.log('[DIAGNOSTIC] app-logic: Workflow loop completed.');
 
-    // ... (rest of the function remains the same)
     articles = currentArticles !== null ? (Array.isArray(currentArticles) ? currentArticles : allFreshlyAssessedHeadlines) : allFreshlyAssessedHeadlines;
     logFinalSummary(articles, ARTICLES_RELEVANCE_THRESHOLD, HEADLINES_RELEVANCE_THRESHOLD);
     if (currentArticles !== null) logPipelineDuration(startTime, '🎉 News Processing Pipeline finished successfully.');
     return { success: true, stats: runStats, articles };
-
   } catch (error) {
     console.error('[DIAGNOSTIC] CATCH block in executePipeline:', error);
     pipelineLogger.error('💥💥💥 CRITICAL PIPELINE FAILURE 💥💥💥');
