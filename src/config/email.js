@@ -1,6 +1,15 @@
-// File: headlines_mongo/src/config/email.js
-import { getEnvVariable } from '@daitanjs/development'; // Import directly
-import { HEADLINE_RECIPIENTS_STR, SUPERVISOR_EMAIL_ENV, SEND_TO_DEFAULT_SUPERVISOR_ENV, SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM_ADDRESS, SMTP_FROM_NAME } from './env.js'; // Import from local env.js
+import { 
+  HEADLINE_RECIPIENTS_STR, 
+  SUPERVISOR_EMAIL_ENV, 
+  SEND_TO_DEFAULT_SUPERVISOR_ENV, 
+  SMTP_HOST, 
+  SMTP_PORT, 
+  SMTP_SECURE, 
+  SMTP_USER, 
+  SMTP_PASS, 
+  SMTP_FROM_ADDRESS, 
+  SMTP_FROM_NAME 
+} from [LOCAL .env FILE]
 
 export const HEADLINE_RECIPIENTS = HEADLINE_RECIPIENTS_STR
   .split(',')

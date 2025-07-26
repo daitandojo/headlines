@@ -1,116 +1,70 @@
-// File: headlines_mongo/src/modules/email/components/articleFormatter.js
-import { createArticleCardForEmail } from '@daitanjs/html';
-import { getLogger } from '@daitanjs/development';
-import { EMAIL_CONFIG } from '../../../config/index.js';
-import { truncateString } from '@daitanjs/utilities'; // Only for local summary construction logic
+// src/modules/email/components/articleFormatter.js (version 2.0)
+import { logger } from '../../../utils/logger.js';
+import { truncateString } from '../../../utils/helpers.js';
 
-const logger = getLogger('headlines-mongo-email-articleformatter');
+function createArticleCard(article) {
+    const {
+        link,
+        headline,
+        source,
+        summary,
+        assessmentText,
+        relevanceScore,
+        callToActionText,
+    } = article;
 
-export function formatArticleForEmail(article, appEmailConfig = EMAIL_CONFIG) {
-  if (
-    !article ||
-    typeof article !== 'object' ||
-    !article.link ||
-    !article.headline
-  ) {
-    logger.warn(
-      `formatArticleForEmail: Invalid article object or missing link/headline. Skipping formatting.`,
-      {
-        articlePreview: article
-          ? { headline: article.headline, link: article.link }
-          : article,
-      }
-    );
-    return `<p style="color:red; border:1px dashed red; padding:10px;">Error: Article data was invalid for email formatting.</p>`;
-  }
+    const scoreColor = relevanceScore >= 80 ? '#27ae60' : relevanceScore >= 50 ? '#f39c12' : '#c0392b';
 
-  const genericArticleData = {
-    link: article.link,
-    headline: article.headline,
-    source: article.source || article.newspaper || 'N/A',
-    summary: 'No direct summary field, using assessment or content.',
-    imageUrl: article.image || article.raw?.image || null, // Check raw.image too
-    imageAlt: article.headline,
-    assessmentText:
-      article.assessment_article ||
-      article.assessment_headline ||
-      'Assessment not available.',
-    relevanceScore:
-      article.relevance_article !== undefined &&
-      article.relevance_article !== null
-        ? article.relevance_article
-        : article.relevance_headline !== undefined &&
-          article.relevance_headline !== null
-        ? article.relevance_headline
-        : 'N/A',
-    callToActionText: 'Read Full Article Online →',
-  };
+    return `
+    <div style="border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 20px; padding: 20px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 18px; color: #333;">
+            <a href="${link}" style="color: #007bff; text-decoration: none;">${headline}</a>
+        </h3>
+        <p style="margin: 0 0 15px; font-size: 14px; color: #777;"><strong>Source:</strong> ${source}</p>
+        <p style="margin: 0 0 15px; font-size: 15px; color: #555; line-height: 1.6;">${summary}</p>
+        <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+            <p style="margin: 0; font-size: 14px; color: #333;">
+                <strong>System Assessment:</strong> <span style="font-weight: bold; color: ${scoreColor};">[Score: ${relevanceScore}]</span> ${assessmentText}
+            </p>
+        </div>
+        <a href="${link}" style="display: inline-block; background-color: #007bff; color: #ffffff; padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 14px;">
+            ${callToActionText}
+        </a>
+    </div>
+    `;
+}
 
-  if (article.articleContent && typeof article.articleContent === 'object') {
-    const ac = article.articleContent;
-    if (
-      ac.subheadings &&
-      Array.isArray(ac.subheadings) &&
-      ac.subheadings.length > 0 &&
-      String(ac.subheadings[0] || '').trim()
-    ) {
-      genericArticleData.summary = truncateString(
-        String(ac.subheadings[0]),
-        250
-      );
-    } else if (
-      ac.headlines &&
-      Array.isArray(ac.headlines) &&
-      ac.headlines.length > 0 &&
-      String(ac.headlines[0] || '').trim() &&
-      ac.headlines[0] !== article.headline
-    ) {
-      genericArticleData.summary = truncateString(String(ac.headlines[0]), 250);
-    } else if (
-      ac.contents &&
-      Array.isArray(ac.contents) &&
-      ac.contents.length > 0 &&
-      String(ac.contents[0] || '').trim()
-    ) {
-      genericArticleData.summary = truncateString(String(ac.contents[0]), 250);
-    } else if (
-      genericArticleData.assessmentText &&
-      genericArticleData.assessmentText !== 'Assessment not available.'
-    ) {
-      genericArticleData.summary = truncateString(
-        genericArticleData.assessmentText,
-        250
-      );
+export function formatArticleForEmail(article) {
+    if (!article || typeof article !== 'object' || !article.link || !article.headline) {
+        logger.warn(`formatArticleForEmail: Invalid article object provided.`, { articlePreview: article });
+        return `<p style="color:red;">Error: Article data was invalid.</p>`;
     }
-  }
-  if (
-    genericArticleData.summary ===
-    'No direct summary field, using assessment or content.'
-  ) {
-    genericArticleData.summary = 'Detailed content available via link.';
-  }
 
-  logger.debug(
-    `Formatting article for email: "${genericArticleData.headline}" using @daitanjs/html component.`
-  );
+    const genericArticleData = {
+        link: article.link,
+        headline: article.headline,
+        source: article.source || article.newspaper || 'N/A',
+        summary: 'No summary available.',
+        assessmentText: article.assessment_article || article.assessment_headline || 'Assessment not available.',
+        relevanceScore: article.relevance_article ?? article.relevance_headline ?? 'N/A',
+        callToActionText: 'Read Full Article →',
+    };
 
-  try {
-    return createArticleCardForEmail({
-      article: genericArticleData,
-      config: appEmailConfig,
-    });
-  } catch (error) {
-    logger.error(
-      `❌ Error using createArticleCardForEmail from @daitanjs/html for article: "${article.headline}"`,
-      {
-        errorMessage: error.message,
-        stack: error.stack?.substring(0, 500),
-        articleData: article,
-      }
-    );
-    return `<p style="color:red; border:1px dashed red; padding:10px;">Error formatting article "${truncateString(
-      String(article.headline || 'Unknown Title'),
-      50
-    )}". Please check logs.</p>`;
-  }
+    if (article.articleContent && typeof article.articleContent === 'object') {
+        const { contents } = article.articleContent;
+        if (contents && Array.isArray(contents) && contents.length > 0) {
+            genericArticleData.summary = truncateString(contents.join(' '), 250);
+        }
+    }
+    
+    if (genericArticleData.summary === 'No summary available.') {
+      genericArticleData.summary = truncateString(genericArticleData.assessmentText, 250);
+    }
+
+    try {
+        return createArticleCard(genericArticleData);
+    } catch (error) {
+        logger.error(`Error creating article card for email: "${article.headline}"`, { errorMessage: error.message });
+        return `<p style="color:red;">Error formatting article: ${truncateString(article.headline, 50)}</p>`;
+    }
 }

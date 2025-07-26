@@ -1,55 +1,73 @@
-// src/config/index.js (version 1.01)
-// --- Environment Variable Sourced Configurations ---
-export {
-  MONGO_URI,
-  HEADLINE_RECIPIENTS_STR,
-  NODE_ENV,
-  IS_PRODUCTION,
-  LOG_LEVEL,
-  DEFAULT_USER_AGENT,
-  CONCURRENCY_LIMIT,
-  APP_LLM_PROVIDER_HEADLINES,
-  APP_LLM_MODEL_HEADLINES,
-  APP_LLM_PROVIDER_ARTICLES,
-  APP_LLM_MODEL_ARTICLES,
-  AI_VERBOSE,
-  FLY_API_TOKEN,
-} from './env.js';
+// src/config/index.js (version 1.2)
+import dotenv from 'dotenv';
 
-// --- Path Configurations ---
-export {
-  PROJECT_ROOT,
-  BASE_APP_DIR,
-  BASE_OUTPUT_DIR,
-  BASE_LOG_DIR,
-  HEADLINES_PATH,
-  ARTICLES_PATH,
-} from './paths.js';
+dotenv.config();
 
-// --- Email Styling, Content, Recipient, and SMTP Configurations ---
-export * from './email.js';
+// --- Core App Behavior ---
+export const NODE_ENV = process.env.NODE_ENV || 'development';
+export const IS_PRODUCTION = NODE_ENV === 'production';
+export const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+export const CONCURRENCY_LIMIT = parseInt(process.env.CONCURRENCY_LIMIT, 10) || 3;
+export const FORCE_EMAIL_SEND_DEV = process.env.FORCE_EMAIL_SEND_DEV === 'true';
 
-// --- Source Configurations ---
-export * from './sources.js';
+// --- Database ---
+export const MONGO_URI = process.env.MONGO_URI;
 
-// --- Core Processing Thresholds & Settings ---
-export const HEADLINES_RELEVANCE_THRESHOLD = 10;
-export const ARTICLES_RELEVANCE_THRESHOLD = 10;
+// --- LLM Configuration ---
+export const KIMI_API_KEY = process.env.KIMI_API_KEY;
+export const LLM_MODEL_HEADLINES = process.env.LLM_MODEL_HEADLINES || 'moonshot-v1-8k';
+export const LLM_MODEL_ARTICLES = process.env.LLM_MODEL_ARTICLES || 'moonshot-v1-32k';
+
+// --- Scraper Configuration ---
+// Add your proxy URL here if you have one.
+// Example format: http://user:pass@host:port
+export const SCRAPER_PROXY_URL = process.env.SCRAPER_PROXY_URL || null;
+
+
+// --- Thresholds ---
+export const HEADLINES_RELEVANCE_THRESHOLD = 30;
+export const ARTICLES_RELEVANCE_THRESHOLD = 70;
 export const MIN_ARTICLE_CHARS = 150;
 export const MAX_ARTICLE_CHARS = 100000;
 export const MIN_HEADLINE_CHARS = 15;
 export const MAX_HEADLINE_CHARS = 500;
-export const BATCH_SIZE = 5;
-export const MAX_APP_RETRIES = 3;
-export const APP_RETRY_DELAY_MS = 1000;
+export const AI_BATCH_SIZE = 6;
 
-// --- Deprecated ---
-// This is kept for backward compatibility if any module still imports it directly.
-// It is recommended to use the more specific ARTICLES_RELEVANCE_THRESHOLD instead.
-export const RELEVANCE_THRESHOLD = ARTICLES_RELEVANCE_THRESHOLD;
+// --- Email Configuration ---
+export const SMTP_CONFIG = {
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT, 10) || 587,
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+    fromAddress: process.env.SMTP_FROM_ADDRESS || process.env.SMTP_USER,
+    fromName: process.env.SMTP_FROM_NAME || 'Headlines Bot',
+};
 
-import { getLogger as getMainLogger } from '@daitanjs/development';
-const centralConfigLogger = getMainLogger('headlines-mongo-config-index');
-centralConfigLogger.info(
-  '✅ All application configurations aggregated and exported from headlines_mongo/src/config/index.js.'
-);
+export const HEADLINE_RECIPIENTS_STR = process.env.HEADLINE_RECIPIENTS || '';
+export const SUPERVISOR_EMAIL_ENV = process.env.SUPERVISOR_EMAIL || 'your-supervisor-default@example.com';
+export const SEND_TO_DEFAULT_SUPERVISOR_ENV = process.env.SEND_TO_DEFAULT_SUPERVISOR === 'true';
+
+// Derived Email Config
+export const HEADLINE_RECIPIENTS = HEADLINE_RECIPIENTS_STR.split(',').map(e => e.trim()).filter(Boolean);
+export const SUPERVISOR_EMAIL = SUPERVISOR_EMAIL_ENV;
+export const SEND_TO_DEFAULT_SUPERVISOR = SEND_TO_DEFAULT_SUPERVISOR_ENV;
+
+// --- Email Template Config ---
+export const EMAIL_CONFIG = {
+  templateName: 'wealthEvents',
+  subject: '🇩🇰 New Danish Banking Opportunities Detected',
+  language: 'en',
+  brandName: 'Wealth Watch Denmark',
+  companyAddress: 'Wealth Watch Inc., Copenhagen, Denmark',
+  unsubscribeUrl: '#',
+};
+
+export const SUPERVISOR_EMAIL_CONFIG = {
+  templateName: 'supervisorReport',
+  subject: '⚙️ Hourly Headlines Processing Run Summary',
+  language: 'en',
+  brandName: 'Headlines Processing Bot',
+};

@@ -1,12 +1,4 @@
-// File: headlines_mongo/src/config/database.js
-import {
-  connectToMongoose,
-  getMongooseDefaultReadyState,
-} from '@daitanjs/data';
-import { getLogger } from '@daitanjs/development';
-import { MONGO_URI } from './env.js';
-
-const logger = getLogger('headlines-mongo-db');
+import { MONGO_URI } from [LOCAL .env FILE];
 
 /**
  * Establishes the MongoDB connection for the headlines_mongo application

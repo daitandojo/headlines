@@ -1,0 +1,1 @@
+[Store here the parameters for the scraper; the "sources" for the four newspaper and the parameters needed to find headlines and articles]

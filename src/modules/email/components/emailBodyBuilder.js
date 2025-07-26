@@ -1,87 +1,63 @@
-// File: headlines_mongo/src/modules/email/components/emailBodyBuilder.js
-import {
-  createEmailWrapper,
-  createEmailHeader,
-  createEmailFooter,
-  createHeading,
-  createParagraph,
-} from '@daitanjs/html';
-import { getLogger } from '@daitanjs/development';
+// src/modules/email/components/emailBodyBuilder.js (version 2.0)
+import { logger } from '../../../utils/logger.js';
 import { EMAIL_CONFIG } from '../../../config/index.js';
 import { LOGO_URL } from '../constants.js';
 import { formatArticleForEmail } from './articleFormatter.js';
 
-const logger = getLogger('headlines-mongo-email-bodybuilder');
+function createEmailWrapper(bodyContent) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${EMAIL_CONFIG.subject}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background-color: #f4f4f4;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
+            <tr>
+                <td align="center">
+                    <table width="600" border="0" cellspacing="0" cellpadding="20" style="max-width: 600px; width: 100%; background-color: #ffffff; margin-top: 20px; margin-bottom: 20px;">
+                        <tr>
+                            <td>
+                                ${bodyContent}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>`;
+}
 
-export function createEmailBody(articles, appEmailConfig = EMAIL_CONFIG) {
-  if (!Array.isArray(articles) || articles.length === 0) {
-    logger.warn('createEmailBody: No articles provided. Cannot create email body.');
-    return null;
-  }
+export function createEmailBody(articles) {
+    if (!Array.isArray(articles) || articles.length === 0) {
+        logger.warn('createEmailBody: No articles provided to build email body.');
+        return null;
+    }
 
-  logger.info(`Constructing email body for ${articles.length} wealth event articles.`);
-  
-  const formattedArticlesHtml = articles
-    .map((article) => formatArticleForEmail(article, appEmailConfig))
-    .filter(Boolean)
-    .join('');
+    const formattedArticlesHtml = articles.map(formatArticleForEmail).join('');
 
-  if (!formattedArticlesHtml.trim()) {
-    logger.warn('createEmailBody: All articles failed to format. No content for email body.');
-    return null;
-  }
+    const mainContent = `
+        <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eeeeee;">
+            <img src="${LOGO_URL}" alt="${EMAIL_CONFIG.brandName} Logo" style="max-width: 150px; height: auto;">
+        </div>
+        <h1 style="color: #333333; text-align: center; margin-top: 20px;">${EMAIL_CONFIG.subject}</h1>
+        <p style="font-size: 16px; color: #555555; text-align: left;">
+            Good morning,
+            <br><br>
+            Here are the latest potential wealth events identified by the system for your review:
+        </p>
+        ${formattedArticlesHtml}
+        <p style="font-size: 16px; color: #555555; text-align: left;">
+            Best Regards,<br>The Wealth Insight Team
+        </p>
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eeeeee; font-size: 12px; color: #888888;">
+            <p>${EMAIL_CONFIG.brandName} | ${EMAIL_CONFIG.companyAddress}</p>
+            <p><a href="${EMAIL_CONFIG.unsubscribeUrl}" style="color: #888888;">Unsubscribe</a></p>
+        </div>
+    `;
 
-  const headerHtml = createEmailHeader({
-    logoUrl: LOGO_URL,
-    logoAlt: `${appEmailConfig.brandName || 'Wealth Watch'} Logo`,
-    customStyles: { textAlign: 'center', paddingBottom: '20px' },
-  });
-
-  const mainContent = `
-    ${headerHtml}
-    ${createHeading({
-      text: appEmailConfig.subject,
-      level: 1,
-      customStyles: {
-        color: appEmailConfig.headingColor,
-        textAlign: 'center',
-        marginBottom: '25px',
-        fontSize: '24px',
-        lineHeight: '1.3',
-      },
-    })}
-    ${createParagraph({
-      text: `Good morning! Here are the latest potential wealth events and insights identified by our system. ${articles.length} item(s) met the criteria for closer review:`,
-      customStyles: { marginBottom: '30px', textAlign: 'left' },
-    })}
-    ${formattedArticlesHtml}
-    ${createParagraph({
-      text: "Please review these leads and take appropriate action.",
-      customStyles: { marginTop: '30px', marginBottom: '15px', textAlign: 'left' },
-    })}
-    ${createParagraph({
-      text: 'Best Regards,<br>The Wealth Insight Team',
-      customStyles: { marginTop: '20px', textAlign: 'left' },
-    })}
-  `;
-
-  const footerHtml = createEmailFooter({
-    companyName: appEmailConfig.brandName || 'Wealth Watch Denmark',
-    address: appEmailConfig.companyAddress,
-    unsubscribeUrl: appEmailConfig.unsubscribeUrl,
-    textStyles: { color: appEmailConfig.footerTextColor },
-    linkStyles: { color: appEmailConfig.footerLinkColor },
-  });
-
-  const fullEmailBody = `${mainContent}${footerHtml}`;
-
-  try {
-    return createEmailWrapper({
-      bodyContent: fullEmailBody,
-      config: appEmailConfig,
-    });
-  } catch (error) {
-    logger.error('Error constructing email body with createEmailWrapper:', { errorMessage: error.message });
-    return null;
-  }
+    return createEmailWrapper(mainContent);
 }
