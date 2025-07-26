@@ -1,4 +1,4 @@
-// index.js (version 1.4)
+// app-logic.js (version 1.0)
 import { connectDatabase, disconnectDatabase } from './src/database.js';
 import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
 import { filterFreshArticles, storeInitialHeadlineData, updateArticlesWithFullData } from './src/modules/mongoStore/index.js';
@@ -8,7 +8,7 @@ import { HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_HEADLINES, LLM_MODEL_ARTICLES 
 import { sendWealthEventsEmail, sendSupervisorReportEmail } from './src/modules/email/index.js';
 import { truncateString } from './src/utils/helpers.js';
 
-async function main() {
+export async function runPipeline() {
     const runStartTime = Date.now();
     logger.info('🚀 STARTING HEADLINES PROCESSING PIPELINE...');
     const runStats = {
@@ -62,7 +62,6 @@ async function main() {
         const assessedHeadlines = await assessHeadlinesInBatches(freshHeadlines);
         runStats.headlinesAssessed = assessedHeadlines.length;
         
-        // --- NEW: Concise Results Logging ---
         const relevantResults = assessedHeadlines
             .filter(a => a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD)
             .sort((a, b) => b.relevance_headline - a.relevance_headline);
@@ -138,5 +137,3 @@ async function main() {
         logger.info(`✅ PIPELINE FINISHED in ${duration} seconds.`);
     }
 }
-
-main();

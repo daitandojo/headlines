@@ -1,5 +1,5 @@
 #!/bin/bash
-# scripts/set-fly-secrets.sh (version 1.02 - Corrected)
+# scripts/setFlySecrets.sh (version 1.0)
 
 # A script to read a .env file and set the variables as Fly.io secrets.
 # It builds a single command to set all secrets at once for efficiency.
@@ -22,14 +22,13 @@ then
     exit 1
 fi
 
-# --- FIX: Correctly check for app name by parsing fly.toml ---
 if [ ! -f "fly.toml" ]; then
     echo "Error: No fly.toml file found in this directory."
     echo "Please run 'fly launch' first."
     exit 1
 fi
-APP_NAME=$(grep '^app = ' fly.toml | cut -d "'" -f 2)
 
+APP_NAME=$(grep '^app = ' fly.toml | cut -d "'" -f 2)
 if [ -z "$APP_NAME" ]; then
     echo "Error: Could not determine app name from fly.toml."
     exit 1
@@ -38,20 +37,22 @@ fi
 echo "Reading secrets from '$ENV_FILE' for app '$APP_NAME'..."
 
 # --- Main Logic ---
-
-# Prepare the command arguments
 secrets_args=()
 while IFS= read -r line || [ -n "$line" ]; do
     # Skip comments and empty lines
     if [[ "$line" =~ ^#.* ]] || [[ -z "$line" ]]; then
         continue
     fi
+    # Handle carriage return for Windows-edited .env files
+    line=$(echo "$line" | tr -d '\r')
     key=$(echo "$line" | cut -d '=' -f 1)
-    value=$(echo "$line" | sed -e 's/^[^=]*=//' -e "s/^'//" -e "s/'$//" -e 's/^"//' -e 's/"$//')
+    # Correctly extract value, even if it contains '='
+    value=$(echo "$line" | sed -e "s/^$key=//")
     if [ -z "$key" ]; then
         continue
     fi
-    secrets_args+=("$key=$value")
+    # Use printf for robust quoting to handle special characters
+    secrets_args+=("$(printf "%s=%s" "$key" "$value")")
     echo "  - Found secret: $key"
 done < "$ENV_FILE"
 

@@ -1,13 +1,26 @@
+# fly.toml (version 1.0)
 app = 'headlines-polished-sea-1731'
 primary_region = 'lhr'
 
-# We are no longer an HTTP service.
-# [http_service] section is removed.
+# This app is a scheduled task, not a web server.
+# The [http_service] section is removed.
 
-# We define a scheduled machine instead.
+# We define two scheduled machines to run at different times.
+# Fly.io schedules are in UTC. European time (CET/CEST) is UTC+1/UTC+2.
+# 10:00 CET/CEST is ~08:00 UTC.
+# 16:30 CET/CEST is ~14:30 UTC.
+
 [[machines]]
-  schedule = "0 */2 * * *" # This is the same cron schedule: every 2 hours
+  schedule = '0 8 * * *' # Runs daily at 08:00 UTC (approx. 10:00 Europe/Copenhagen)
   
+  [machines.vm]
+    memory = '4gb'
+    cpu_kind = 'shared'
+    cpus = 2
+
+[[machines]]
+  schedule = '30 14 * * *' # Runs daily at 14:30 UTC (approx. 16:30 Europe/Copenhagen)
+
   [machines.vm]
     memory = '4gb'
     cpu_kind = 'shared'

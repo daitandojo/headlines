@@ -1,4 +1,4 @@
-// src/modules/scraper/index.js (version 1.2)
+// src/modules/scraper/index.js (version 1.3)
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
@@ -6,22 +6,9 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { logger } from '../../utils/logger.js';
 import { safeExecute } from '../../utils/helpers.js';
 import { CONCURRENCY_LIMIT, SCRAPER_PROXY_URL } from '../../config/index.js';
+import { SITES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js';
 
 const limit = pLimit(CONCURRENCY_LIMIT);
-
-const SITES_CONFIG = {
-    berlingske: { name: 'Berlingske', url: 'https://www.berlingske.dk/business', selector: 'h4.teaser__title a.teaser__title-link', extract: (el, site) => ({ headline: el.text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.name }) },
-    borsen: { name: 'Børsen', url: 'https://borsen.dk/nyheder', useJsonLd: true },
-    politiken: { name: 'Politiken', url: 'https://politiken.dk/danmark/oekonomi/', selector: 'article', extract: (el, site) => { const h = el.find('h2, h3, h4').first().text().trim(); const a = el.find('a[href*="/art"]').first().attr('href'); return h && a ? { headline: h, link: new URL(a, site.url).href, source: site.name, newspaper: site.name } : null; } },
-    finans: { name: 'Finans.dk', url: 'https://finans.dk/seneste-nyt', selector: 'article a h3', extract: (el, site) => ({ headline: el.text().trim(), link: el.closest('a').attr('href'), source: site.name, newspaper: site.name }) },
-};
-
-const TEXT_SELECTORS = {
-  'Berlingske': '.article-body p',
-  'Børsen': '.article-content p',
-  'Politiken': 'section[data-track-meta*="article-body"] p',
-  'Finans.dk': 'p.container-text:not([class*="italic"])',
-};
 
 const axiosInstance = axios.create();
 if (SCRAPER_PROXY_URL) {
@@ -31,7 +18,6 @@ if (SCRAPER_PROXY_URL) {
     axiosInstance.defaults.httpAgent = httpsAgent;
 }
 
-// --- FIX: Add comprehensive browser-like headers ---
 const BROWSER_HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -47,10 +33,8 @@ const BROWSER_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
 };
 
-
 async function fetchPage(url) {
     const axiosConfig = { headers: BROWSER_HEADERS };
-
     const result = await safeExecute(() => axiosInstance.get(url, axiosConfig), {
         errorHandler: (err) => {
             const status = err.response ? err.response.status : 'N/A';
@@ -61,12 +45,10 @@ async function fetchPage(url) {
     return result ? cheerio.load(result.data) : null;
 }
 
-// ... rest of the file is unchanged ...
 async function scrapeSite(site) {
     logger.debug(`Scraping headlines from ${site.name}`);
     const $ = await fetchPage(site.url);
     if (!$) return [];
-
     let articles = [];
     if (site.useJsonLd) {
         $('script[type="application/ld+json"]').each((_, el) => {
@@ -106,14 +88,11 @@ export async function scrapeArticleContent(article) {
         logger.warn(`No text selector for source "${article.source}".`);
         return { ...article, enrichment_error: 'No selector' };
     }
-
     const $ = await fetchPage(article.link);
     if (!$) {
         return { ...article, enrichment_error: 'Failed to fetch page' };
     }
-
     const fullText = $(selector).map((_, el) => $(el).text()).get().join(' ').replace(/\s\s+/g, ' ').trim();
-
     if (fullText) {
         article.articleContent = { contents: [fullText] };
     } else {
