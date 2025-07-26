@@ -78,48 +78,30 @@ jobs:
 
 
 # File: .gitignore
-# Node modules
-node_modules/
-dist/
-build/
-coverage/
-.git/
-
-# Logs
-logs/
-*.log
+/node_modules
+/.pnpm
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+# misc
+.DS_Store
+*.pem
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-*.pnpm-debug.log*
-
-# Runtime
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-# DO NOT COMMIT .env files with secrets. Use .env.template.
-
-# IDEs and editors
-.idea/
-.vscode/
-
-# OS generated
-.DS_Store
-Thumbs.db
-
-# Misc
-*.pem
+.pnpm-debug.log*
+# env files
+.env*
+!/.env.template
+# vercel
+.vercel
+# typescript
 *.tsbuildinfo
 next-env.d.ts
-
 
 # File: .nvmrc
 20.15.1
@@ -207,42 +189,8 @@ USER node
 # It runs the pipeline script once and then exits.
 CMD [ "node", "--max-old-space-size=3584", "app.js" ]
 
-# File: docker-compose.yml
-# docker-compose.yml (version 1.03)
-# This file is for LOCAL DEVELOPMENT and TESTING ONLY.
-# It allows us to reliably run the application in a container,
-# mimicking the production environment.
-
-services:
-  app:
-    # Build the image from the Dockerfile in the current directory.
-    build: .
-    # Use the .env file to supply environment variables to the container.
-    # docker-compose has a robust parser that handles special characters correctly.
-    env_file:
-      - .env
-    # The application is a script, not a web server, so no port mapping is needed.
-    # Give the container a friendly name.
-    container_name: headlines_local
-
-# File: fly.toml
-app = 'headlines-polished-sea-1731'
-primary_region = 'lhr'
-
-# We are no longer an HTTP service.
-# [http_service] section is removed.
-
-# We define a scheduled machine instead.
-[[machines]]
-  schedule = "0 */2 * * *" # This is the same cron schedule: every 2 hours
-  
-  [machines.vm]
-    memory = '4gb'
-    cpu_kind = 'shared'
-    cpus = 2
-
-# File: index.js
-// index.js (version 1.4)
+# File: app-logic.js
+// app-logic.js (version 1.0)
 import { connectDatabase, disconnectDatabase } from './src/database.js';
 import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
 import { filterFreshArticles, storeInitialHeadlineData, updateArticlesWithFullData } from './src/modules/mongoStore/index.js';
@@ -252,7 +200,7 @@ import { HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_HEADLINES, LLM_MODEL_ARTICLES 
 import { sendWealthEventsEmail, sendSupervisorReportEmail } from './src/modules/email/index.js';
 import { truncateString } from './src/utils/helpers.js';
 
-async function main() {
+export async function runPipeline() {
     const runStartTime = Date.now();
     logger.info('🚀 STARTING HEADLINES PROCESSING PIPELINE...');
     const runStats = {
@@ -306,7 +254,6 @@ async function main() {
         const assessedHeadlines = await assessHeadlinesInBatches(freshHeadlines);
         runStats.headlinesAssessed = assessedHeadlines.length;
         
-        // --- NEW: Concise Results Logging ---
         const relevantResults = assessedHeadlines
             .filter(a => a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD)
             .sort((a, b) => b.relevance_headline - a.relevance_headline);
@@ -383,7 +330,71 @@ async function main() {
     }
 }
 
-main();
+# File: app.js
+// app.js (version 1.0)
+import 'dotenv/config'; // Load environment variables at the very beginning
+import { logger } from './src/utils/logger.js';
+import { runPipeline } from './app-logic.js';
+
+async function start() {
+    try {
+        await runPipeline();
+        // The process will exit naturally after the pipeline completes.
+    } catch (error) {
+        logger.fatal({ err: error }, 'A top-level, unhandled exception occurred in the application. The pipeline did not complete.');
+        // Exit with a failure code to signal an issue to the scheduler (e.g., Fly.io).
+        process.exit(1);
+    }
+}
+
+start();
+
+# File: docker-compose.yml
+# docker-compose.yml (version 1.03)
+# This file is for LOCAL DEVELOPMENT and TESTING ONLY.
+# It allows us to reliably run the application in a container,
+# mimicking the production environment.
+
+services:
+  app:
+    # Build the image from the Dockerfile in the current directory.
+    build: .
+    # Use the .env file to supply environment variables to the container.
+    # docker-compose has a robust parser that handles special characters correctly.
+    env_file:
+      - .env
+    # The application is a script, not a web server, so no port mapping is needed.
+    # Give the container a friendly name.
+    container_name: headlines_local
+
+# File: fly.toml
+# fly.toml (version 1.0)
+app = 'headlines-polished-sea-1731'
+primary_region = 'lhr'
+
+# This app is a scheduled task, not a web server.
+# The [http_service] section is removed.
+
+# We define two scheduled machines to run at different times.
+# Fly.io schedules are in UTC. European time (CET/CEST) is UTC+1/UTC+2.
+# 10:00 CET/CEST is ~08:00 UTC.
+# 16:30 CET/CEST is ~14:30 UTC.
+
+[[machines]]
+  schedule = '0 8 * * *' # Runs daily at 08:00 UTC (approx. 10:00 Europe/Copenhagen)
+  
+  [machines.vm]
+    memory = '4gb'
+    cpu_kind = 'shared'
+    cpus = 2
+
+[[machines]]
+  schedule = '30 14 * * *' # Runs daily at 14:30 UTC (approx. 16:30 Europe/Copenhagen)
+
+  [machines.vm]
+    memory = '4gb'
+    cpu_kind = 'shared'
+    cpus = 2
 
 # File: models/Article.js
 // models/Article.js (version 2.0)
@@ -462,12 +473,12 @@ export default models.Article || model('Article', ArticleSchema);
 # File: package.json
 {
   "name": "headlines-pipeline",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "A Node.js pipeline to scrape, analyze, and store news articles about wealth events.",
-  "main": "index.js",
+  "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -494,349 +505,9 @@ export default models.Article || model('Article', ArticleSchema);
   }
 }
 
-
-# File: scripts/delete.js
-// scripts/delete.js
-import { getLogger, loadEnvironmentFiles } from '@daitanjs/development';
-import {
-  connectToMongoose,
-  disconnectFromMongoose,
-  getMongooseDefaultReadyState,
-  getMongooseInstance,
-} from '@daitanjs/data';
-import readline from 'readline';
-
-// Initialize logger
-const scriptLogger = getLogger('deleteAllArticlesScript');
-
-// Use the library's Mongoose instance to interact with models
-const mongooseInstanceFromLib = getMongooseInstance();
-
-// --- Environment and DB Connection ---
-async function initializeAndConnect() {
-  scriptLogger.info('Initializing script environment...');
-  loadEnvironmentFiles({ loggerInstance: scriptLogger, override: true });
-
-  const MONGO_URI = process.env.MONGO_URI;
-  if (!MONGO_URI) {
-    throw new Error('MONGO_URI environment variable is not set or loaded.');
-  }
-
-  if (getMongooseDefaultReadyState() !== 1) {
-    scriptLogger.info(`Attempting to connect to MongoDB via @daitanjs/data...`);
-    await connectToMongoose(MONGO_URI, {}, { loggerInstance: scriptLogger });
-  } else {
-    scriptLogger.debug('Already connected to MongoDB.');
-  }
-}
-
-async function disconnectDB() {
-  if (getMongooseDefaultReadyState() !== 0) {
-    await disconnectFromMongoose({ loggerInstance: scriptLogger });
-  }
-}
-
-function askForConfirmation(query) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  return new Promise((resolve) =>
-    rl.question(query, (ans) => {
-      rl.close();
-      resolve(ans);
-    })
-  );
-}
-
-async function deleteAllArticleData() {
-  let exitCode = 0;
-  try {
-    await initializeAndConnect();
-
-    // Dynamically import the model after connection is established
-    const Article = (await import('../models/Article.js')).default;
-    const dbName = mongooseInstanceFromLib.connection.name;
-    const collectionName = Article.collection.name;
-
-    scriptLogger.info(
-      `Model: ${Article.modelName}, Collection: ${collectionName}, DB: ${dbName}`
-    );
-
-    scriptLogger.warn(
-      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-    );
-    scriptLogger.warn(
-      `You are about to DELETE ALL ENTRIES from the "${collectionName}" collection in the database "${dbName}".`
-    );
-    scriptLogger.warn('This operation is IRREVERSIBLE.');
-    scriptLogger.warn(
-      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-    );
-
-    const confirmation = await askForConfirmation(
-      `Type 'yes' to confirm deletion from "${collectionName}": `
-    );
-
-    if (confirmation.toLowerCase() !== 'yes') {
-      scriptLogger.info('Operation cancelled by the user.');
-      return;
-    }
-
-    scriptLogger.info('User confirmed. Proceeding with deletion...');
-    const initialCount = await Article.countDocuments({});
-    if (initialCount === 0) {
-      scriptLogger.info(`Collection "${collectionName}" is already empty.`);
-    } else {
-      scriptLogger.info(`Attempting to delete ${initialCount} documents...`);
-      const result = await Article.deleteMany({});
-      scriptLogger.info(
-        `Deletion acknowledged: ${result.acknowledged}, Count: ${result.deletedCount}`
-      );
-      if (result.acknowledged && result.deletedCount === initialCount) {
-        scriptLogger.info('✅ All documents successfully deleted.');
-      } else {
-        scriptLogger.warn(
-          '⚠️ Deletion might be incomplete or failed. Please verify in the database.'
-        );
-        exitCode = 1;
-      }
-    }
-  } catch (error) {
-    scriptLogger.error('An error occurred during the deletion script:', error);
-    exitCode = 1;
-  } finally {
-    await disconnectDB();
-    scriptLogger.info('Deletion script finished.');
-    setTimeout(() => process.exit(exitCode), 500);
-  }
-}
-
-deleteAllArticleData();
-
-
-# File: scripts/mail.js
-// scripts/mail.js
-import {
-  getLogger,
-  loadEnvironmentFiles,
-  getEnvVariable,
-} from '@daitanjs/development';
-import {
-  connectToMongoose,
-  disconnectFromMongoose,
-  getMongooseDefaultReadyState,
-} from '@daitanjs/data';
-
-// Initialize logger
-const scriptLogger = getLogger('mailRelevantHeadlinesScript');
-
-// --- Environment and DB Connection ---
-async function initializeAndConnect() {
-  scriptLogger.info('Initializing script environment...');
-  loadEnvironmentFiles({ loggerInstance: scriptLogger, override: true });
-
-  const MONGO_URI = getEnvVariable(
-    'MONGO_URI',
-    null,
-    true,
-    'string',
-    'MongoDB Connection URI is required for this script.'
-  );
-
-  if (getMongooseDefaultReadyState() !== 1) {
-    scriptLogger.info(`Attempting to connect to MongoDB...`);
-    await connectToMongoose(MONGO_URI, {}, { loggerInstance: scriptLogger });
-  }
-}
-
-async function disconnectDB() {
-  if (getMongooseDefaultReadyState() !== 0) {
-    await disconnectFromMongoose({ loggerInstance: scriptLogger });
-  }
-}
-
-async function fetchAndEmailRelevantHeadlines() {
-  let emailSentSuccessfully = false;
-  let exitCode = 0;
-
-  try {
-    await initializeAndConnect();
-
-    // Dynamically import modules that might depend on the environment
-    const Article = (await import('../models/Article.js')).default;
-    const { sendWealthEventsEmail } = await import(
-      '../src/modules/email/index.js'
-    );
-
-    scriptLogger.info('Fetching relevant articles for emailing...');
-    // Fetch articles that are likely candidates for emailing.
-    // The actual filtering logic is inside sendWealthEventsEmail.
-    const candidateArticles = await Article.find({
-      $or: [
-        { relevance_article: { $gte: 30 } },
-        { relevance_headline: { $gte: 30 } },
-      ],
-      emailed: { $ne: true }, // Optional: avoid re-evaluating already emailed articles
-    })
-      .sort({ relevance_article: -1, relevance_headline: -1, createdAt: -1 })
-      .limit(50) // Limit the number of candidates to process in one run
-      .select(
-        'headline link newspaper source topic articleContent assessment_article relevance_article assessment_headline relevance_headline amount contacts background image createdAt updatedAt error enrichment_error emailed email_error email_skipped_reason'
-      )
-      .lean();
-
-    if (candidateArticles.length === 0) {
-      scriptLogger.info(
-        'No potential articles found meeting initial criteria. No email will be sent.'
-      );
-      return;
-    }
-
-    scriptLogger.info(
-      `Found ${candidateArticles.length} candidate articles. Passing to email module for final filtering and sending.`
-    );
-
-    const emailProcessingResults = await sendWealthEventsEmail(
-      candidateArticles
-    );
-    const successfullyEmailedCount = emailProcessingResults.filter(
-      (article) => article && article.emailed
-    ).length;
-
-    if (successfullyEmailedCount > 0) {
-      scriptLogger.info(
-        `✅ App mailer module reported that ${successfullyEmailedCount} articles were included in the email.`
-      );
-      emailSentSuccessfully = true;
-    } else {
-      scriptLogger.warn(
-        '⚠️ App mailer module did not send an email for any of the candidate articles.'
-      );
-    }
-  } catch (error) {
-    scriptLogger.error(
-      'An error occurred during the mail script execution:',
-      error
-    );
-    exitCode = 1;
-  } finally {
-    await disconnectDB();
-    scriptLogger.info(
-      `Mail script finished. Email process was ${
-        emailSentSuccessfully ? 'successful' : 'not completed or skipped'
-      }.`
-    );
-    setTimeout(() => process.exit(exitCode), 500);
-  }
-}
-
-fetchAndEmailRelevantHeadlines();
-
-
-# File: scripts/migrateToMongo.js
-// scripts/migrateToMongo.js
-import { readFile, rm } from 'fs/promises';
-import {
-  getLogger,
-  loadEnvironmentFiles,
-  getEnvVariable,
-} from '@daitanjs/development';
-import { connectToMongoose, disconnectFromMongoose } from '@daitanjs/data';
-import path from 'path';
-
-const logger = getLogger('migration-script');
-
-async function readJsonFile(filePath) {
-  try {
-    const data = await readFile(filePath, 'utf8');
-    return data
-      .split('\n')
-      .filter((line) => line.trim())
-      .map((line) => JSON.parse(line));
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      logger.warn(`File not found: ${filePath}`);
-      return [];
-    }
-    throw error;
-  }
-}
-
-async function migrateData() {
-  let exitCode = 0;
-  try {
-    logger.info('🚀 Starting migration to MongoDB...');
-
-    // 1. Load environment variables using the DaitanJS utility
-    loadEnvironmentFiles({ loggerInstance: logger, override: true });
-    const MONGO_URI = getEnvVariable('MONGO_URI', null, true);
-
-    // 2. Connect to MongoDB using the DaitanJS utility
-    await connectToMongoose(MONGO_URI, {}, { loggerInstance: logger });
-
-    // 3. Import the Mongoose model (it will use the established connection)
-    const Article = (await import('../models/Article.js')).default;
-    const collectionName = Article.collection.name;
-
-    // 4. Read the legacy JSON file
-    const headlinesPath = path.resolve('./output/headlines.json');
-    logger.info(`Reading headlines from ${headlinesPath}`);
-    const headlines = await readJsonFile(headlinesPath);
-
-    if (headlines.length === 0) {
-      logger.warn('No headlines found to migrate.');
-      return;
-    }
-
-    logger.info(`Found ${headlines.length} headlines to migrate.`);
-
-    // 5. Insert headlines into MongoDB, checking for existence
-    let insertedCount = 0;
-    for (const headline of headlines) {
-      try {
-        const exists = await Article.exists({
-          $or: [{ headline: headline.headline }, { link: headline.link }],
-        });
-
-        if (!exists) {
-          await Article.create(headline);
-          insertedCount++;
-        }
-      } catch (error) {
-        logger.error(`Error inserting headline: ${error.message}`, {
-          headline: headline.headline,
-        });
-      }
-    }
-
-    logger.info(
-      `Successfully migrated ${insertedCount} new headlines to MongoDB collection "${collectionName}".`
-    );
-
-    // 6. Clean up legacy file
-    if (insertedCount > 0) {
-      logger.info('Cleaning up legacy headlines.json file...');
-      await rm(headlinesPath, { force: true });
-      logger.info('Cleanup complete.');
-    }
-
-    logger.info('✅ Migration completed successfully');
-  } catch (error) {
-    logger.error('💥 Migration failed:', error);
-    exitCode = 1;
-  } finally {
-    await disconnectFromMongoose({ loggerInstance: logger });
-    process.exit(exitCode);
-  }
-}
-
-migrateData();
-
-
 # File: scripts/setFlySecrets.sh
 #!/bin/bash
-# scripts/set-fly-secrets.sh (version 1.02 - Corrected)
+# scripts/setFlySecrets.sh (version 1.0)
 
 # A script to read a .env file and set the variables as Fly.io secrets.
 # It builds a single command to set all secrets at once for efficiency.
@@ -859,14 +530,13 @@ then
     exit 1
 fi
 
-# --- FIX: Correctly check for app name by parsing fly.toml ---
 if [ ! -f "fly.toml" ]; then
     echo "Error: No fly.toml file found in this directory."
     echo "Please run 'fly launch' first."
     exit 1
 fi
-APP_NAME=$(grep '^app = ' fly.toml | cut -d "'" -f 2)
 
+APP_NAME=$(grep '^app = ' fly.toml | cut -d "'" -f 2)
 if [ -z "$APP_NAME" ]; then
     echo "Error: Could not determine app name from fly.toml."
     exit 1
@@ -875,20 +545,22 @@ fi
 echo "Reading secrets from '$ENV_FILE' for app '$APP_NAME'..."
 
 # --- Main Logic ---
-
-# Prepare the command arguments
 secrets_args=()
 while IFS= read -r line || [ -n "$line" ]; do
     # Skip comments and empty lines
     if [[ "$line" =~ ^#.* ]] || [[ -z "$line" ]]; then
         continue
     fi
+    # Handle carriage return for Windows-edited .env files
+    line=$(echo "$line" | tr -d '\r')
     key=$(echo "$line" | cut -d '=' -f 1)
-    value=$(echo "$line" | sed -e 's/^[^=]*=//' -e "s/^'//" -e "s/'$//" -e 's/^"//' -e 's/"$//')
+    # Correctly extract value, even if it contains '='
+    value=$(echo "$line" | sed -e "s/^$key=//")
     if [ -z "$key" ]; then
         continue
     fi
-    secrets_args+=("$key=$value")
+    # Use printf for robust quoting to handle special characters
+    secrets_args+=("$(printf "%s=%s" "$key" "$value")")
     echo "  - Found secret: $key"
 done < "$ENV_FILE"
 
@@ -923,339 +595,46 @@ else
     exit 1
 fi
 
-# File: scripts/show.js
-// scripts/show.js
-import {
-  getLogger,
-  loadEnvironmentFiles,
-  getEnvVariable,
-} from '@daitanjs/development';
-import {
-  connectToMongoose,
-  disconnectFromMongoose,
-  findWithModel,
-} from '@daitanjs/data';
-
-const logger = getLogger('showRelevantScript');
-
-/**
- * Main function to connect to the database, fetch relevant articles,
- * display them, and then disconnect.
- */
-async function showRelevantHeadlines() {
-  let exitCode = 0;
-
-  try {
-    // 1. Initialize Environment by loading .env files
-    logger.info('Initializing script environment...');
-    loadEnvironmentFiles({ loggerInstance: logger, override: true });
-
-    // 2. Get the required MONGO_URI from the now-populated process.env
-    const MONGO_URI = getEnvVariable(
-      'MONGO_URI',
-      null, // No default, it's required
-      true, // isRequired = true
-      'string',
-      'MongoDB Connection URI for this script'
-    );
-
-    // 3. Connect to the database using the DaitanJS data library
-    await connectToMongoose(MONGO_URI, {}, { loggerInstance: logger });
-
-    // 4. Dynamically import the model to ensure it uses the established connection
-    const Article = (await import('../models/Article.js')).default;
-
-    // 5. Fetch the data using the DaitanJS data utility
-    logger.info('Fetching articles with relevance_headline > 0...');
-    const relevantArticles = await findWithModel(
-      Article,
-      { relevance_headline: { $gt: 0 } },
-      {
-        select:
-          'headline link relevance_headline assessment_headline newspaper source createdAt updatedAt',
-        sort: { relevance_headline: -1, updatedAt: -1 },
-        lean: true,
-        loggerInstance: logger,
-      }
-    );
-
-    // 6. Display the results in the console
-    if (!relevantArticles || relevantArticles.length === 0) {
-      logger.info('No articles found with relevance_headline > 0.');
-    } else {
-      console.log(
-        `\nFound ${relevantArticles.length} articles with relevance_headline > 0:\n`
-      );
-      console.log(
-        '===================================================================================='
-      );
-      relevantArticles.forEach((article, index) => {
-        console.log(`Article #${index + 1}:`);
-        console.log(`  Headline: ${article.headline}`);
-        console.log(`  Link: ${article.link}`);
-        console.log(
-          `  Source: ${article.newspaper || article.source || 'N/A'}`
-        );
-        console.log(`  Headline Relevance: ${article.relevance_headline}`);
-        console.log(`  Headline Assessment: ${article.assessment_headline}`);
-        console.log(
-          `  DB CreatedAt: ${
-            article.createdAt
-              ? new Date(article.createdAt).toLocaleString()
-              : 'N/A'
-          }`
-        );
-        console.log(
-          `  DB UpdatedAt: ${
-            article.updatedAt
-              ? new Date(article.updatedAt).toLocaleString()
-              : 'N/A'
-          }`
-        );
-        console.log(
-          '------------------------------------------------------------------------------------'
-        );
-      });
-      console.log(
-        '===================================================================================='
-      );
-    }
-  } catch (error) {
-    logger.error('An error occurred during script execution:', error);
-    exitCode = 1;
-  } finally {
-    // 7. Ensure disconnection from the database
-    await disconnectFromMongoose({ loggerInstance: logger });
-    logger.info('Script finished.');
-    setTimeout(() => process.exit(exitCode), 500); // Exit with appropriate code
-  }
-}
-
-// Run the script
-showRelevantHeadlines();
-
-
-# File: scripts/test-logger.js
-// File: scripts/test-logger.js (version 1.02)
-import path from 'path';
-// --- FIX: Removed 'initializeRootLogger' as it's not exported by the npm version of the package. ---
-import {
-  getLogger,
-  setGlobalLogLevel,
-} from '@daitanjs/development';
-import { BASE_LOG_DIR } from '../src/config/paths.js';
-
-// --- Main Test Function ---
-async function testLogger() {
-  console.log('--- Logger Test Script Starting ---');
-  console.log(`This script will test the DaitanJS logger.`);
-  console.log(`It will attempt to write logs to the console and to a file.`);
-  console.log(`Log directory is configured as: ${BASE_LOG_DIR}`);
-  console.log('-------------------------------------\n');
-
-  try {
-    // --- FIX: Initialize the logger by passing config to the *first* getLogger call. ---
-    // This first call will initialize the logger with path and level.
-    const testLogger = getLogger('logger-test', { logPath: BASE_LOG_DIR, logLevel: 'debug' });
-    console.log('[TEST] Step 1 & 2: getLogger("logger-test") called with config successfully.');
-
-    // Step 3: Log messages at various levels.
-    console.log('[TEST] Step 3: Sending messages at different log levels...');
-    testLogger.info('This is an INFO message.');
-    testLogger.warn('This is a WARNING message.', {
-      metadata: 'some_value',
-      code: 123,
-    });
-    testLogger.error('This is an ERROR message.', {
-      error: new Error('This is a simulated error object.').stack,
-    });
-    testLogger.debug('This is a DEBUG message (should be visible).');
-
-    console.log('\n[TEST] Step 4: Dynamically changing global log level to "warn"...');
-    setGlobalLogLevel('warn');
-    testLogger.info(
-      'This INFO message should NOT be visible in the console or file.'
-    );
-    testLogger.warn(
-      'This second WARNING message SHOULD be visible.'
-    );
-    console.log('[TEST] Step 4: Log level change test complete.');
-  } catch (error) {
-    console.error('💥 CRITICAL ERROR during logger test:', error);
-    process.exit(1);
-  }
-
-  console.log('\n-------------------------------------');
-  console.log('--- Logger Test Script Finished ---');
-  console.log(
-    '✅ VERIFICATION: Check the console output above for colorized log messages.'
-  );
-  console.log(
-    `✅ VERIFICATION: Check the file at "${path.join(
-      BASE_LOG_DIR,
-      'logger-test.log'
-    )}" for structured JSON logs.`
-  );
-  console.log('If you see output in both places, the logger is working correctly.');
-}
-
-testLogger();
-
-# File: src/config/database.js
-import { MONGO_URI } from [LOCAL .env FILE];
-
-/**
- * Establishes the MongoDB connection for the headlines_mongo application
- * using the centralized utility from @daitanjs/data.
- * @throws {Error} If MONGO_URI is not set or the connection fails.
- */
-export async function connectDatabase() {
-  if (!MONGO_URI) {
-    const errMsg =
-      'MONGO_URI is not configured for headlines_mongo. Database connection cannot be established.';
-    logger.error(errMsg);
-    throw new Error(errMsg);
-  }
-
-  logger.info('Attempting to connect to MongoDB via @daitanjs/data library...');
-  try {
-    // Call the library function, passing the app's specific URI and logger
-    await connectToMongoose(MONGO_URI, {}, { loggerInstance: logger });
-
-    if (getMongooseDefaultReadyState() === 1) {
-      // 1 means connected
-      logger.info(
-        '✅ MongoDB connection successful and active (via @daitanjs/data).'
-      );
-    } else {
-      // This state should ideally be an error thrown by connectToMongoose if it fails after retries
-      const errMsg =
-        'MongoDB connection attempt sequence finished, but connection is not in ready state (1).';
-      logger.error(errMsg, { readyState: getMongooseDefaultReadyState() });
-      throw new Error(errMsg);
-    }
-  } catch (error) {
-    logger.error(
-      `❌ CRITICAL: Failed to establish MongoDB connection via @daitanjs/data: ${error.message}`
-    );
-    // It's important to re-throw so the application (app.js) knows startup failed.
-    throw error;
-  }
-}
-
-
-# File: src/config/email.js
-import { 
-  HEADLINE_RECIPIENTS_STR, 
-  SUPERVISOR_EMAIL_ENV, 
-  SEND_TO_DEFAULT_SUPERVISOR_ENV, 
-  SMTP_HOST, 
-  SMTP_PORT, 
-  SMTP_SECURE, 
-  SMTP_USER, 
-  SMTP_PASS, 
-  SMTP_FROM_ADDRESS, 
-  SMTP_FROM_NAME 
-} from [LOCAL .env FILE]
-
-export const HEADLINE_RECIPIENTS = HEADLINE_RECIPIENTS_STR
-  .split(',')
-  .map((email) => email.trim())
-  .filter((email) => email && email !== 'your-default-email@example.com'); // Filter out potential placeholder
-
-// Use the value from env.js, which has its own default if SUPERVISOR_EMAIL is not in .env
-export const SUPERVISOR_EMAIL = SUPERVISOR_EMAIL_ENV; 
-export const SEND_TO_DEFAULT_SUPERVISOR = SEND_TO_DEFAULT_SUPERVISOR_ENV;
-
-export const EMAIL_CONFIG = {
-  templateName: 'wealthEvents',
-  subject: '🇩🇰 New Danish Banking Opportunities Detected',
-  language: 'en',
-  brandName: 'Wealth Watch Denmark',
-  maxWidth: '650px',
-  backgroundColor: '#ECEFF1',
-  contentBackgroundColor: '#FFFFFF',
-  fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-  linkColor: '#007BFF',
-  contentBorderRadius: '8px',
-  contentBoxShadow: '0 4px 12px rgba(0,0,0,0.07)',
-  headingColor: '#2c3e50',
-  paragraphColor: '#555555',
-  metaTextColor: '#777777',
-  assessmentTextColor: '#333333',
-  cardHeadingColor: '#333333',
-  cardBackgroundColor: '#FFFFFF',
-  cardBorderColor: '#E0E0E0',
-  cardBorderRadius: '6px',
-  cardPadding: '15px 20px',
-  cardBoxShadow: '0 3px 8px rgba(0,0,0,0.07)',
-  assessmentBlockBgColor: '#f8f9fa',
-  assessmentBlockBorderColor: '#dee2e6',
-  buttonColor: '#007BFF',
-  buttonTextColor: '#FFFFFF',
-  footerTextColor: '#888888',
-  footerBorderColor: '#DDDDDD',
-  footerLinkColor: '#777777',
-  companyAddress: 'Wealth Watch Inc., Copenhagen, Denmark',
-  unsubscribeUrl: '#', 
-};
-
-export const SUPERVISOR_EMAIL_CONFIG = {
-  templateName: 'supervisorReport', 
-  subject: '⚙️ Hourly Headlines Processing Run Summary',
-  language: 'en',
-  brandName: 'Headlines Processing Bot',
-  maxWidth: '800px', 
-  backgroundColor: '#F0F0F0',
-  contentBackgroundColor: '#FFFFFF',
-  fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-  linkColor: '#007BFF',
-  headingColor: '#333333',
-  paragraphColor: '#555555',
-  metaTextColor: '#6c757d', 
-  tableBorderColor: '#DDDDDD',
-  tableHeaderBgColor: '#F8F8F8',
-  tableCellPadding: '8px',
-};
-
-// Assemble SMTP_CONFIG here using values imported from env.js
-export const SMTP_CONFIG = {
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_SECURE,
-  auth: {
-    user: SMTP_USER,
-    pass: SMTP_PASS,
-  },
-  fromAddress: SMTP_FROM_ADDRESS, 
-  fromName: SMTP_FROM_NAME 
-};
-
 # File: src/config/index.js
-// src/config/index.js (version 1.2)
+// src/config/index.js (version 1.3)
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+/**
+ * Helper function to safely read and clean string environment variables.
+ * It trims whitespace and removes surrounding quotes.
+ * @param {string} key The environment variable key.
+ * @param {string} defaultValue The default value if the key is not found.
+ * @returns {string} The cleaned environment variable value.
+ */
+function getCleanStringEnv(key, defaultValue = '') {
+    let value = process.env[key] || defaultValue;
+    value = value.trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        return value.slice(1, -1);
+    }
+    return value;
+}
+
+
 // --- Core App Behavior ---
-export const NODE_ENV = process.env.NODE_ENV || 'development';
+export const NODE_ENV = getCleanStringEnv('NODE_ENV', 'development');
 export const IS_PRODUCTION = NODE_ENV === 'production';
-export const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+export const LOG_LEVEL = getCleanStringEnv('LOG_LEVEL', 'info');
 export const CONCURRENCY_LIMIT = parseInt(process.env.CONCURRENCY_LIMIT, 10) || 3;
 export const FORCE_EMAIL_SEND_DEV = process.env.FORCE_EMAIL_SEND_DEV === 'true';
 
 // --- Database ---
-export const MONGO_URI = process.env.MONGO_URI;
+export const MONGO_URI = getCleanStringEnv('MONGO_URI');
 
 // --- LLM Configuration ---
-export const KIMI_API_KEY = process.env.KIMI_API_KEY;
-export const LLM_MODEL_HEADLINES = process.env.LLM_MODEL_HEADLINES || 'moonshot-v1-8k';
-export const LLM_MODEL_ARTICLES = process.env.LLM_MODEL_ARTICLES || 'moonshot-v1-32k';
+export const KIMI_API_KEY = getCleanStringEnv('KIMI_API_KEY');
+export const LLM_MODEL_HEADLINES = getCleanStringEnv('LLM_MODEL_HEADLINES', 'moonshot-v1-8k');
+export const LLM_MODEL_ARTICLES = getCleanStringEnv('LLM_MODEL_ARTICLES', 'moonshot-v1-32k');
 
 // --- Scraper Configuration ---
-// Add your proxy URL here if you have one.
-// Example format: http://user:pass@host:port
-export const SCRAPER_PROXY_URL = process.env.SCRAPER_PROXY_URL || null;
+export const SCRAPER_PROXY_URL = getCleanStringEnv('SCRAPER_PROXY_URL') || null;
 
 
 // --- Thresholds ---
@@ -1269,19 +648,19 @@ export const AI_BATCH_SIZE = 6;
 
 // --- Email Configuration ---
 export const SMTP_CONFIG = {
-    host: process.env.SMTP_HOST,
+    host: getCleanStringEnv('SMTP_HOST'),
     port: parseInt(process.env.SMTP_PORT, 10) || 587,
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: getCleanStringEnv('SMTP_USER'),
+        pass: getCleanStringEnv('SMTP_PASS'),
     },
-    fromAddress: process.env.SMTP_FROM_ADDRESS || process.env.SMTP_USER,
-    fromName: process.env.SMTP_FROM_NAME || 'Headlines Bot',
+    fromAddress: getCleanStringEnv('SMTP_FROM_ADDRESS') || getCleanStringEnv('SMTP_USER'),
+    fromName: getCleanStringEnv('SMTP_FROM_NAME', 'Headlines Bot'),
 };
 
-export const HEADLINE_RECIPIENTS_STR = process.env.HEADLINE_RECIPIENTS || '';
-export const SUPERVISOR_EMAIL_ENV = process.env.SUPERVISOR_EMAIL || 'your-supervisor-default@example.com';
+export const HEADLINE_RECIPIENTS_STR = getCleanStringEnv('HEADLINE_RECIPIENTS');
+export const SUPERVISOR_EMAIL_ENV = getCleanStringEnv('SUPERVISOR_EMAIL', 'your-supervisor-default@example.com');
 export const SEND_TO_DEFAULT_SUPERVISOR_ENV = process.env.SEND_TO_DEFAULT_SUPERVISOR === 'true';
 
 // Derived Email Config
@@ -1306,8 +685,24 @@ export const SUPERVISOR_EMAIL_CONFIG = {
   brandName: 'Headlines Processing Bot',
 };
 
-# File: src/config/scraper.js
-[Store here the parameters for the scraper; the "sources" for the four newspaper and the parameters needed to find headlines and articles]
+# File: src/config/sources.js
+// src/config/sources.js (version 1.0)
+// Centralized configuration for web scraping sources.
+// This separates the scraper's target configuration from its operational logic.
+
+export const SITES_CONFIG = {
+    berlingske: { name: 'Berlingske', url: 'https://www.berlingske.dk/business', selector: 'h4.teaser__title a.teaser__title-link', extract: (el, site) => ({ headline: el.text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.name }) },
+    borsen: { name: 'Børsen', url: 'https://borsen.dk/nyheder', useJsonLd: true },
+    politiken: { name: 'Politiken', url: 'https://politiken.dk/danmark/oekonomi/', selector: 'article', extract: (el, site) => { const h = el.find('h2, h3, h4').first().text().trim(); const a = el.find('a[href*="/art"]').first().attr('href'); return h && a ? { headline: h, link: new URL(a, site.url).href, source: site.name, newspaper: site.name } : null; } },
+    finans: { name: 'Finans.dk', url: 'https://finans.dk/seneste-nyt', selector: 'article a h3', extract: (el, site) => ({ headline: el.text().trim(), link: el.closest('a').attr('href'), source: site.name, newspaper: site.name }) },
+};
+
+export const TEXT_SELECTORS = {
+  'Berlingske': '.article-body p',
+  'Børsen': '.article-content p',
+  'Politiken': 'section[data-track-meta*="article-body"] p',
+  'Finans.dk': 'p.container-text:not([class*="italic"])',
+};
 
 # File: src/database.js
 // src/database.js (version 1.0)
@@ -2515,9 +1910,6 @@ export async function performActualSupervisorEmailSend(allArticles, runStats) {
     }
 }
 
-# File: src/modules/mongoStore/articleOperations.js
-[Store the articles in Mongo]
-
 # File: src/modules/mongoStore/index.js
 // src/modules/mongoStore/index.js (version 1.0)
 import Article from '../../../models/Article.js';
@@ -2620,7 +2012,7 @@ export async function updateArticlesWithFullData(articles) {
 }
 
 # File: src/modules/scraper/index.js
-// src/modules/scraper/index.js (version 1.2)
+// src/modules/scraper/index.js (version 1.3)
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
@@ -2628,22 +2020,9 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { logger } from '../../utils/logger.js';
 import { safeExecute } from '../../utils/helpers.js';
 import { CONCURRENCY_LIMIT, SCRAPER_PROXY_URL } from '../../config/index.js';
+import { SITES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js';
 
 const limit = pLimit(CONCURRENCY_LIMIT);
-
-const SITES_CONFIG = {
-    berlingske: { name: 'Berlingske', url: 'https://www.berlingske.dk/business', selector: 'h4.teaser__title a.teaser__title-link', extract: (el, site) => ({ headline: el.text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.name }) },
-    borsen: { name: 'Børsen', url: 'https://borsen.dk/nyheder', useJsonLd: true },
-    politiken: { name: 'Politiken', url: 'https://politiken.dk/danmark/oekonomi/', selector: 'article', extract: (el, site) => { const h = el.find('h2, h3, h4').first().text().trim(); const a = el.find('a[href*="/art"]').first().attr('href'); return h && a ? { headline: h, link: new URL(a, site.url).href, source: site.name, newspaper: site.name } : null; } },
-    finans: { name: 'Finans.dk', url: 'https://finans.dk/seneste-nyt', selector: 'article a h3', extract: (el, site) => ({ headline: el.text().trim(), link: el.closest('a').attr('href'), source: site.name, newspaper: site.name }) },
-};
-
-const TEXT_SELECTORS = {
-  'Berlingske': '.article-body p',
-  'Børsen': '.article-content p',
-  'Politiken': 'section[data-track-meta*="article-body"] p',
-  'Finans.dk': 'p.container-text:not([class*="italic"])',
-};
 
 const axiosInstance = axios.create();
 if (SCRAPER_PROXY_URL) {
@@ -2653,7 +2032,6 @@ if (SCRAPER_PROXY_URL) {
     axiosInstance.defaults.httpAgent = httpsAgent;
 }
 
-// --- FIX: Add comprehensive browser-like headers ---
 const BROWSER_HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -2669,10 +2047,8 @@ const BROWSER_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
 };
 
-
 async function fetchPage(url) {
     const axiosConfig = { headers: BROWSER_HEADERS };
-
     const result = await safeExecute(() => axiosInstance.get(url, axiosConfig), {
         errorHandler: (err) => {
             const status = err.response ? err.response.status : 'N/A';
@@ -2683,12 +2059,10 @@ async function fetchPage(url) {
     return result ? cheerio.load(result.data) : null;
 }
 
-// ... rest of the file is unchanged ...
 async function scrapeSite(site) {
     logger.debug(`Scraping headlines from ${site.name}`);
     const $ = await fetchPage(site.url);
     if (!$) return [];
-
     let articles = [];
     if (site.useJsonLd) {
         $('script[type="application/ld+json"]').each((_, el) => {
@@ -2728,14 +2102,11 @@ export async function scrapeArticleContent(article) {
         logger.warn(`No text selector for source "${article.source}".`);
         return { ...article, enrichment_error: 'No selector' };
     }
-
     const $ = await fetchPage(article.link);
     if (!$) {
         return { ...article, enrichment_error: 'Failed to fetch page' };
     }
-
     const fullText = $(selector).map((_, el) => $(el).text()).get().join(' ').replace(/\s\s+/g, ' ').trim();
-
     if (fullText) {
         article.articleContent = { contents: [fullText] };
     } else {
@@ -2744,9 +2115,6 @@ export async function scrapeArticleContent(article) {
     }
     return article;
 }
-
-# File: src/modules/statistics/analyzeStats.js
-[Provide statistics of the findings]
 
 # File: src/utils/helpers.js
 // src/utils/helpers.js (version 1.0)

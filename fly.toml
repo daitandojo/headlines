@@ -14,14 +14,14 @@ primary_region = 'lhr'
   schedule = '0 8 * * *' # Runs daily at 08:00 UTC (approx. 10:00 Europe/Copenhagen)
   
   [machines.vm]
-    memory = '4gb'
+    memory = '1gb'
     cpu_kind = 'shared'
-    cpus = 2
+    cpus = 1
 
 [[machines]]
   schedule = '30 14 * * *' # Runs daily at 14:30 UTC (approx. 16:30 Europe/Copenhagen)
 
   [machines.vm]
-    memory = '4gb'
+    memory = '1gb'
     cpu_kind = 'shared'
-    cpus = 2
+    cpus = 1

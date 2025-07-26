@@ -25,4 +25,4 @@ USER node
 
 # This is no longer a web server, so no EXPOSE needed.
 # It runs the pipeline script once and then exits.
-CMD [ "node", "--max-old-space-size=3584", "app.js" ]
+CMD [ "node", "app.js" ]
