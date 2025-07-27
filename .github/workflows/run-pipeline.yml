@@ -1,0 +1,31 @@
+name: Run Pipeline on Schedule
+
+on:
+  workflow_dispatch: # This is the line that enables the manual run button.
+  schedule:
+    # IMPORTANT: GitHub schedules run on UTC time.
+    # 10:00 Copenhagen (CEST, UTC+2) is 08:00 UTC
+    # 16:30 Copenhagen (CEST, UTC+2) is 14:30 UTC
+    - cron: '0 8 * * *'
+    - cron: '30 14 * * *'
+
+jobs:
+  run-on-fly:
+    name: Start a Fly Machine to Run the Pipeline
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        
+      - name: Start a temporary machine
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          # The "fly machine run ." command creates a new machine from the fly.toml template,
+          # starts it, waits for the script to complete, and then the machine is auto-destroyed.
+          # This is the perfect pattern for cost-effective, on-demand tasks.
+          fly machine run . --detach
+          
+          echo "A new machine has been started to run the pipeline. It will be destroyed upon completion."
+          echo "You can monitor its logs in the Fly.io dashboard."
