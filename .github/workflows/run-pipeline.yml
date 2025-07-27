@@ -1,7 +1,7 @@
 name: Run Pipeline on Schedule
 
 on:
-  workflow_dispatch: # This is the line that enables the manual run button.
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
   schedule:
     # IMPORTANT: GitHub schedules run on UTC time.
     # 10:00 Copenhagen (CEST, UTC+2) is 08:00 UTC
@@ -15,17 +15,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Check out your repository's code
       - uses: actions/checkout@v4
+      
+      # Step 2: Set up the flyctl command-line tool (This was the missing piece)
       - uses: superfly/flyctl-actions/setup-flyctl@master
         
-      - name: Start a temporary machine
+      # Step 3: Now that flyctl is installed, run the command
+      - name: Start a temporary machine and wait for completion
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          # The "fly machine run ." command creates a new machine from the fly.toml template,
-          # starts it, waits for the script to complete, and then the machine is auto-destroyed.
-          # This is the perfect pattern for cost-effective, on-demand tasks.
+          # This command will now be found and will execute correctly.
           fly machine run .
           
-          echo "A new machine has been started to run the pipeline. It will be destroyed upon completion."
-          echo "You can monitor its logs in the Fly.io dashboard."
+          echo "The machine has completed its run and has been destroyed."
