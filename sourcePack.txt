@@ -187,7 +187,7 @@ USER node
 
 # This is no longer a web server, so no EXPOSE needed.
 # It runs the pipeline script once and then exits.
-CMD [ "node", "--max-old-space-size=3584", "app.js" ]
+CMD [ "node", "app.js" ]
 
 # File: app-logic.js
 // app-logic.js (version 1.0)
@@ -368,33 +368,24 @@ services:
     container_name: headlines_local
 
 # File: fly.toml
-# fly.toml (version 1.0)
+# fly.toml (The Final, Correct Version)
 app = 'headlines-polished-sea-1731'
 primary_region = 'lhr'
 
-# This app is a scheduled task, not a web server.
-# The [http_service] section is removed.
+# This empty [processes] block is the key.
+# It tells flyctl to use the modern Machines platform deployment logic
+# and to not look for a long-running web service.
+[processes]
 
-# We define two scheduled machines to run at different times.
-# Fly.io schedules are in UTC. European time (CET/CEST) is UTC+1/UTC+2.
-# 10:00 CET/CEST is ~08:00 UTC.
-# 16:30 CET/CEST is ~14:30 UTC.
-
+# --- TEST SCHEDULE ---
+# This schedule will now be correctly applied by the Machines platform.
 [[machines]]
-  schedule = '0 8 * * *' # Runs daily at 08:00 UTC (approx. 10:00 Europe/Copenhagen)
+  schedule = 'hourly'
   
   [machines.vm]
-    memory = '4gb'
+    memory = '1gb'
     cpu_kind = 'shared'
-    cpus = 2
-
-[[machines]]
-  schedule = '30 14 * * *' # Runs daily at 14:30 UTC (approx. 16:30 Europe/Copenhagen)
-
-  [machines.vm]
-    memory = '4gb'
-    cpu_kind = 'shared'
-    cpus = 2
+    cpus = 1
 
 # File: models/Article.js
 // models/Article.js (version 2.0)
