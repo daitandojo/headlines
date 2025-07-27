@@ -25,7 +25,7 @@ jobs:
           # The "fly machine run ." command creates a new machine from the fly.toml template,
           # starts it, waits for the script to complete, and then the machine is auto-destroyed.
           # This is the perfect pattern for cost-effective, on-demand tasks.
-          fly machine run . --detach
+          fly machine run .
           
           echo "A new machine has been started to run the pipeline. It will be destroyed upon completion."
           echo "You can monitor its logs in the Fly.io dashboard."
