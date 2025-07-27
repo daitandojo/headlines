@@ -42,14 +42,18 @@ async function fetchPage(url) {
             return null;
         }
     });
-    return result ? cheerio.load(result.data) : null;
+    // Return the response object which contains data
+    return result;
 }
 
 async function scrapeSite(site) {
     logger.debug(`Scraping headlines from ${site.name}`);
-    const $ = await fetchPage(site.url);
-    if (!$) return [];
+    const response = await fetchPage(site.url);
+    if (!response) return [];
+    
+    const $ = cheerio.load(response.data);
     let articles = [];
+
     if (site.useJsonLd) {
         $('script[type="application/ld+json"]').each((_, el) => {
             try {
@@ -59,7 +63,9 @@ async function scrapeSite(site) {
                         if (item.name && item.url) articles.push({ headline: item.name, link: item.url, source: site.name, newspaper: site.name });
                     });
                 }
-            } catch { /* ignore parse errors */ }
+            } catch (e) { 
+                logger.warn({ err: e, site: site.name }, `Failed to parse JSON-LD from ${site.name}`);
+            }
         });
     } else {
         $(site.selector).each((_, el) => {
@@ -69,6 +75,7 @@ async function scrapeSite(site) {
             }
         });
     }
+    
     const uniqueArticles = Array.from(new Map(articles.map(a => [a.link, a])).values());
     logger.info(`Scraped ${uniqueArticles.length} unique headlines from ${site.name}.`);
     return uniqueArticles;
@@ -83,15 +90,17 @@ export async function scrapeAllHeadlines() {
 
 export async function scrapeArticleContent(article) {
     logger.debug(`Enriching article: ${article.link}`);
-    const selector = TEXT_SELECTORS[article.source];
+    const newspaperName = article.newspaper || article.source;
+    const selector = TEXT_SELECTORS[newspaperName];
     if (!selector) {
-        logger.warn(`No text selector for source "${article.source}".`);
+        logger.warn(`No text selector for newspaper "${newspaperName}".`);
         return { ...article, enrichment_error: 'No selector' };
     }
-    const $ = await fetchPage(article.link);
-    if (!$) {
+    const pageResponse = await fetchPage(article.link);
+    if (!pageResponse) {
         return { ...article, enrichment_error: 'Failed to fetch page' };
     }
+    const $ = cheerio.load(pageResponse.data);
     const fullText = $(selector).map((_, el) => $(el).text()).get().join(' ').replace(/\s\s+/g, ' ').trim();
     if (fullText) {
         article.articleContent = { contents: [fullText] };
