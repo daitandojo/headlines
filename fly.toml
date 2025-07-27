@@ -1,16 +1,19 @@
-# fly.toml (The Final, Correct Version)
 app = 'headlines-polished-sea-1731'
 primary_region = 'lhr'
 
-# This empty [processes] block is the key.
-# It tells flyctl to use the modern Machines platform deployment logic
-# and to not look for a long-running web service.
+# This empty [processes] block tells flyctl to use the modern Machines platform
+# and not look for a long-running web service.
 [processes]
 
-# --- TEST SCHEDULE ---
-# This schedule will now be correctly applied by the Machines platform.
+# We define a template for a machine that can be started on demand.
 [[machines]]
-  schedule = 'hourly'
+  # This machine will not run on a simple schedule from Fly.
+  # schedule = 'hourly' <-- REMOVE THIS LINE
+  
+  # The machine will be destroyed after its task is complete.
+  auto_destroy = true
+  # When created during deploy, it will be in a 'stopped' state, costing nothing for CPU/RAM.
+  initial_state = "stopped"
   
   [machines.vm]
     memory = '1gb'
