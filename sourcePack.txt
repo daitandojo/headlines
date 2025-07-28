@@ -76,6 +76,41 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
+# File: .github/workflows/run-pipeline.yml
+name: Run Pipeline on Schedule
+
+on:
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+  schedule:
+    # IMPORTANT: GitHub schedules run on UTC time.
+    # 10:00 Copenhagen (CEST, UTC+2) is 08:00 UTC
+    # 16:30 Copenhagen (CEST, UTC+2) is 14:30 UTC
+    - cron: '0 6 * * *'
+    - cron: '0 8 * * *'
+    - cron: '30 14 * * *'
+    - cron: '39 22 * * *'
+
+jobs:
+  run-on-fly:
+    name: Start a Fly Machine to Run the Pipeline
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out your repository's code
+      - uses: actions/checkout@v4
+      
+      # Step 2: Set up the flyctl command-line tool (This was the missing piece)
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        
+      # Step 3: Now that flyctl is installed, run the command
+      - name: Start a temporary machine and wait for completion
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          # This command will now be found and will execute correctly.
+          fly machine run .
+          
+          echo "The machine has completed its run and has been destroyed."
 
 # File: .gitignore
 /node_modules
@@ -368,19 +403,22 @@ services:
     container_name: headlines_local
 
 # File: fly.toml
-# fly.toml (The Final, Correct Version)
 app = 'headlines-polished-sea-1731'
 primary_region = 'lhr'
 
-# This empty [processes] block is the key.
-# It tells flyctl to use the modern Machines platform deployment logic
-# and to not look for a long-running web service.
+# This empty [processes] block tells flyctl to use the modern Machines platform
+# and not look for a long-running web service.
 [processes]
 
-# --- TEST SCHEDULE ---
-# This schedule will now be correctly applied by the Machines platform.
+# We define a template for a machine that can be started on demand.
 [[machines]]
-  schedule = 'hourly'
+  # This machine will not run on a simple schedule from Fly.
+  # schedule = 'hourly' <-- REMOVE THIS LINE
+  
+  # The machine will be destroyed after its task is complete.
+  auto_destroy = true
+  # When created during deploy, it will be in a 'stopped' state, costing nothing for CPU/RAM.
+  initial_state = "stopped"
   
   [machines.vm]
     memory = '1gb'
@@ -495,6 +533,200 @@ export default models.Article || model('Article', ArticleSchema);
     "pino-pretty": "^11.1.0"
   }
 }
+
+# File: scrape.js
+// scrape.js
+// A utility script to scrape a few headlines and articles from each configured source.
+// This is useful for testing, debugging, and adding new newspapers.
+// It now directly uses the main application's scraping modules for consistency.
+// To run: `node scrape.js` from the project root.
+
+import 'dotenv/config';
+import { SITES_CONFIG } from './src/config/sources.js';
+import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
+import { truncateString } from './src/utils/helpers.js';
+
+// --- Configuration ---
+const HEADLINES_TO_SCRAPE_PER_SITE = 3;
+
+// --- Console Colors for Readability ---
+const colors = {
+    reset: "\x1b[0m",
+    red: "\x1b[31m",
+    green: "\x1b[32m",
+    yellow: "\x1b[33m",
+    cyan: "\x1b[36m",
+    grey: "\x1b[90m",
+};
+const log = {
+    info: (msg) => console.log(`${colors.cyan}${msg}${colors.reset}`),
+    success: (msg) => console.log(`${colors.green}${msg}${colors.reset}`),
+    warn: (msg) => console.log(`${colors.yellow}${msg}${colors.reset}`),
+    error: (msg) => console.log(`${colors.red}${msg}${colors.reset}`),
+};
+
+
+/**
+ * Main function to orchestrate the test scrape.
+ */
+async function main() {
+    log.info(`🚀 Starting test scrape for ${HEADLINES_TO_SCRAPE_PER_SITE} articles per site...`);
+
+    const allHeadlines = await scrapeAllHeadlines();
+    const sites = Object.values(SITES_CONFIG);
+
+    for (const site of sites) {
+        console.log(`\n==================== 📰 ${site.name.toUpperCase()} ====================`);
+
+        // FIX: Filter by `h.source` which is guaranteed to match `site.name`.
+        const siteHeadlines = allHeadlines
+            .filter(h => h.source === site.name)
+            .slice(0, HEADLINES_TO_SCRAPE_PER_SITE);
+
+        if (siteHeadlines.length === 0) {
+            log.warn(`No headlines found for ${site.name}.`);
+            continue;
+        }
+
+        log.info(`Found ${siteHeadlines.length} headlines. Fetching full article content...`);
+
+        for (const [index, headline] of siteHeadlines.entries()) {
+            console.log(`\n[${index + 1}/${siteHeadlines.length}] ${truncateString(headline.headline, 80)}`);
+            console.log(`${colors.grey}  -> ${headline.link}${colors.reset}`); // Always show link
+            
+            // Use the main application's function to fetch and parse the article
+            const articleWithContent = await scrapeArticleContent(headline);
+
+            if (articleWithContent.articleContent?.contents?.length > 0) {
+                const contentSnippet = articleWithContent.articleContent.contents.join(' ').trim().replace(/\s\s+/g, ' ').substring(0, 150);
+                log.success(`  ✅ SUCCESS: "${contentSnippet}..."`);
+            } else {
+                const reason = articleWithContent.enrichment_error || 'Selector did not find content (this is expected for live blogs or paywalled articles)';
+                log.error(`  ❌ FAILED: ${reason}`);
+            }
+        }
+    }
+
+    log.info('\n✅ Test scrape finished.');
+}
+
+// --- Execute Script ---
+main().catch(err => {
+    console.error(err);
+    log.error('The test scrape script encountered a fatal error.');
+    process.exit(1);
+});
+
+# File: scripts/reDeploy.sh
+#!/bin/bash
+# redeploy.sh
+# A script to completely destroy, re-create, set secrets, and then redeploy the Fly.io app.
+# This ensures a clean slate, removing any old machines or volumes.
+
+# --- Configuration ---
+# Colors for better logging
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# --- Pre-flight Checks ---
+echo -e "${YELLOW}--- Running Pre-flight Checks ---${NC}"
+
+if ! command -v fly &> /dev/null; then
+    echo -e "${RED}Error: 'fly' command-line tool not found.${NC}"
+    exit 1
+fi
+
+if [ ! -f "fly.toml" ]; then
+    echo -e "${RED}Error: No fly.toml file found in this directory.${NC}"
+    exit 1
+fi
+
+if [ ! -f "scripts/setFlySecrets.sh" ]; then
+    echo -e "${RED}Error: The secrets script is missing at 'scripts/setFlySecrets.sh'.${NC}"
+    exit 1
+fi
+
+APP_NAME=$(grep '^app = ' fly.toml | cut -d "'" -f 2)
+
+if [ -z "$APP_NAME" ]; then
+    echo -e "${RED}Error: Could not determine app name from fly.toml.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Checks passed. App name is '${APP_NAME}'.${NC}"
+echo ""
+
+# --- Step 1: Destroy the App (with confirmation and error handling) ---
+echo -e "${YELLOW}--- Step 1: Destroying the App ---${NC}"
+echo -e "${RED}WARNING: This is a destructive action. It will permanently delete the app '${APP_NAME}' if it exists.${NC}"
+read -p "Are you absolutely sure you want to proceed with the full redeploy? (y/N) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Operation cancelled by user."
+    exit 1
+fi
+
+echo "Attempting to destroy '${APP_NAME}'..."
+DESTROY_OUTPUT=$(fly apps destroy "$APP_NAME" --yes 2>&1)
+DESTROY_STATUS=$?
+
+if [ $DESTROY_STATUS -eq 0 ]; then
+    echo -e "${GREEN}App '${APP_NAME}' destroyed successfully.${NC}"
+elif echo "$DESTROY_OUTPUT" | grep -q "Could not find App"; then
+    echo -e "${YELLOW}Warning: App '${APP_NAME}' did not exist. Continuing to the create step.${NC}"
+else
+    echo -e "${RED}An error occurred while trying to destroy the app:${NC}"
+    echo "$DESTROY_OUTPUT"
+    exit 1
+fi
+echo ""
+
+
+# --- Step 2: Create the App ---
+echo -e "${YELLOW}--- Step 2: Creating the App ---${NC}"
+echo "Registering a new, empty app shell on Fly.io for '${APP_NAME}'..."
+
+fly apps create "$APP_NAME" --org personal
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}An error occurred while creating the app. Please check the output above.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}Empty app shell for '${APP_NAME}' created successfully.${NC}"
+echo ""
+
+
+# --- Step 3: Set Secrets ---
+echo -e "${YELLOW}--- Step 3: Setting Secrets ---${NC}"
+echo "Running the setFlySecrets.sh script to populate environment variables..."
+
+# Automatically answer 'y' to the confirmation prompt within setFlySecrets.sh
+# to avoid being prompted twice.
+echo 'y' | bash ./scripts/setFlySecrets.sh
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}An error occurred while setting secrets. Please check the output above.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}Secrets set successfully.${NC}"
+echo ""
+
+
+# --- Step 4: Deploy the App ---
+echo -e "${YELLOW}--- Step 4: Deploying the App ---${NC}"
+echo "Deploying the project to the new instance of '${APP_NAME}'..."
+echo "This will create 1 machine with an 'hourly' schedule as defined in fly.toml."
+
+fly deploy
+
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ Successfully deployed '${APP_NAME}'. A new release has been created and the scheduled machine is configured.${NC}"
+else
+    echo -e "${RED}❌ An error occurred during deployment. Please check the output above.${NC}"
+    exit 1
+fi
 
 # File: scripts/setFlySecrets.sh
 #!/bin/bash
@@ -686,13 +918,120 @@ export const SITES_CONFIG = {
     borsen: { name: 'Børsen', url: 'https://borsen.dk/nyheder', useJsonLd: true },
     politiken: { name: 'Politiken', url: 'https://politiken.dk/danmark/oekonomi/', selector: 'article', extract: (el, site) => { const h = el.find('h2, h3, h4').first().text().trim(); const a = el.find('a[href*="/art"]').first().attr('href'); return h && a ? { headline: h, link: new URL(a, site.url).href, source: site.name, newspaper: site.name } : null; } },
     finans: { name: 'Finans.dk', url: 'https://finans.dk/seneste-nyt', selector: 'article a h3', extract: (el, site) => ({ headline: el.text().trim(), link: el.closest('a').attr('href'), source: site.name, newspaper: site.name }) },
+    dn_investor: {
+        name: 'DN Investor',
+        url: 'https://www.dn.no/investor',
+        newspaper: 'DN.no',
+        selector: 'a[href*="/2-1-"]', 
+        extract: (el, site) => {
+            const headline = el.find('span.font-mono').text().trim();
+            const href = el.attr('href');
+            if (headline && href) {
+                return { headline, link: new URL(href, site.url).href, source: site.name, newspaper: site.newspaper };
+            }
+            return null;
+        }
+    },
+    axcel: {
+        name: 'Axcel',
+        url: 'https://axcel.com/news',
+        selector: 'div.news-mask a',
+        extract: (el, site) => ({
+            headline: el.find('h3').text().trim(),
+            link: new URL(el.attr('href'), site.url).href,
+            source: site.name,
+            newspaper: site.name
+        })
+    },
+    polaris: {
+        name: 'Polaris',
+        url: 'https://polarisequity.dk/news',
+        selector: 'div.fl-post-feed-post',
+        extract: (el, site) => {
+            const linkEl = el.find('h3.fl-post-feed-title a');
+            const headline = linkEl.text().trim();
+            const href = linkEl.attr('href');
+            if (headline && href) {
+                return { headline, link: new URL(href, site.url).href, source: site.name, newspaper: site.name };
+            }
+            return null;
+        }
+    },
+    finansavisen: {
+        name: 'Finansavisen',
+        url: 'https://www.finansavisen.no/',
+        newspaper: 'Finansavisen',
+        selector: 'article.dre-item a.dre-item__title',
+        extract: (el, site) => ({
+            headline: el.text().trim(),
+            link: new URL(el.attr('href'), site.url).href,
+            source: site.name,
+            newspaper: site.newspaper
+        })
+    },
+    finansavisen_kapital: {
+        name: 'Finansavisen Kapital',
+        url: 'https://www.finansavisen.no/kapital',
+        newspaper: 'Kapital',
+        selector: 'article.dre-item a.dre-item__title',
+        extract: (el, site) => ({
+            headline: el.text().trim(),
+            link: new URL(el.attr('href'), site.url).href,
+            source: site.name,
+            newspaper: site.newspaper
+        })
+    },
+    e24: {
+        name: 'E24',
+        url: 'https://e24.no/',
+        newspaper: 'E24',
+        selector: 'a._teaser_bizto_1',
+        extract: (el, site) => {
+            const headlineEl = el.find('h3._mainTitle_qsmm2_16').clone();
+            headlineEl.find('style').remove();
+            const headline = headlineEl.text().trim();
+            const href = el.attr('href');
+            if (headline && href) {
+                return { headline, link: new URL(href, site.url).href, source: site.name, newspaper: site.newspaper };
+            }
+            return null;
+        }
+    },
+    // NEW: Added Nordic Capital
+    nordic_capital: {
+        name: 'Nordic Capital',
+        url: 'https://www.nordiccapital.com/news-views/',
+        newspaper: 'Nordic Capital',
+        // Each news item is an article with a specific class, containing a link
+        selector: 'article.masonry-card--component a',
+        extract: (el, site) => {
+            const headline = el.find('h3').text().trim();
+            const href = el.attr('href');
+            if (headline && href) {
+                return {
+                    headline,
+                    link: new URL(href, site.url).href,
+                    source: site.name,
+                    newspaper: site.newspaper
+                };
+            }
+            return null;
+        }
+    },
 };
 
 export const TEXT_SELECTORS = {
   'Berlingske': '.article-body p',
-  'Børsen': '.article-content p',
-  'Politiken': 'section[data-track-meta*="article-body"] p',
+  'Børsen': '.article-content',
+  'Politiken': 'section#js-article-body .font-serif-body-20 p',
   'Finans.dk': 'p.container-text:not([class*="italic"])',
+  'DN.no': '.dn-article-top .lead, .dn-content .dn-text p',
+  'Axcel': 'div.article-content p',
+  'Polaris': 'div.fl-module-fl-post-content p',
+  'Finansavisen': '.c-article-regular__body__preamble, .c-article-regular__body p',
+  'Kapital': '.c-article-regular__body__preamble, .c-article-regular__body p',
+  'E24': 'article p[data-test-tag="lead-text"], article p.hyperion-css-1lemvax',
+  'Nordic Capital': '.multi-column-rich-text--content-block .block-content p',
 };
 
 # File: src/database.js
@@ -910,10 +1249,10 @@ export async function assessArticleContent(article) {
 
 export const instructionArticle = {
   whoYouAre:
-    'You are a private wealth relevance analyst specialized in Danish or Dutch media.',
+    'You are a private wealth relevance analyst specialized in Scandinavian media.',
 
   whatYouDo:
-    'You analyze full-text articles. Your primary goal is to identify if they report a direct, substantial private wealth event (over $30 million) benefiting private Danish or Dutch individuals or families. Additionally, you flag articles discussing significant business activities, strategies, or opinions expressed by known Danish/Dutch Rich List individuals concerning their core businesses, as these may have indirect or future wealth implications.',
+    'You analyze full-text articles. Your primary goal is to identify if they report a direct, substantial private wealth event (over $30 million) benefiting private Scandinavian individuals or families. Additionally, you flag articles discussing significant business activities, strategies, or opinions expressed by known Danish/Dutch Rich List individuals concerning their core businesses, as these may have indirect or future wealth implications.',
 
   writingStyle:
     'Use concise, factual English. Avoid speculation where possible, but acknowledge implied significance for Rich List individuals. Maintain formal tone.',
@@ -923,16 +1262,16 @@ export const instructionArticle = {
 
   guidelines: `
 Focus on:
-1.  **Direct Wealth Events**: Articles involving direct wealth transfers (company sales, IPOs, M&A, inheritances, significant asset sales) to named Danish or Dutch individuals/families where the new wealth clearly exceeds $30 million. This includes transactions within holding companies clearly owned by such families (e.g., KIRKBI, APMH Holding, Bestseller's holding company) where proceeds benefit the family. Obituaries of very wealthy individuals are also key.
+1.  **Direct Wealth Events**: Articles involving direct wealth transfers (company sales, IPOs, M&A, inheritances, significant asset sales) to named Scandinavian individuals/families where the new wealth clearly exceeds $30 million. This includes transactions within holding companies clearly owned by such families (e.g., KIRKBI, APMH Holding, Bestseller's holding company) where proceeds benefit the family. Obituaries of very wealthy individuals are also key.
 
-2.  **Rich List Individual Activity (SPECIAL ATTENTION)**: Articles featuring prominent Danish or Dutch Rich List individuals (e.g., **Martin Thorborg**, Anders Holch Povlsen, Kirk Kristiansen family members, etc.) discussing:
+2.  **Rich List Individual Activity (SPECIAL ATTENTION)**: Articles featuring prominent Scandinavian Rich List individuals (e.g., **Martin Thorborg**, Anders Holch Povlsen, Kirk Kristiansen family members, etc.) discussing:
     *   Significant strategic decisions for their main businesses.
     *   Major investments or divestments, even if the article doesn't explicitly state a >$30M personal gain but the context implies substantial financial activity.
     *   Interviews or detailed reports where they speak at length about their company's performance, market position, or future plans that could significantly impact their wealth.
     *   **For these Rich List cases, the $30M direct threshold can be relaxed if the activity is clearly significant to their primary wealth-generating entities or a substantial new venture.** The assessment should reflect *why* it's relevant due to their status and the nature of the discussion.
 
 Exclude any articles primarily about:
-- Companies or projects without a clearly identified private Danish or Dutch individual/family beneficiary (unless it's a known Rich List holding company).
+- Companies or projects without a clearly identified private Scandinavian individual/family beneficiary (unless it's a known Rich List holding company).
 - Foreign or institutional beneficiaries (unless it's an acquisition *from* a Danish/Dutch private owner).
 - Indirect economic impact, general market analysis, or company performance reports *unless* they directly quote a Rich List owner discussing significant strategic implications for their wealth/company.
 - Minor news, public appearances not related to core business strategy or major financial decisions.
@@ -970,26 +1309,26 @@ Score 0-29 for:
 export const instructionHeadlines = {
   whoYouAre: 'You are a financial news relevance analyst.',
   whatYouDo:
-    'You assess whether Danish or Dutch news headlines describe immediate, substantial private wealth events.',
+    'You assess whether Scandinavian news headlines describe immediate, substantial private wealth events.',
   guidelines: `
 Include only:
-- Major liquidity events for private Danish or Dutch individuals or families (e.g., company sales, IPOs benefiting founders, substantial asset sales) generating >$50M (or DKK/EUR equivalent).
-- Obituaries of ultra high net worth Danish or Dutch individuals leading to substantial wealth transfer/inheritance.
-- Significant transactions or capital events within privately-held/family-owned holding companies of Danish or Dutch rich list families that clearly indicate a substantial change in the family's private wealth (e.g., large dividend payouts from holding to family, sale of a major subsidiary by the holding company where proceeds directly benefit the family).
-- Any headlines directly indicating substantial (>$50M) wealth generation or transfer for Danish or Dutch rich list families or their primary business entities where the family is the clear beneficiary (e.g., "Bestseller owner Anders Holch Povlsen acquires major real estate portfolio for DKK 1 billion", "Grundfos owner foundation distributes DKK 500 million to Due Jensen family").
-- Significant real estate transactions (>$50M or DKK/EUR equivalent) involving clearly identified private Danish or Dutch individuals/families.
+- Major liquidity events for private Scandinavian individuals or families (e.g., company sales, IPOs benefiting founders, substantial asset sales) generating >$50M (or DKK/EUR equivalent).
+- Obituaries of ultra high net worth Scandinavian individuals leading to substantial wealth transfer/inheritance.
+- Significant transactions or capital events within privately-held/family-owned holding companies of Scandinavian rich list families that clearly indicate a substantial change in the family's private wealth (e.g., large dividend payouts from holding to family, sale of a major subsidiary by the holding company where proceeds directly benefit the family).
+- Any headlines directly indicating substantial (>$50M) wealth generation or transfer for Scandinavian rich list families or their primary business entities where the family is the clear beneficiary (e.g., "Bestseller owner Anders Holch Povlsen acquires major real estate portfolio for DKK 1 billion", "Grundfos owner foundation distributes DKK 500 million to Due Jensen family").
+- Significant real estate transactions (>$50M or DKK/EUR equivalent) involving clearly identified private Scandinavian individuals/families.
 - **SPECIAL ATTENTION**: News involving known Danish Rich List individuals like **Martin Thorborg**, Anders Holch Povlsen, the Kirk Kristiansen family (LEGO), the Holch Povlsen family (Bestseller), the Due Jensen family (Grundfos), the Louis-Hansen family (Coloplast), the Kasprzak family (ECCO) etc., especially related to their significant business activities, investments, or sales, should be scored with high relevance (70-100) if a wealth event is plausible, even if the exact amount is not stated but implied to be substantial. Examples include company sales/acquisitions, large personal investments. General commentary or public appearances are not relevant.
 
 Strictly exclude:
-- General corporate news such as expansions, new product launches, operational performance (profits/losses of publicly traded companies or even private companies unless it's a liquidity event for the owners), public fundraising, general tax changes, or non-private Danish or Dutch events unless directly tied to a rich list family's private wealth as per "Include only" criteria.
-- Headlines without direct, immediate, and substantial (>$50M) wealth impact for private Danish or Dutch individuals/families (unless it's a Rich List individual per "SPECIAL ATTENTION" rule where significance is implied).
+- General corporate news such as expansions, new product launches, operational performance (profits/losses of publicly traded companies or even private companies unless it's a liquidity event for the owners), public fundraising, general tax changes, or non-private Scandinavian events unless directly tied to a rich list family's private wealth as per "Include only" criteria.
+- Headlines without direct, immediate, and substantial (>$50M) wealth impact for private Scandinavian individuals/families (unless it's a Rich List individual per "SPECIAL ATTENTION" rule where significance is implied).
 - Foreign corporate or public institution activity, unless it's a direct acquisition/sale involving a Danish/Dutch private individual/family generating >$50M.
 - General market commentary, stock performance of public companies (unless it's an IPO benefiting founders significantly), or economic trends.
 - Philanthropic donations by foundations or individuals.
 - Appointments to boards or executive positions, even if highly paid.
 
 Relevance Scoring:
-- 90–100: Clear and substantial private wealth gain/transfer (>$50M or DKK/EUR equivalent) for Danish or Dutch individuals/families; news directly concerning Danish/Dutch rich list families (per "SPECIAL ATTENTION" list) and significant activities of their primary businesses or holding companies that clearly and immediately impact family wealth. Obituaries of UHNW Danish/Dutch individuals implying substantial wealth transfer.
+- 90–100: Clear and substantial private wealth gain/transfer (>$50M or DKK/EUR equivalent) for Scandinavian individuals/families; news directly concerning Danish/Dutch rich list families (per "SPECIAL ATTENTION" list) and significant activities of their primary businesses or holding companies that clearly and immediately impact family wealth. Obituaries of UHNW Danish/Dutch individuals implying substantial wealth transfer.
 - 70–89: Likely or partial substantial wealth gain or transaction (potentially >$50M, or an IPO of a significant family-owned/founded company where founders retain large stakes). News about significant investments/divestments by rich list family holdings where the direct private benefit to the family is strongly implied but not explicitly stated as >$50M immediately. For Rich List individuals (like Martin Thorborg), this score can apply if the event (e.g., "Martin Thorborg erkender: Kunstig intelligens kan...") suggests significant business involvement or strategy shift that could imply wealth impact, even if not a direct transaction headline.
 - 50–69: Moderate or indirect wealth gain (typically <$50M but still a clear private wealth event).
 - 30–49: Minor or future potential gain, or wealth event of unclear substantiality for a private individual/family.
@@ -2047,14 +2386,18 @@ async function fetchPage(url) {
             return null;
         }
     });
-    return result ? cheerio.load(result.data) : null;
+    // Return the response object which contains data
+    return result;
 }
 
 async function scrapeSite(site) {
     logger.debug(`Scraping headlines from ${site.name}`);
-    const $ = await fetchPage(site.url);
-    if (!$) return [];
+    const response = await fetchPage(site.url);
+    if (!response) return [];
+    
+    const $ = cheerio.load(response.data);
     let articles = [];
+
     if (site.useJsonLd) {
         $('script[type="application/ld+json"]').each((_, el) => {
             try {
@@ -2064,7 +2407,9 @@ async function scrapeSite(site) {
                         if (item.name && item.url) articles.push({ headline: item.name, link: item.url, source: site.name, newspaper: site.name });
                     });
                 }
-            } catch { /* ignore parse errors */ }
+            } catch (e) { 
+                logger.warn({ err: e, site: site.name }, `Failed to parse JSON-LD from ${site.name}`);
+            }
         });
     } else {
         $(site.selector).each((_, el) => {
@@ -2074,6 +2419,7 @@ async function scrapeSite(site) {
             }
         });
     }
+    
     const uniqueArticles = Array.from(new Map(articles.map(a => [a.link, a])).values());
     logger.info(`Scraped ${uniqueArticles.length} unique headlines from ${site.name}.`);
     return uniqueArticles;
@@ -2088,15 +2434,17 @@ export async function scrapeAllHeadlines() {
 
 export async function scrapeArticleContent(article) {
     logger.debug(`Enriching article: ${article.link}`);
-    const selector = TEXT_SELECTORS[article.source];
+    const newspaperName = article.newspaper || article.source;
+    const selector = TEXT_SELECTORS[newspaperName];
     if (!selector) {
-        logger.warn(`No text selector for source "${article.source}".`);
+        logger.warn(`No text selector for newspaper "${newspaperName}".`);
         return { ...article, enrichment_error: 'No selector' };
     }
-    const $ = await fetchPage(article.link);
-    if (!$) {
+    const pageResponse = await fetchPage(article.link);
+    if (!pageResponse) {
         return { ...article, enrichment_error: 'Failed to fetch page' };
     }
+    const $ = cheerio.load(pageResponse.data);
     const fullText = $(selector).map((_, el) => $(el).text()).get().join(' ').replace(/\s\s+/g, ' ').trim();
     if (fullText) {
         article.articleContent = { contents: [fullText] };
