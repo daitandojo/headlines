@@ -1,4 +1,4 @@
-// models/Article.js (version 2.0)
+// models/Article.js
 import mongoose from 'mongoose';
 
 const { Schema, model, models } = mongoose;
@@ -32,31 +32,22 @@ const ArticleSchema = new Schema(
     relevance_article: { type: Number, required: false, min: 0, max: 100 },
     assessment_article: { type: String, required: false, trim: true },
     amount: { type: Number, required: false },
-    contacts: { type: [String], required: false, default: [] },
+    key_individuals: [{
+        name: String,
+        role_in_event: String,
+        company: String,
+        email_suggestion: { type: String, required: false }, // NEW FIELD
+    }],
     background: { type: String, required: false, trim: true },
     error: { type: String, required: false, trim: true, default: null },
-    enrichment_error: {
-      type: String,
-      required: false,
-      trim: true,
-      default: null,
-    },
-    storage_error_initial_headline_data: {
-      type: String,
-      required: false,
-      trim: true,
-      default: null,
-    },
+    enrichment_error: { type: String, required: false, trim: true, default: null },
+    storage_error_initial_headline_data: { type: String, required: false, trim: true, default: null },
     db_operation_status: { type: String, required: false, trim: true },
     db_error_reason: { type: String, required: false, trim: true },
     emailed: { type: Boolean, default: false },
     email_error: { type: String, required: false, trim: true, default: null },
-    email_skipped_reason: {
-      type: String,
-      required: false,
-      trim: true,
-      default: null,
-    },
+    email_skipped_reason: { type: String, required: false, trim: true, default: null },
+    embedding: { type: [Number], required: false },
   },
   {
     timestamps: true,

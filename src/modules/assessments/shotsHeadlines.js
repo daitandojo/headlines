@@ -8,16 +8,16 @@ export const shotsInput = [
     'Boligejere med for stor grundskyldsregning har udsigt til hjælp',
     'Kriseramte Boeing vil rejse milliarder for at tilbagebetale gæld',
     'Aarstiderne solgt til gigant',
-    'Danish family sells company for $500M',
+    'Nordic family sells company for $500M',
   ].join('\n- '),
 
   [
     'Local football match results',
-    'New Danish tech startup launched',
+    'New Nordic tech startup launched',
     'Vestas CEO buys shares',
     'Vestas CEO sells significant shares',
     'Maersk heir sells estate in Copenhagen',
-    'Danish lottery winner claims prize',
+    'Nordic lottery winner claims prize',
   ].join('\n- '),
 
   [
@@ -50,12 +50,12 @@ export const shotsOutput = [
       {
         relevance_headline: 10,
         assessment_headline:
-          'Corporate expansion (Rockwool is public), no direct private wealth generation for Danish individuals.',
+          'Corporate expansion (Rockwool is public), no direct private wealth generation for Nordic individuals.',
       },
       {
         relevance_headline: 0,
         assessment_headline:
-          'Foreign corporate activity, no relevance to Danish private wealth.',
+          'Foreign corporate activity, no relevance to Nordic private wealth.',
       },
       {
         relevance_headline: 20,
@@ -65,17 +65,17 @@ export const shotsOutput = [
       {
         relevance_headline: 0,
         assessment_headline:
-          'Foreign corporate debt repayment, no relevance to Danish private wealth.',
+          'Foreign corporate debt repayment, no relevance to Nordic private wealth.',
       },
       {
         relevance_headline: 95,
         assessment_headline:
-          'Acquisition likely results in substantial wealth for Danish founders/owners.',
+          'Acquisition likely results in substantial wealth for Nordic founders/owners.',
       },
       {
         relevance_headline: 100,
         assessment_headline:
-          'Clear substantial private wealth event for Danish family.',
+          'Clear substantial private wealth event for Nordic family.',
       },
     ],
   }),
@@ -100,7 +100,7 @@ export const shotsOutput = [
       {
         relevance_headline: 95,
         assessment_headline:
-          "Clear wealth event (>$50M implied by 'Maersk heir' and 'estate in Copenhagen') benefiting Danish private individual.",
+          "Clear wealth event (>$50M implied by 'Maersk heir' and 'estate in Copenhagen') benefiting Nordic private individual.",
       },
       {
         relevance_headline: 50,
@@ -129,7 +129,7 @@ export const shotsOutput = [
       {
         relevance_headline: 70,
         assessment_headline:
-          'Merger of two significant Danish-founded (though Sivantos/Widex is now WS Audiology, part foreign-owned) companies, potential for substantial wealth implications for any remaining Danish private owners if value is realized.',
+          'Merger of two significant Nordic-founded (though Sivantos/Widex is now WS Audiology, part foreign-owned) companies, potential for substantial wealth implications for any remaining Nordic private owners if value is realized.',
       },
       {
         relevance_headline: 0,
@@ -139,7 +139,7 @@ export const shotsOutput = [
       {
         relevance_headline: 80,
         assessment_headline:
-          'Potential substantial private wealth event if IPO proceeds benefit Danish founders/owners significantly.',
+          'Potential substantial private wealth event if IPO proceeds benefit Nordic founders/owners significantly.',
       },
     ],
   }),
@@ -153,7 +153,7 @@ export const shotsOutput = [
       {
         relevance_headline: 95,
         assessment_headline:
-          'Clear substantial private wealth event for the Danish Due Jensen family via distribution from their foundation.',
+          'Clear substantial private wealth event for the Nordic Due Jensen family via distribution from their foundation.',
       },
       {
         relevance_headline: 0,
@@ -163,7 +163,7 @@ export const shotsOutput = [
       {
         relevance_headline: 90,
         assessment_headline:
-          'Substantial personal acquisition by Danish rich list individual Anders Holch Povlsen, a clear private wealth event.',
+          'Substantial personal acquisition by Nordic rich list individual Anders Holch Povlsen, a clear private wealth event.',
       },
       {
         relevance_headline: 10,

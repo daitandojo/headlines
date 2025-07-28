@@ -7,6 +7,7 @@ function createArticleCard(article) {
         link,
         headline,
         source,
+        contacts,
         summary,
         assessmentText,
         relevanceScore,
@@ -15,12 +16,17 @@ function createArticleCard(article) {
 
     const scoreColor = relevanceScore >= 80 ? '#27ae60' : relevanceScore >= 50 ? '#f39c12' : '#c0392b';
 
+    const contactsHtml = (contacts && contacts.length > 0)
+        ? `<p style="margin: 0 0 15px; font-size: 14px; color: #555;"><strong>Contacts:</strong> ${contacts.join(', ')}</p>`
+        : '';
+
     return `
     <div style="border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 20px; padding: 20px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 18px; color: #333;">
             <a href="${link}" style="color: #007bff; text-decoration: none;">${headline}</a>
         </h3>
         <p style="margin: 0 0 15px; font-size: 14px; color: #777;"><strong>Source:</strong> ${source}</p>
+        ${contactsHtml}
         <p style="margin: 0 0 15px; font-size: 15px; color: #555; line-height: 1.6;">${summary}</p>
         <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
             <p style="margin: 0; font-size: 14px; color: #333;">
@@ -44,6 +50,7 @@ export function formatArticleForEmail(article) {
         link: article.link,
         headline: article.headline,
         source: article.source || article.newspaper || 'N/A',
+        contacts: article.contacts || [],
         summary: 'No summary available.',
         assessmentText: article.assessment_article || article.assessment_headline || 'Assessment not available.',
         relevanceScore: article.relevance_article ?? article.relevance_headline ?? 'N/A',

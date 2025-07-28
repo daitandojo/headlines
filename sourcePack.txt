@@ -150,7 +150,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Headlines-Mongo** is a news processing application that scrapes Danish business news (Børsen, Berlingske, Politiken, Finans.dk), assesses relevance using AI/LLM, and sends curated newsletters via email. The application is deployed on Fly.io and is designed to be triggered by a scheduler.
+**Headlines-Mongo** is a news processing application that scrapes Nordic business news (Børsen, Berlingske, Politiken, Finans.dk), assesses relevance using AI/LLM, and sends curated newsletters via email. The application is deployed on Fly.io and is designed to be triggered by a scheduler.
 
 ## Architecture
 
@@ -172,7 +172,7 @@ All processing is done within the `runPipeline` function call.
 ### Key Files
 - `app.js`: Main application entry point. Sets up the environment and triggers the pipeline.
 - `app-logic.js`: Contains the `runPipeline` function which orchestrates the entire data processing flow from start to finish.
-- `src/config/sources.js`: Web scraping configuration for Danish news sites.
+- `src/config/sources.js`: Web scraping configuration for Nordic news sites.
 - `src/config/env.js`: Centralized module for reading and exporting all environment variables.
 - `src/config/email.js`: SMTP and email content configuration.
 
@@ -960,7 +960,7 @@ export const SEND_TO_DEFAULT_SUPERVISOR = SEND_TO_DEFAULT_SUPERVISOR_ENV;
 // --- Email Template Config ---
 export const EMAIL_CONFIG = {
   templateName: 'wealthEvents',
-  subject: '🇩🇰 New Danish Banking Opportunities Detected',
+  subject: '🇩🇰 New Nordic Banking Opportunities Detected',
   language: 'en',
   brandName: 'Wealth Watch Denmark',
   companyAddress: 'Wealth Watch Inc., Copenhagen, Denmark',
@@ -1318,7 +1318,7 @@ export const instructionArticle = {
     'You are a private wealth relevance analyst specialized in Scandinavian media.',
 
   whatYouDo:
-    'You analyze full-text articles. Your primary goal is to identify if they report a direct, substantial private wealth event (over $30 million) benefiting private Scandinavian individuals or families. Additionally, you flag articles discussing significant business activities, strategies, or opinions expressed by known Danish/Dutch Rich List individuals concerning their core businesses, as these may have indirect or future wealth implications.',
+    'You analyze full-text articles. Your primary goal is to identify if they report a direct, substantial private wealth event (over $30 million) benefiting private Scandinavian individuals or families. Additionally, you flag articles discussing significant business activities, strategies, or opinions expressed by known Nordic Rich List individuals concerning their core businesses, as these may have indirect or future wealth implications.',
 
   writingStyle:
     'Use concise, factual English. Avoid speculation where possible, but acknowledge implied significance for Rich List individuals. Maintain formal tone.',
@@ -1338,7 +1338,7 @@ Focus on:
 
 Exclude any articles primarily about:
 - Companies or projects without a clearly identified private Scandinavian individual/family beneficiary (unless it's a known Rich List holding company).
-- Foreign or institutional beneficiaries (unless it's an acquisition *from* a Danish/Dutch private owner).
+- Foreign or institutional beneficiaries (unless it's an acquisition *from* a Nordic private owner).
 - Indirect economic impact, general market analysis, or company performance reports *unless* they directly quote a Rich List owner discussing significant strategic implications for their wealth/company.
 - Minor news, public appearances not related to core business strategy or major financial decisions.
 - Philanthropy.
@@ -1346,7 +1346,7 @@ Exclude any articles primarily about:
 
   scoring: `
 Score 90-100 for:
--   Clear, direct wealth events >$30M for Danish/Dutch individuals/families.
+-   Clear, direct wealth events >$30M for Nordic individuals/families.
 -   Articles detailing significant business activities or strategic pronouncements by top-tier Rich List individuals (e.g., Martin Thorborg discussing a major pivot for Dinero/Visma, Anders Holch Povlsen on Bestseller's global strategy that has clear financial scale). The assessment should note "High relevance due to [Rich List Person]'s strategic involvement with [Company/Venture]."
 
 Score 70-89 for:
@@ -1361,7 +1361,7 @@ Score 0-29 for:
 `,
 
   vitals:
-    'If the article references "Goldman Sachs", "London" or "Morgan Stanley" in the context of a deal involving Danish/Dutch private entities, it MUST be scored 100 for relevance_article. Pay extremely close attention to articles involving known Danish/Dutch Rich List individuals and their core business activities; these are often highly relevant even if not a direct sale announcement.',
+    'If the article references "Goldman Sachs", "London" or "Morgan Stanley" in the context of a deal involving Nordic private entities, it MUST be scored 100 for relevance_article. Pay extremely close attention to articles involving known Nordic Rich List individuals and their core business activities; these are often highly relevant even if not a direct sale announcement.',
 
   promptingTips:
     'Break down article structure: identify named subjects, companies. Determine if personal wealth was created or if a Rich List individual is making significant strategic statements about their business. For Rich List individuals, consider the *implication* of their statements/actions on their wealth and businesses, not just explicit transaction amounts.',
@@ -1383,18 +1383,18 @@ Include only:
 - Significant transactions or capital events within privately-held/family-owned holding companies of Scandinavian rich list families that clearly indicate a substantial change in the family's private wealth (e.g., large dividend payouts from holding to family, sale of a major subsidiary by the holding company where proceeds directly benefit the family).
 - Any headlines directly indicating substantial (>$50M) wealth generation or transfer for Scandinavian rich list families or their primary business entities where the family is the clear beneficiary (e.g., "Bestseller owner Anders Holch Povlsen acquires major real estate portfolio for DKK 1 billion", "Grundfos owner foundation distributes DKK 500 million to Due Jensen family").
 - Significant real estate transactions (>$50M or DKK/EUR equivalent) involving clearly identified private Scandinavian individuals/families.
-- **SPECIAL ATTENTION**: News involving known Danish Rich List individuals like **Martin Thorborg**, Anders Holch Povlsen, the Kirk Kristiansen family (LEGO), the Holch Povlsen family (Bestseller), the Due Jensen family (Grundfos), the Louis-Hansen family (Coloplast), the Kasprzak family (ECCO) etc., especially related to their significant business activities, investments, or sales, should be scored with high relevance (70-100) if a wealth event is plausible, even if the exact amount is not stated but implied to be substantial. Examples include company sales/acquisitions, large personal investments. General commentary or public appearances are not relevant.
+- **SPECIAL ATTENTION**: News involving known Nordic Rich List individuals like **Martin Thorborg**, Anders Holch Povlsen, the Kirk Kristiansen family (LEGO), the Holch Povlsen family (Bestseller), the Due Jensen family (Grundfos), the Louis-Hansen family (Coloplast), the Kasprzak family (ECCO) etc., especially related to their significant business activities, investments, or sales, should be scored with high relevance (70-100) if a wealth event is plausible, even if the exact amount is not stated but implied to be substantial. Examples include company sales/acquisitions, large personal investments. General commentary or public appearances are not relevant.
 
 Strictly exclude:
 - General corporate news such as expansions, new product launches, operational performance (profits/losses of publicly traded companies or even private companies unless it's a liquidity event for the owners), public fundraising, general tax changes, or non-private Scandinavian events unless directly tied to a rich list family's private wealth as per "Include only" criteria.
 - Headlines without direct, immediate, and substantial (>$50M) wealth impact for private Scandinavian individuals/families (unless it's a Rich List individual per "SPECIAL ATTENTION" rule where significance is implied).
-- Foreign corporate or public institution activity, unless it's a direct acquisition/sale involving a Danish/Dutch private individual/family generating >$50M.
+- Foreign corporate or public institution activity, unless it's a direct acquisition/sale involving a Nordic private individual/family generating >$50M.
 - General market commentary, stock performance of public companies (unless it's an IPO benefiting founders significantly), or economic trends.
 - Philanthropic donations by foundations or individuals.
 - Appointments to boards or executive positions, even if highly paid.
 
 Relevance Scoring:
-- 90–100: Clear and substantial private wealth gain/transfer (>$50M or DKK/EUR equivalent) for Scandinavian individuals/families; news directly concerning Danish/Dutch rich list families (per "SPECIAL ATTENTION" list) and significant activities of their primary businesses or holding companies that clearly and immediately impact family wealth. Obituaries of UHNW Danish/Dutch individuals implying substantial wealth transfer.
+- 90–100: Clear and substantial private wealth gain/transfer (>$50M or DKK/EUR equivalent) for Scandinavian individuals/families; news directly concerning Nordic rich list families (per "SPECIAL ATTENTION" list) and significant activities of their primary businesses or holding companies that clearly and immediately impact family wealth. Obituaries of UHNW Nordic individuals implying substantial wealth transfer.
 - 70–89: Likely or partial substantial wealth gain or transaction (potentially >$50M, or an IPO of a significant family-owned/founded company where founders retain large stakes). News about significant investments/divestments by rich list family holdings where the direct private benefit to the family is strongly implied but not explicitly stated as >$50M immediately. For Rich List individuals (like Martin Thorborg), this score can apply if the event (e.g., "Martin Thorborg erkender: Kunstig intelligens kan...") suggests significant business involvement or strategy shift that could imply wealth impact, even if not a direct transaction headline.
 - 50–69: Moderate or indirect wealth gain (typically <$50M but still a clear private wealth event).
 - 30–49: Minor or future potential gain, or wealth event of unclear substantiality for a private individual/family.
@@ -1402,7 +1402,7 @@ Relevance Scoring:
 `,
   scoring: `
 Examples of High Relevance (90–100):
-- "Danish family sells tech company for EUR 150M"
+- "Nordic family sells tech company for EUR 150M"
 - "LEGO heir passes away leaving substantial estate"
 - "Founders of Dutch fintech Adyen see wealth soar after IPO with EUR 500M personal gain"
 - "Grundfos owner Poul Due Jensen's family holding company, KIRKBI A/S, acquires significant UK property portfolio for DKK 2 billion"
@@ -1425,7 +1425,7 @@ Examples of Low Relevance (0–29):
 `,
   vitals: `
 VITAL: Any mention of "Goldman Sachs" or "Morgan Stanley" or "London" must result in a relevance score of 100.
-**VITAL: Headlines mentioning names from the Danish/Dutch Rich List (e.g., Martin Thorborg, Holch Povlsen, Kirk Kristiansen) involved in significant business transactions, strategy announcements for their core businesses, or substantial investments should be considered highly relevant (score 70-100). General commentary or public appearances are low relevance.**
+**VITAL: Headlines mentioning names from the Nordic Rich List (e.g., Martin Thorborg, Holch Povlsen, Kirk Kristiansen) involved in significant business transactions, strategy announcements for their core businesses, or substantial investments should be considered highly relevant (score 70-100). General commentary or public appearances are low relevance.**
 `,
   outputFormatDescription: `
 Respond in English with a valid JSON object, exactly formatted like below.
@@ -1443,7 +1443,7 @@ NEVER RETURN A PLAIN ARRAY.
   writingStyle: 'Be precise and analytical. Use clear financial terminology.',
   reiteration: 'All assessments must adhere to the criteria above. Pay special attention to Rich List individuals and their business activities.',
   promptingTips:
-    'Reflect on wealth creation context. Distinguish between corporate performance and direct private wealth events for individuals/families. Apply scoring rules carefully. Explicitly consider if named individuals are on the Danish/Dutch Rich List and if the news relates to their core business or significant financial activities.',
+    'Reflect on wealth creation context. Distinguish between corporate performance and direct private wealth events for individuals/families. Apply scoring rules carefully. Explicitly consider if named individuals are on the Nordic Rich List and if the news relates to their core business or significant financial activities.',
 };
 
 # File: src/modules/assessments/shotsArticle.js
@@ -1456,18 +1456,18 @@ export const shotsInput = [
     articleText:
       'Many homeowners will see lower property taxes in 2025 and 2026',
   },
-  { articleText: 'Danish family sells company for $500M' },
+  { articleText: 'Nordic family sells company for $500M' },
   { articleText: 'Harald Nyborg billionaire establishes new discount chain' },
   {
     articleText:
       'New green energy plant in Esbjerg to produce climate-friendly hydrogen',
   },
   { articleText: 'Homeowners to receive tax relief in 2025' },
-  { articleText: 'CEO of family-owned Danish tech firm sells for $120M' },
-  { articleText: 'Danish logistics company IPO to benefit founder' },
+  { articleText: 'CEO of family-owned Nordic tech firm sells for $120M' },
+  { articleText: 'Nordic logistics company IPO to benefit founder' },
   { articleText: 'Rockwool plans massive global expansions' },
   {
-    articleText: 'Danish Crowns fyringsrunde er gået hårdt ud over hovedsædet',
+    articleText: 'Nordic Crowns fyringsrunde er gået hårdt ud over hovedsædet',
   },
   { articleText: 'Boeing raises $19 billion to repay debts' },
   {
@@ -1475,12 +1475,12 @@ export const shotsInput = [
   },
   { articleText: 'Crisis-hit Boeing plans to raise billions to repay debt' },
   { articleText: 'Novo Nordisk Foundation profits from new obesity drug' },
-  { articleText: 'Danish billionaire invests in U.S. tech startup' },
+  { articleText: 'Nordic billionaire invests in U.S. tech startup' },
   { articleText: 'Maersk Group reports 30% revenue increase' },
   {
-    articleText: 'Danish entrepreneur inherits $60 million from family estate',
+    articleText: 'Nordic entrepreneur inherits $60 million from family estate',
   },
-  { articleText: 'Foreign investor buys stake in Danish public company' },
+  { articleText: 'Foreign investor buys stake in Nordic public company' },
 ];
 
 // --- KEY FIX: All shot outputs for a JSON response must be a STRINGIFIED JSON object. ---
@@ -1501,10 +1501,10 @@ export const shotsOutput = [
     topic: 'Aarstiderne sold to giant',
     relevance_article: 95,
     category: 1,
-    assessment_article: 'Clear private wealth event for Danish founders.',
+    assessment_article: 'Clear private wealth event for Nordic founders.',
     amount: 100,
     contacts: ['Søren Ejlersen'],
-    background: 'Sale of private Danish company.',
+    background: 'Sale of private Nordic company.',
   }),
   JSON.stringify({
     topic: 'Property tax cuts for homeowners',
@@ -1516,11 +1516,11 @@ export const shotsOutput = [
     background: 'Policy affecting many, not enriching individuals.',
   }),
   JSON.stringify({
-    topic: 'Danish family sells company for $500M',
+    topic: 'Nordic family sells company for $500M',
     relevance_article: 100,
     category: 1,
     assessment_article:
-      'Substantial wealth event clearly benefiting a Danish family.',
+      'Substantial wealth event clearly benefiting a Nordic family.',
     amount: 500,
     contacts: ['Family Name'],
     background: 'Private business transaction.',
@@ -1558,13 +1558,13 @@ export const shotsOutput = [
     relevance_article: 95,
     category: 1,
     assessment_article:
-      'Substantial wealth event for private Danish individual.',
+      'Substantial wealth event for private Nordic individual.',
     amount: 120,
     contacts: ['CEO Name'],
     background: 'Private tech company acquisition.',
   }),
   JSON.stringify({
-    topic: 'IPO benefits Danish logistics founder',
+    topic: 'IPO benefits Nordic logistics founder',
     relevance_article: 90,
     category: 1,
     assessment_article: 'Clear private wealth generation through IPO.',
@@ -1582,7 +1582,7 @@ export const shotsOutput = [
     background: 'Public company operations.',
   }),
   JSON.stringify({
-    topic: 'Danish Crown layoffs',
+    topic: 'Nordic Crown layoffs',
     relevance_article: 0,
     category: 0,
     assessment_article: 'No wealth event present.',
@@ -1595,7 +1595,7 @@ export const shotsOutput = [
     relevance_article: 0,
     category: 0,
     assessment_article:
-      'Foreign financial activity irrelevant to Danish private wealth.',
+      'Foreign financial activity irrelevant to Nordic private wealth.',
     amount: 0,
     contacts: [],
     background: 'U.S. corporate strategy.',
@@ -1624,13 +1624,13 @@ export const shotsOutput = [
     relevance_article: 10,
     category: 0,
     assessment_article:
-      'Institutional profit, no personal Danish wealth event.',
+      'Institutional profit, no personal Nordic wealth event.',
     amount: 0,
     contacts: [],
     background: 'Public foundation income.',
   }),
   JSON.stringify({
-    topic: 'Danish billionaire invests abroad',
+    topic: 'Nordic billionaire invests abroad',
     relevance_article: 20,
     category: 0,
     assessment_article: 'Investment activity without clear wealth increase.',
@@ -1649,7 +1649,7 @@ export const shotsOutput = [
     background: 'Listed company performance.',
   }),
   JSON.stringify({
-    topic: 'Danish entrepreneur inherits $60M',
+    topic: 'Nordic entrepreneur inherits $60M',
     relevance_article: 95,
     category: 1,
     assessment_article: 'Direct substantial wealth transfer via inheritance.',
@@ -1658,10 +1658,10 @@ export const shotsOutput = [
     background: 'Family wealth transition.',
   }),
   JSON.stringify({
-    topic: 'Foreign investor buys Danish shares',
+    topic: 'Foreign investor buys Nordic shares',
     relevance_article: 10,
     category: 0,
-    assessment_article: 'No direct benefit to Danish individuals.',
+    assessment_article: 'No direct benefit to Nordic individuals.',
     amount: 0,
     contacts: [],
     background: 'Public market transaction.',
@@ -1680,16 +1680,16 @@ export const shotsInput = [
     'Boligejere med for stor grundskyldsregning har udsigt til hjælp',
     'Kriseramte Boeing vil rejse milliarder for at tilbagebetale gæld',
     'Aarstiderne solgt til gigant',
-    'Danish family sells company for $500M',
+    'Nordic family sells company for $500M',
   ].join('\n- '),
 
   [
     'Local football match results',
-    'New Danish tech startup launched',
+    'New Nordic tech startup launched',
     'Vestas CEO buys shares',
     'Vestas CEO sells significant shares',
     'Maersk heir sells estate in Copenhagen',
-    'Danish lottery winner claims prize',
+    'Nordic lottery winner claims prize',
   ].join('\n- '),
 
   [
@@ -1722,12 +1722,12 @@ export const shotsOutput = [
       {
         relevance_headline: 10,
         assessment_headline:
-          'Corporate expansion (Rockwool is public), no direct private wealth generation for Danish individuals.',
+          'Corporate expansion (Rockwool is public), no direct private wealth generation for Nordic individuals.',
       },
       {
         relevance_headline: 0,
         assessment_headline:
-          'Foreign corporate activity, no relevance to Danish private wealth.',
+          'Foreign corporate activity, no relevance to Nordic private wealth.',
       },
       {
         relevance_headline: 20,
@@ -1737,17 +1737,17 @@ export const shotsOutput = [
       {
         relevance_headline: 0,
         assessment_headline:
-          'Foreign corporate debt repayment, no relevance to Danish private wealth.',
+          'Foreign corporate debt repayment, no relevance to Nordic private wealth.',
       },
       {
         relevance_headline: 95,
         assessment_headline:
-          'Acquisition likely results in substantial wealth for Danish founders/owners.',
+          'Acquisition likely results in substantial wealth for Nordic founders/owners.',
       },
       {
         relevance_headline: 100,
         assessment_headline:
-          'Clear substantial private wealth event for Danish family.',
+          'Clear substantial private wealth event for Nordic family.',
       },
     ],
   }),
@@ -1772,7 +1772,7 @@ export const shotsOutput = [
       {
         relevance_headline: 95,
         assessment_headline:
-          "Clear wealth event (>$50M implied by 'Maersk heir' and 'estate in Copenhagen') benefiting Danish private individual.",
+          "Clear wealth event (>$50M implied by 'Maersk heir' and 'estate in Copenhagen') benefiting Nordic private individual.",
       },
       {
         relevance_headline: 50,
@@ -1801,7 +1801,7 @@ export const shotsOutput = [
       {
         relevance_headline: 70,
         assessment_headline:
-          'Merger of two significant Danish-founded (though Sivantos/Widex is now WS Audiology, part foreign-owned) companies, potential for substantial wealth implications for any remaining Danish private owners if value is realized.',
+          'Merger of two significant Nordic-founded (though Sivantos/Widex is now WS Audiology, part foreign-owned) companies, potential for substantial wealth implications for any remaining Nordic private owners if value is realized.',
       },
       {
         relevance_headline: 0,
@@ -1811,7 +1811,7 @@ export const shotsOutput = [
       {
         relevance_headline: 80,
         assessment_headline:
-          'Potential substantial private wealth event if IPO proceeds benefit Danish founders/owners significantly.',
+          'Potential substantial private wealth event if IPO proceeds benefit Nordic founders/owners significantly.',
       },
     ],
   }),
@@ -1825,7 +1825,7 @@ export const shotsOutput = [
       {
         relevance_headline: 95,
         assessment_headline:
-          'Clear substantial private wealth event for the Danish Due Jensen family via distribution from their foundation.',
+          'Clear substantial private wealth event for the Nordic Due Jensen family via distribution from their foundation.',
       },
       {
         relevance_headline: 0,
@@ -1835,7 +1835,7 @@ export const shotsOutput = [
       {
         relevance_headline: 90,
         assessment_headline:
-          'Substantial personal acquisition by Danish rich list individual Anders Holch Povlsen, a clear private wealth event.',
+          'Substantial personal acquisition by Nordic rich list individual Anders Holch Povlsen, a clear private wealth event.',
       },
       {
         relevance_headline: 10,

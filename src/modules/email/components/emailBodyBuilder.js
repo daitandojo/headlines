@@ -1,8 +1,8 @@
-// src/modules/email/components/emailBodyBuilder.js (version 2.0)
+// src/modules/email/components/emailBodyBuilder.js
 import { logger } from '../../../utils/logger.js';
 import { EMAIL_CONFIG } from '../../../config/index.js';
 import { LOGO_URL } from '../constants.js';
-import { formatArticleForEmail } from './articleFormatter.js';
+import { formatEventForEmail } from './eventFormatter.js';
 
 function createEmailWrapper(bodyContent) {
     return `
@@ -31,13 +31,13 @@ function createEmailWrapper(bodyContent) {
     </html>`;
 }
 
-export function createEmailBody(articles) {
-    if (!Array.isArray(articles) || articles.length === 0) {
-        logger.warn('createEmailBody: No articles provided to build email body.');
+export function createEmailBody(events) {
+    if (!Array.isArray(events) || events.length === 0) {
+        logger.warn('createEmailBody: No events provided to build email body.');
         return null;
     }
 
-    const formattedArticlesHtml = articles.map(formatArticleForEmail).join('');
+    const formattedEventsHtml = events.map(formatEventForEmail).join('');
 
     const mainContent = `
         <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eeeeee;">
@@ -47,9 +47,9 @@ export function createEmailBody(articles) {
         <p style="font-size: 16px; color: #555555; text-align: left;">
             Good morning,
             <br><br>
-            Here are the latest potential wealth events identified by the system for your review:
+            Here are the latest potential wealth events identified and synthesized by the system:
         </p>
-        ${formattedArticlesHtml}
+        ${formattedEventsHtml}
         <p style="font-size: 16px; color: #555555; text-align: left;">
             Best Regards,<br>The Wealth Insight Team
         </p>

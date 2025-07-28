@@ -1,14 +1,14 @@
 # Headlines-Mongo
 
-An intelligent Danish business news processing application that scrapes, analyzes, and delivers curated newsletters based on relevance scoring powered by Large Language Models (LLM).
+An intelligent Nordic business news processing application that scrapes, analyzes, and delivers curated newsletters based on relevance scoring powered by Large Language Models (LLM).
 
 ## Overview
 
-This application monitors Danish business news sources (Børsen, Berlingske, Politiken, Finans.dk) for relevant content, uses AI to assess article relevance, and delivers curated newsletters via email.
+This application monitors Nordic business news sources (Børsen, Berlingske, Politiken, Finans.dk) for relevant content, uses AI to assess article relevance, and delivers curated newsletters via email.
 
 ## Features
 
-- **Multi-source News Scraping**: Configurable web scraping from major Danish business publications
+- **Multi-source News Scraping**: Configurable web scraping from major Nordic business publications
 - **AI-Powered Relevance Scoring**: Uses LLM to evaluate headline and article content relevance
 - **Automated Newsletter Delivery**: Curated email newsletters sent to configurable recipients
 - **Queue-based Processing**: Uses Redis for reliable background email delivery

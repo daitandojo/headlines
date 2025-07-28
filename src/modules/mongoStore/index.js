@@ -1,8 +1,9 @@
-// src/modules/mongoStore/index.js (version 1.0)
+// src/modules/mongoStore/index.js
 import Article from '../../../models/Article.js';
 import { logger } from '../../utils/logger.js';
 import { truncateString } from '../../utils/helpers.js';
-import { MIN_HEADLINE_CHARS, MAX_HEADLINE_CHARS } from '../../config/index.js';
+import { generateEmbedding } from '../../utils/vectorUtils.js';
+import { MIN_HEADLINE_CHARS, MAX_HEADLINE_CHARS, IS_REFRESH_MODE } from '../../config/index.js';
 
 function validateInitialArticle(article) {
     if (!article || typeof article !== 'object') return 'Article object is invalid.';
@@ -10,12 +11,21 @@ function validateInitialArticle(article) {
     if (article.headline.length > MAX_HEADLINE_CHARS) return `Headline is too long (max ${MAX_HEADLINE_CHARS}).`;
     if (!article.link || !article.link.startsWith('http')) return 'Link is invalid.';
     if (!article.newspaper) return 'Newspaper field is missing.';
-    if (typeof article.relevance_headline !== 'number') return 'relevance_headline is missing.';
     return null;
 }
 
 export async function filterFreshArticles(articles) {
     if (!articles || articles.length === 0) return [];
+
+    // CRITICAL FIX: In refresh mode, we must fetch the full existing documents
+    // for the scraped articles to ensure they have an _id and can be processed.
+    if (IS_REFRESH_MODE) {
+        logger.warn('REFRESH MODE: Re-fetching all scraped articles from DB to re-process.');
+        const links = articles.map(a => a.link);
+        const refreshedArticles = await Article.find({ link: { $in: links } }).lean();
+        logger.info(`Found ${refreshedArticles.length} existing articles to refresh.`);
+        return refreshedArticles;
+    }
     
     const links = articles.map(a => a.link);
     const existingArticles = await Article.find({ link: { $in: links } }).select('link').lean();
@@ -27,68 +37,84 @@ export async function filterFreshArticles(articles) {
 }
 
 export async function storeInitialHeadlineData(articles) {
-    const operations = [];
-    const articlesWithStatus = articles.map(article => {
+    const articlesToProcess = [];
+    
+    for (const article of articles) {
         const validationError = validateInitialArticle(article);
         if (validationError) {
-            logger.warn(`Initial validation failed for "${article.headline}": ${validationError}`);
-            return { ...article, storage_error_initial_headline_data: validationError };
+            logger.warn(`Initial validation failed for "${truncateString(article.headline, 50)}": ${validationError}`);
+            continue;
         }
-
-        operations.push({
-            updateOne: {
-                filter: { link: article.link },
-                update: {
-                    $set: {
-                        headline: article.headline,
-                        link: article.link,
-                        newspaper: article.newspaper,
-                        source: article.source,
-                        relevance_headline: article.relevance_headline,
-                        assessment_headline: article.assessment_headline,
-                        raw: article.raw,
-                    },
-                    $setOnInsert: { createdAt: new Date() }
-                },
-                upsert: true,
-            },
-        });
-        return { ...article, storage_error_initial_headline_data: null };
-    });
-
-    if (operations.length > 0) {
-        try {
-            logger.info(`Storing initial data for ${operations.length} headlines via bulk write.`);
-            await Article.bulkWrite(operations);
-        } catch (error) {
-            logger.error({ err: error }, 'Bulk write operation failed for initial data.');
-            // This is a broad error assignment, but sufficient for supervisor report
-            return articlesWithStatus.map(a => ({ ...a, storage_error_initial_headline_data: 'Bulk DB operation failed.' }));
-        }
+        articlesToProcess.push(article);
     }
 
-    return articlesWithStatus;
+    if (articlesToProcess.length === 0) {
+        logger.info('No valid new articles to store.');
+        return [];
+    }
+
+    const operations = [];
+    for (const article of articlesToProcess) {
+        const textToEmbed = article.headline;
+        const embedding = await generateEmbedding(textToEmbed);
+
+        operations.push({
+            insertOne: {
+                document: {
+                    ...article,
+                    embedding,
+                    relevance_headline: 0,
+                    assessment_headline: 'Awaiting assessment',
+                }
+            }
+        });
+    }
+
+    try {
+        logger.info(`Storing initial data for ${operations.length} new articles.`);
+        const bulkResult = await Article.bulkWrite(operations, { ordered: false });
+        logger.info(`MongoDB bulk write complete. Inserted: ${bulkResult.insertedCount}`);
+        
+        const links = articlesToProcess.map(a => a.link);
+        const processedDocs = await Article.find({ link: { $in: links } }).lean();
+        
+        return processedDocs;
+    } catch (error) {
+        // Ignore duplicate key errors which can happen in a race condition, but log others.
+        if (error.code !== 11000) {
+            logger.error({ err: error }, 'Bulk insert operation failed for initial data.');
+        }
+        // Still attempt to fetch the docs
+        const links = articlesToProcess.map(a => a.link);
+        const processedDocs = await Article.find({ link: { $in: links } }).lean();
+        return processedDocs;
+    }
 }
 
 
 export async function updateArticlesWithFullData(articles) {
-    const operations = articles.map(article => {
-        const { link, ...dataToSet } = article;
-        // Clean up data to avoid storing undefined values
-        Object.keys(dataToSet).forEach(key => dataToSet[key] === undefined && delete dataToSet[key]);
+    if (articles.length === 0) return [];
 
-        return {
+    const operations = [];
+    for (const article of articles) {
+        const { _id, ...dataToSet } = article;
+        Object.keys(dataToSet).forEach(key => dataToSet[key] === undefined && delete dataToSet[key]);
+        
+        const textToEmbed = `${article.headline}\n${article.assessment_article || ''}\n${(article.articleContent?.contents || []).join(' ').substring(0, 500)}`;
+        dataToSet.embedding = await generateEmbedding(textToEmbed);
+
+        operations.push({
             updateOne: {
-                filter: { link: article.link },
+                filter: { _id: article._id },
                 update: { $set: dataToSet },
             },
-        };
-    });
+        });
+    }
 
     if (operations.length > 0) {
         try {
-            logger.info(`Updating ${operations.length} articles with full data via bulk write.`);
-            await Article.bulkWrite(operations);
+            logger.info(`Updating ${operations.length} articles with full data and new embeddings.`);
+            await Article.bulkWrite(operations, { ordered: false });
             return articles.map(a => ({...a, db_operation_status: 'updated'}));
         } catch (error) {
             logger.error({ err: error }, 'Bulk write operation failed for final data update.');

@@ -1,7 +1,7 @@
-// src/modules/ai/index.js (version 2.3)
+// src/modules/ai/index.js
 import OpenAI from 'openai';
 import pLimit from 'p-limit';
-import { KIMI_API_KEY, LLM_MODEL_HEADLINES, LLM_MODEL_ARTICLES, AI_BATCH_SIZE, CONCURRENCY_LIMIT, HEADLINES_RELEVANCE_THRESHOLD } from '../../config/index.js';
+import { KIMI_API_KEY, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, AI_BATCH_SIZE, CONCURRENCY_LIMIT, HEADLINES_RELEVANCE_THRESHOLD } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { instructionHeadlines } from '../assessments/instructionHeadlines.js';
 import { shotsInput as shotsInputHeadlines, shotsOutput as shotsOutputHeadlines } from '../assessments/shotsHeadlines.js';
@@ -18,7 +18,7 @@ const kimi = new OpenAI({
     baseURL: 'https://api.moonshot.ai/v1',
     defaultHeaders: { 'Authorization': `Bearer ${KIMI_API_KEY}` },
     timeout: 90 * 1000,
-    maxRetries: 1,
+    maxRetries: 3,
 });
 
 const limit = pLimit(CONCURRENCY_LIMIT);
@@ -126,7 +126,7 @@ export async function assessHeadlinesInBatches(articles) {
         allAssessedPromises.push(
             limit(async () => {
                 const headlinesText = batch.map(a => a.headline).join('\n- ');
-                const response = await generateAssessment(LLM_MODEL_HEADLINES, instructionHeadlines, headlinesText, shotsInputHeadlines, shotsOutputHeadlines);
+                const response = await generateAssessment(LLM_MODEL_TRIAGE, instructionHeadlines, headlinesText, shotsInputHeadlines, shotsOutputHeadlines);
                 
                 completedBatches++;
                 

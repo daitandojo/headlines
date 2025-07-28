@@ -1,4 +1,4 @@
-// src/config/index.js (version 1.3)
+// src/config/index.js
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -26,12 +26,14 @@ export const IS_PRODUCTION = NODE_ENV === 'production';
 export const LOG_LEVEL = getCleanStringEnv('LOG_LEVEL', 'info');
 export const CONCURRENCY_LIMIT = parseInt(process.env.CONCURRENCY_LIMIT, 10) || 3;
 export const FORCE_EMAIL_SEND_DEV = process.env.FORCE_EMAIL_SEND_DEV === 'true';
+export const IS_REFRESH_MODE = process.env.REFRESH_MODE === 'true';
 
 // --- Database ---
 export const MONGO_URI = getCleanStringEnv('MONGO_URI');
 
 // --- LLM Configuration ---
 export const KIMI_API_KEY = getCleanStringEnv('KIMI_API_KEY');
+export const LLM_MODEL_TRIAGE = getCleanStringEnv('LLM_MODEL_TRIAGE', 'moonshot-v1-8k');
 export const LLM_MODEL_HEADLINES = getCleanStringEnv('LLM_MODEL_HEADLINES', 'moonshot-v1-8k');
 export const LLM_MODEL_ARTICLES = getCleanStringEnv('LLM_MODEL_ARTICLES', 'moonshot-v1-32k');
 
@@ -44,7 +46,7 @@ export const HEADLINES_RELEVANCE_THRESHOLD = 30;
 export const ARTICLES_RELEVANCE_THRESHOLD = 70;
 export const MIN_ARTICLE_CHARS = 150;
 export const MAX_ARTICLE_CHARS = 100000;
-export const MIN_HEADLINE_CHARS = 15;
+export const MIN_HEADLINE_CHARS = 5; // MODIFIED: Changed from 15 to 5
 export const MAX_HEADLINE_CHARS = 500;
 export const AI_BATCH_SIZE = 6;
 
@@ -73,9 +75,9 @@ export const SEND_TO_DEFAULT_SUPERVISOR = SEND_TO_DEFAULT_SUPERVISOR_ENV;
 // --- Email Template Config ---
 export const EMAIL_CONFIG = {
   templateName: 'wealthEvents',
-  subject: '🇩🇰 New Danish Banking Opportunities Detected',
+  subject: '🇩🇰 🇳🇴 New Nordic Banking Opportunities Detected',
   language: 'en',
-  brandName: 'Wealth Watch Denmark',
+  brandName: 'Nordic Wealth Watch',
   companyAddress: 'Wealth Watch Inc., Copenhagen, Denmark',
   unsubscribeUrl: '#',
 };

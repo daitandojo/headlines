@@ -1,4 +1,4 @@
-// src/modules/email/mailer.js (version 2.0)
+// src/modules/email/mailer.js
 import nodemailer from 'nodemailer';
 import { logger } from '../../utils/logger.js';
 import { safeExecute } from '../../utils/helpers.js';
@@ -48,16 +48,16 @@ async function sendEmail(mailOptions, emailType) {
     return { success: true };
 }
 
-export async function performActualEmailSend(articlesForEmail) {
+export async function performActualEmailSend(eventsForEmail) {
     if (!HEADLINE_RECIPIENTS || HEADLINE_RECIPIENTS.length === 0) {
         logger.error(`❌ [Wealth Events Mailer] ${RECIPIENTS_UNCONFIGURED_MSG}`);
-        return articlesForEmail.map(a => ({ ...a, emailed: false, email_error: RECIPIENTS_UNCONFIGURED_MSG }));
+        return false;
     }
 
-    const emailBodyHtml = createEmailBody(articlesForEmail);
+    const emailBodyHtml = createEmailBody(eventsForEmail);
     if (!emailBodyHtml) {
         logger.error('❌ [Wealth Events Mailer] HTML email body generation failed.');
-        return articlesForEmail.map(a => ({ ...a, emailed: false, email_error: 'HTML body generation failed' }));
+        return false;
     }
 
     const mailOptions = {
@@ -68,23 +68,17 @@ export async function performActualEmailSend(articlesForEmail) {
     };
 
     const result = await sendEmail(mailOptions, 'Wealth Events');
-
-    if (result.success) {
-        return articlesForEmail.map(a => ({ ...a, emailed: true, email_error: null, email_skipped_reason: null }));
-    }
-    if (result.skipped) {
-        return articlesForEmail.map(a => ({ ...a, emailed: false, email_skipped_reason: result.reason }));
-    }
-    return articlesForEmail.map(a => ({ ...a, emailed: false, email_error: result.error }));
+    return result.success || false;
 }
 
-export async function performActualSupervisorEmailSend(allArticles, runStats) {
+export async function performActualSupervisorEmailSend(runStats) {
     if (!SUPERVISOR_EMAIL || (SUPERVISOR_EMAIL.toLowerCase().includes('default') && !SEND_TO_DEFAULT_SUPERVISOR)) {
         logger.warn('[Supervisor Mailer] Skipping: Supervisor email not configured or is default.');
         return;
     }
 
-    const emailBodyHtml = createSupervisorEmailBody(allArticles, runStats);
+    // CRITICAL FIX: The function createSupervisorEmailBody is now async, so we must 'await' it.
+    const emailBodyHtml = await createSupervisorEmailBody(runStats);
     if (!emailBodyHtml) {
         logger.error('❌ [Supervisor Mailer] HTML email body generation failed.');
         throw new Error('Failed to generate supervisor email body');

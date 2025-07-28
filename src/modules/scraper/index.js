@@ -1,4 +1,4 @@
-// src/modules/scraper/index.js (version 1.3)
+// src/modules/scraper/index.js
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
@@ -34,12 +34,10 @@ const BROWSER_HEADERS = {
 };
 
 async function fetchPage(url) {
-    // Add a generous 30-second timeout to handle slow-responding sites.
     const axiosConfig = { headers: BROWSER_HEADERS, timeout: 30000 };
     const result = await safeExecute(() => axiosInstance.get(url, axiosConfig), {
         errorHandler: (err) => {
             const status = err.response ? err.response.status : 'N/A';
-            // Add specific logging for timeout errors for better debugging.
             if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
                 logger.error(`Request to ${url} timed out after 30 seconds.`);
             } else {
@@ -48,14 +46,15 @@ async function fetchPage(url) {
             return null;
         }
     });
-    // Return the response object which contains data
     return result;
 }
 
 async function scrapeSite(site) {
     logger.debug(`Scraping headlines from ${site.name}`);
     const response = await fetchPage(site.url);
-    if (!response) return [];
+    if (!response) {
+        return { source: site.name, articles: [], success: false };
+    }
     
     const $ = cheerio.load(response.data);
     let articles = [];
@@ -84,14 +83,18 @@ async function scrapeSite(site) {
     
     const uniqueArticles = Array.from(new Map(articles.map(a => [a.link, a])).values());
     logger.info(`Scraped ${uniqueArticles.length} unique headlines from ${site.name}.`);
-    return uniqueArticles;
+    return { source: site.name, articles: uniqueArticles, success: true };
 }
 
 export async function scrapeAllHeadlines() {
     logger.info('📰 Starting headline scraping from all sources...');
     const promises = Object.values(SITES_CONFIG).map(site => limit(() => scrapeSite(site)));
     const results = await Promise.all(promises);
-    return results.flat();
+
+    const allArticles = results.flatMap(r => r.articles);
+    const scraperHealth = results.map(r => ({ source: r.source, success: r.success, count: r.articles.length }));
+
+    return { allArticles, scraperHealth };
 }
 
 export async function scrapeArticleContent(article) {

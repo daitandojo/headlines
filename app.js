@@ -1,7 +1,14 @@
-// app.js (version 1.0)
+// app.js
 import 'dotenv/config'; // Load environment variables at the very beginning
 import { logger } from './src/utils/logger.js';
 import { runPipeline } from './app-logic.js';
+
+// NEW: Check for a '--refresh' command-line argument to enable re-processing.
+const isRefreshMode = process.argv.includes('--refresh');
+if (isRefreshMode) {
+    process.env.REFRESH_MODE = 'true';
+    logger.warn('🚀 REFRESH MODE ACTIVATED: Previously processed articles from this scrape will be treated as fresh.');
+}
 
 async function start() {
     try {

@@ -46,5 +46,11 @@ All processing is done within the `runPipeline` function call.
 
 ### Core Operations
 ```bash
-npm start          # Run the pipeline script locally
-npm test           # Run Jest test suite
+# Run the pipeline script locally
+npm start
+
+# Run in test mode, re-processing articles from the current scrape
+node app.js --refresh
+
+# Run the Jest test suite
+npm test

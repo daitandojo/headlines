@@ -7,18 +7,18 @@ export const shotsInput = [
     articleText:
       'Many homeowners will see lower property taxes in 2025 and 2026',
   },
-  { articleText: 'Danish family sells company for $500M' },
+  { articleText: 'Nordic family sells company for $500M' },
   { articleText: 'Harald Nyborg billionaire establishes new discount chain' },
   {
     articleText:
       'New green energy plant in Esbjerg to produce climate-friendly hydrogen',
   },
   { articleText: 'Homeowners to receive tax relief in 2025' },
-  { articleText: 'CEO of family-owned Danish tech firm sells for $120M' },
-  { articleText: 'Danish logistics company IPO to benefit founder' },
+  { articleText: 'CEO of family-owned Nordic tech firm sells for $120M' },
+  { articleText: 'Nordic logistics company IPO to benefit founder' },
   { articleText: 'Rockwool plans massive global expansions' },
   {
-    articleText: 'Danish Crowns fyringsrunde er gået hårdt ud over hovedsædet',
+    articleText: 'Nordic Crowns fyringsrunde er gået hårdt ud over hovedsædet',
   },
   { articleText: 'Boeing raises $19 billion to repay debts' },
   {
@@ -26,12 +26,12 @@ export const shotsInput = [
   },
   { articleText: 'Crisis-hit Boeing plans to raise billions to repay debt' },
   { articleText: 'Novo Nordisk Foundation profits from new obesity drug' },
-  { articleText: 'Danish billionaire invests in U.S. tech startup' },
+  { articleText: 'Nordic billionaire invests in U.S. tech startup' },
   { articleText: 'Maersk Group reports 30% revenue increase' },
   {
-    articleText: 'Danish entrepreneur inherits $60 million from family estate',
+    articleText: 'Nordic entrepreneur inherits $60 million from family estate',
   },
-  { articleText: 'Foreign investor buys stake in Danish public company' },
+  { articleText: 'Foreign investor buys stake in Nordic public company' },
 ];
 
 // --- KEY FIX: All shot outputs for a JSON response must be a STRINGIFIED JSON object. ---
@@ -52,10 +52,10 @@ export const shotsOutput = [
     topic: 'Aarstiderne sold to giant',
     relevance_article: 95,
     category: 1,
-    assessment_article: 'Clear private wealth event for Danish founders.',
+    assessment_article: 'Clear private wealth event for Nordic founders.',
     amount: 100,
     contacts: ['Søren Ejlersen'],
-    background: 'Sale of private Danish company.',
+    background: 'Sale of private Nordic company.',
   }),
   JSON.stringify({
     topic: 'Property tax cuts for homeowners',
@@ -67,11 +67,11 @@ export const shotsOutput = [
     background: 'Policy affecting many, not enriching individuals.',
   }),
   JSON.stringify({
-    topic: 'Danish family sells company for $500M',
+    topic: 'Nordic family sells company for $500M',
     relevance_article: 100,
     category: 1,
     assessment_article:
-      'Substantial wealth event clearly benefiting a Danish family.',
+      'Substantial wealth event clearly benefiting a Nordic family.',
     amount: 500,
     contacts: ['Family Name'],
     background: 'Private business transaction.',
@@ -109,13 +109,13 @@ export const shotsOutput = [
     relevance_article: 95,
     category: 1,
     assessment_article:
-      'Substantial wealth event for private Danish individual.',
+      'Substantial wealth event for private Nordic individual.',
     amount: 120,
     contacts: ['CEO Name'],
     background: 'Private tech company acquisition.',
   }),
   JSON.stringify({
-    topic: 'IPO benefits Danish logistics founder',
+    topic: 'IPO benefits Nordic logistics founder',
     relevance_article: 90,
     category: 1,
     assessment_article: 'Clear private wealth generation through IPO.',
@@ -133,7 +133,7 @@ export const shotsOutput = [
     background: 'Public company operations.',
   }),
   JSON.stringify({
-    topic: 'Danish Crown layoffs',
+    topic: 'Nordic Crown layoffs',
     relevance_article: 0,
     category: 0,
     assessment_article: 'No wealth event present.',
@@ -146,7 +146,7 @@ export const shotsOutput = [
     relevance_article: 0,
     category: 0,
     assessment_article:
-      'Foreign financial activity irrelevant to Danish private wealth.',
+      'Foreign financial activity irrelevant to Nordic private wealth.',
     amount: 0,
     contacts: [],
     background: 'U.S. corporate strategy.',
@@ -175,13 +175,13 @@ export const shotsOutput = [
     relevance_article: 10,
     category: 0,
     assessment_article:
-      'Institutional profit, no personal Danish wealth event.',
+      'Institutional profit, no personal Nordic wealth event.',
     amount: 0,
     contacts: [],
     background: 'Public foundation income.',
   }),
   JSON.stringify({
-    topic: 'Danish billionaire invests abroad',
+    topic: 'Nordic billionaire invests abroad',
     relevance_article: 20,
     category: 0,
     assessment_article: 'Investment activity without clear wealth increase.',
@@ -200,7 +200,7 @@ export const shotsOutput = [
     background: 'Listed company performance.',
   }),
   JSON.stringify({
-    topic: 'Danish entrepreneur inherits $60M',
+    topic: 'Nordic entrepreneur inherits $60M',
     relevance_article: 95,
     category: 1,
     assessment_article: 'Direct substantial wealth transfer via inheritance.',
@@ -209,10 +209,10 @@ export const shotsOutput = [
     background: 'Family wealth transition.',
   }),
   JSON.stringify({
-    topic: 'Foreign investor buys Danish shares',
+    topic: 'Foreign investor buys Nordic shares',
     relevance_article: 10,
     category: 0,
-    assessment_article: 'No direct benefit to Danish individuals.',
+    assessment_article: 'No direct benefit to Nordic individuals.',
     amount: 0,
     contacts: [],
     background: 'Public market transaction.',
