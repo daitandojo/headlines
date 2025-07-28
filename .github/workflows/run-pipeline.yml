@@ -6,9 +6,9 @@ on:
     # IMPORTANT: GitHub schedules run on UTC time.
     # 10:00 Copenhagen (CEST, UTC+2) is 08:00 UTC
     # 16:30 Copenhagen (CEST, UTC+2) is 14:30 UTC
+    - cron: '0 6 * * *'
     - cron: '0 8 * * *'
-    - cron: '40 15 * * *'
-    - cron: '40 16 * * *'
+    - cron: '30 14 * * *'
     - cron: '39 22 * * *'
 
 jobs:
@@ -20,15 +20,16 @@ jobs:
       # Step 1: Check out your repository's code
       - uses: actions/checkout@v4
       
-      # Step 2: Set up the flyctl command-line tool (This was the missing piece)
+      # Step 2: Set up the flyctl command-line tool
       - uses: superfly/flyctl-actions/setup-flyctl@master
         
-      # Step 3: Now that flyctl is installed, run the command
+      # Step 3: Run the command with explicit region and memory configuration
       - name: Start a temporary machine and wait for completion
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          # This command will now be found and will execute correctly.
-          flyctl machine run .
+          # MODIFIED: Explicitly set region and memory to match fly.toml.
+          # The 'fly machine run' command does not use the [[machines]] template by default.
+          flyctl machine run . --region lhr --memory 4096
           
           echo "The machine has completed its run and has been destroyed."
