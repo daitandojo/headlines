@@ -8,7 +8,7 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0;33[0m' # No Color
 
 # --- Pre-flight Checks ---
 echo -e "${YELLOW}--- Running Pre-flight Checks ---${NC}"
@@ -97,12 +97,14 @@ echo ""
 # --- Step 4: Deploy the App ---
 echo -e "${YELLOW}--- Step 4: Deploying the App ---${NC}"
 echo "Deploying the project to the new instance of '${APP_NAME}'..."
-echo "This will create 1 machine with an 'hourly' schedule as defined in fly.toml."
+echo "This will create a new release and 1 stopped machine with 2048MB of memory."
 
-fly deploy
+# MODIFIED: Use explicit flags to force the machine size during the initial deploy.
+# This is the definitive way to set the size for this type of worker app.
+fly deploy --vm-cpus 1 --vm-memory 2048
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Successfully deployed '${APP_NAME}'. A new release has been created and the scheduled machine is configured.${NC}"
+    echo -e "${GREEN}✅ Successfully deployed '${APP_NAME}'. The initial machine has been configured with 2048MB of memory.${NC}"
 else
     echo -e "${RED}❌ An error occurred during deployment. Please check the output above.${NC}"
     exit 1

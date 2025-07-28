@@ -3,19 +3,5 @@ primary_region = 'lhr'
 
 # This empty [processes] block tells flyctl to use the modern Machines platform
 # and not look for a long-running web service.
+# This is now the ONLY machine-related configuration in this file.
 [processes]
-
-# We define a template for a machine that can be started on demand.
-[[machines]]
-  # This machine will not run on a simple schedule from Fly.
-  # schedule = 'hourly' <-- REMOVE THIS LINE
-  
-  # The machine will be destroyed after its task is complete.
-  auto_destroy = true
-  # When created during deploy, it will be in a 'stopped' state, costing nothing for CPU/RAM.
-  initial_state = "stopped"
-  
-  [machines.vm]
-    memory = '2048mb' # MODIFIED: Set to the desired 2GB size
-    cpu_kind = 'shared'
-    cpus = 1

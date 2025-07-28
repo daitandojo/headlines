@@ -29,6 +29,6 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           # CORRECTED: Ensure this command with flags is present
-          fly machine run . --region lhr --memory 4096
+          flyctl machine run . --region lhr --memory 4096
           
           echo "The machine has completed its run and has been destroyed."
