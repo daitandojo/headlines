@@ -7,6 +7,9 @@ import { MIN_HEADLINE_CHARS, MAX_HEADLINE_CHARS, IS_REFRESH_MODE } from '../../c
 
 function validateInitialArticle(article) {
     if (!article || typeof article !== 'object') return 'Article object is invalid.';
+    // In refresh mode, the article is already validated.
+    if (article._id && IS_REFRESH_MODE) return null;
+    
     if (!article.headline || article.headline.length < MIN_HEADLINE_CHARS) return `Headline is too short (min ${MIN_HEADLINE_CHARS}).`;
     if (article.headline.length > MAX_HEADLINE_CHARS) return `Headline is too long (max ${MAX_HEADLINE_CHARS}).`;
     if (!article.link || !article.link.startsWith('http')) return 'Link is invalid.';
@@ -17,8 +20,6 @@ function validateInitialArticle(article) {
 export async function filterFreshArticles(articles) {
     if (!articles || articles.length === 0) return [];
 
-    // CRITICAL FIX: In refresh mode, we must fetch the full existing documents
-    // for the scraped articles to ensure they have an _id and can be processed.
     if (IS_REFRESH_MODE) {
         logger.warn('REFRESH MODE: Re-fetching all scraped articles from DB to re-process.');
         const links = articles.map(a => a.link);
@@ -36,7 +37,7 @@ export async function filterFreshArticles(articles) {
     return freshArticles;
 }
 
-export async function storeInitialHeadlineData(articles) {
+export async function prepareArticlesForPipeline(articles) {
     const articlesToProcess = [];
     
     for (const article of articles) {
@@ -49,48 +50,56 @@ export async function storeInitialHeadlineData(articles) {
     }
 
     if (articlesToProcess.length === 0) {
-        logger.info('No valid new articles to store.');
+        logger.info('No valid new or refreshed articles to prepare for the pipeline.');
         return [];
     }
 
     const operations = [];
     for (const article of articlesToProcess) {
-        const textToEmbed = article.headline;
-        const embedding = await generateEmbedding(textToEmbed);
+        // Only generate a new embedding if it's a new article. Refreshed articles already have one.
+        let embedding = article.embedding;
+        if (!embedding) {
+            const textToEmbed = article.headline;
+            embedding = await generateEmbedding(textToEmbed);
+        }
+
+        const updatePayload = {
+            ...article,
+            embedding,
+            // Reset assessment fields for a fresh run
+            relevance_headline: 0,
+            assessment_headline: 'Awaiting assessment',
+            relevance_article: null,
+            assessment_article: null,
+            key_individuals: [],
+            error: null,
+            enrichment_error: null,
+        };
+        // Remove _id from the payload to avoid immutable field errors on upsert
+        delete updatePayload._id; 
 
         operations.push({
-            insertOne: {
-                document: {
-                    ...article,
-                    embedding,
-                    relevance_headline: 0,
-                    assessment_headline: 'Awaiting assessment',
-                }
+            updateOne: {
+                filter: { link: article.link },
+                update: { $set: updatePayload },
+                upsert: true
             }
         });
     }
 
     try {
-        logger.info(`Storing initial data for ${operations.length} new articles.`);
-        const bulkResult = await Article.bulkWrite(operations, { ordered: false });
-        logger.info(`MongoDB bulk write complete. Inserted: ${bulkResult.insertedCount}`);
-        
+        logger.info(`Preparing ${operations.length} articles in the database for processing...`);
+        const bulkResult = await Article.bulkWrite(operations);
+        logger.info(`DB Prep complete. Upserted: ${bulkResult.upsertedCount}, Modified: ${bulkResult.modifiedCount}`);
+
         const links = articlesToProcess.map(a => a.link);
-        const processedDocs = await Article.find({ link: { $in: links } }).lean();
-        
-        return processedDocs;
+        const finalDocs = await Article.find({ link: { $in: links } }).lean();
+        return finalDocs;
     } catch (error) {
-        // Ignore duplicate key errors which can happen in a race condition, but log others.
-        if (error.code !== 11000) {
-            logger.error({ err: error }, 'Bulk insert operation failed for initial data.');
-        }
-        // Still attempt to fetch the docs
-        const links = articlesToProcess.map(a => a.link);
-        const processedDocs = await Article.find({ link: { $in: links } }).lean();
-        return processedDocs;
+        logger.error({ err: error }, 'Bulk upsert operation failed during article preparation.');
+        return [];
     }
 }
-
 
 export async function updateArticlesWithFullData(articles) {
     if (articles.length === 0) return [];

@@ -1,14 +1,14 @@
 // app-logic.js
 import { connectDatabase, disconnectDatabase } from './src/database.js';
 import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
-import { filterFreshArticles, storeInitialHeadlineData, updateArticlesWithFullData } from './src/modules/mongoStore/index.js';
+import { filterFreshArticles, prepareArticlesForPipeline, updateArticlesWithFullData } from './src/modules/mongoStore/index.js';
 import { assessHeadlinesInBatches, assessArticleContent, performKimiSanityCheck, checkModelPermissions } from './src/modules/ai/index.js';
 import { clusterArticlesIntoEvents, synthesizeEvent } from './src/modules/ai/eventProcessing.js';
 import { findSimilarArticles } from './src/modules/ai/rag.js';
 import Article from './models/Article.js';
 import SynthesizedEvent from './models/SynthesizedEvent.js';
 import { logger } from './src/utils/logger.js';
-import { HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, IS_REFRESH_MODE } from './src/config/index.js';
+import { HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES } from './src/config/index.js';
 import { sendWealthEventsEmail, sendSupervisorReportEmail } from './src/modules/email/index.js';
 import { truncateString } from './src/utils/helpers.js';
 
@@ -49,13 +49,15 @@ export async function runPipeline() {
         const articlesToProcess = await filterFreshArticles(scrapedHeadlines);
         runStats.freshHeadlinesFound = articlesToProcess.length;
 
-        // In normal mode, store new articles. In refresh mode, this array is already populated.
-        let articlesForPipeline = articlesToProcess;
-        if (!IS_REFRESH_MODE && articlesToProcess.length > 0) {
-            articlesForPipeline = await storeInitialHeadlineData(articlesToProcess);
-            logger.info(`Successfully stored ${articlesForPipeline.length} new articles in database.`);
-        } else if (articlesToProcess.length === 0) {
+        if (articlesToProcess.length === 0) {
             logger.info('No new or refreshed articles to process. Ending run.');
+            return;
+        }
+        
+        const articlesForPipeline = await prepareArticlesForPipeline(articlesToProcess);
+
+        if (articlesForPipeline.length === 0) {
+            logger.info('No articles were successfully prepared for the pipeline. Ending run.');
             return;
         }
 
@@ -63,9 +65,11 @@ export async function runPipeline() {
         const assessedCandidates = await assessHeadlinesInBatches(articlesForPipeline);
         runStats.headlinesAssessed = assessedCandidates.length;
 
-        // NEW: Log relevance scores for all assessed articles
         logger.info('--- Headline Assessment Complete ---');
-        assessedCandidates.forEach(a => logger.info(`[${String(a.relevance_headline).padStart(3, ' ')}] "${truncateString(a.headline, 80)}"`));
+        assessedCandidates.forEach(a => {
+            const status = a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD ? '✅ Relevant' : '❌ Irrelevant';
+            logger.info(`[${String(a.relevance_headline).padStart(3, ' ')}] ${status} - "${truncateString(a.headline, 70)}"`);
+        });
 
         const relevantCandidates = assessedCandidates.filter(a => a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD);
         runStats.relevantHeadlines = relevantCandidates.length;
@@ -132,10 +136,19 @@ export async function runPipeline() {
         }
 
         if (synthesizedEventsToSave.length > 0) {
-            await SynthesizedEvent.insertMany(synthesizedEventsToSave, { ordered: false }).catch(err => {
-                // Ignore duplicate key errors in refresh mode, log others
-                if (err.code !== 11000) logger.error({ err }, "Error saving synthesized events.");
-            });
+            await SynthesizedEvent.updateMany(
+                { event_key: { $in: synthesizedEventsToSave.map(e => e.event_key) } },
+                { $set: { emailed: false } }
+            );
+            await SynthesizedEvent.bulkWrite(
+                synthesizedEventsToSave.map(e => ({
+                    updateOne: {
+                        filter: { event_key: e.event_key },
+                        update: { $set: e },
+                        upsert: true,
+                    }
+                }))
+            );
             logger.info(`Successfully saved/updated ${synthesizedEventsToSave.length} synthesized events.`);
         }
         
