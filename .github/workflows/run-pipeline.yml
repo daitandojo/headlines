@@ -21,14 +21,14 @@ jobs:
       - uses: actions/checkout@v4
       
       # Step 2: Set up the flyctl command-line tool
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@v1.3
         
-      # Step 3: Run the command with explicit region and memory configuration
+      # Step 3: Run the command with explicit and consistent configuration
       - name: Start a temporary machine and wait for completion
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          # CORRECTED: Ensure this command with flags is present
-          flyctl machine run . --region lhr --memory 4096
+          # MODIFIED: Aligned memory with the valid fly.toml configuration.
+          fly machine run . --region lhr --memory 2048
           
           echo "The machine has completed its run and has been destroyed."
