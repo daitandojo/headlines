@@ -34,11 +34,17 @@ const BROWSER_HEADERS = {
 };
 
 async function fetchPage(url) {
-    const axiosConfig = { headers: BROWSER_HEADERS };
+    // Add a generous 30-second timeout to handle slow-responding sites.
+    const axiosConfig = { headers: BROWSER_HEADERS, timeout: 30000 };
     const result = await safeExecute(() => axiosInstance.get(url, axiosConfig), {
         errorHandler: (err) => {
             const status = err.response ? err.response.status : 'N/A';
-            logger.error(`Failed to fetch page ${url} [Status: ${status}].`);
+            // Add specific logging for timeout errors for better debugging.
+            if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+                logger.error(`Request to ${url} timed out after 30 seconds.`);
+            } else {
+                logger.error(`Failed to fetch page ${url} [Status: ${status}].`);
+            }
             return null;
         }
     });
