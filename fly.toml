@@ -16,6 +16,6 @@ primary_region = 'lhr'
   initial_state = "stopped"
   
   [machines.vm]
-    memory = '1gb'
+    memory = '4gb'
     cpu_kind = 'shared'
     cpus = 1
