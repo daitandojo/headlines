@@ -47,7 +47,7 @@ export function createEmailBody(events) {
         <p style="font-size: 16px; color: #555555; text-align: left;">
             Good morning,
             <br><br>
-            Here are the latest potential wealth events identified and synthesized by the system:
+            Here are the latest potential wealth events identified and synthesized by our AI Agent:
         </p>
         ${formattedEventsHtml}
         <p style="font-size: 16px; color: #555555; text-align: left;">

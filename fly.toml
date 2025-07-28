@@ -16,6 +16,6 @@ primary_region = 'lhr'
   initial_state = "stopped"
   
   [machines.vm]
-    memory = '4gb' # MODIFIED: Changed from '1gb' to '4gb'
+    memory = '2048mb' # MODIFIED: Set to the desired 2GB size
     cpu_kind = 'shared'
     cpus = 1
