@@ -1,5 +1,5 @@
 // app-logic.js
-import { connectDatabase, disconnectDatabase } from './src/database.js';
+import { connectDatabase } from './src/database.js'; // REMOVED disconnectDatabase from import
 import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
 import { filterFreshArticles, prepareArticlesForPipeline, updateArticlesWithFullData } from './src/modules/mongoStore/index.js';
 import { assessHeadlinesInBatches, assessArticleContent, performKimiSanityCheck, checkModelPermissions } from './src/modules/ai/index.js';
@@ -8,7 +8,7 @@ import { findSimilarArticles } from './src/modules/ai/rag.js';
 import Article from './models/Article.js';
 import SynthesizedEvent from './models/SynthesizedEvent.js';
 import { logger } from './src/utils/logger.js';
-// MODIFIED: IS_REFRESH_MODE is no longer needed here as it's passed as an argument.
+import { logFinalReport } from './src/utils/pipelineLogger.js'; 
 import { ARTICLES_RELEVANCE_THRESHOLD, HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES } from './src/config/index.js';
 import { sendWealthEventsEmail, sendSupervisorReportEmail } from './src/modules/email/index.js';
 import { truncateString } from './src/utils/helpers.js';
@@ -23,9 +23,11 @@ export async function runPipeline(isRefreshMode = false) {
         headlinesAssessed: 0,
         relevantHeadlines: 0,
         articlesEnriched: 0,
+        relevantArticles: 0, 
         enrichedBySource: {},
         eventsClustered: 0,
         eventsSynthesized: 0,
+        synthesizedEventsForReport: [], 
         eventsEmailed: 0,
         errors: [],
     };
@@ -56,7 +58,6 @@ export async function runPipeline(isRefreshMode = false) {
         }
         
         const articlesForPipeline = await prepareArticlesForPipeline(articlesToProcess, isRefreshMode);
-
         if (articlesForPipeline.length === 0) {
             logger.info('No articles were successfully prepared for the pipeline. Ending run.');
             return;
@@ -66,12 +67,6 @@ export async function runPipeline(isRefreshMode = false) {
         const assessedCandidates = await assessHeadlinesInBatches(articlesForPipeline);
         runStats.headlinesAssessed = assessedCandidates.length;
 
-        logger.info('--- Headline Assessment Complete ---');
-        assessedCandidates.forEach(a => {
-            const status = a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD ? '✅ Relevant' : '❌ Irrelevant';
-            logger.info(`[${String(a.relevance_headline).padStart(3, ' ')}] ${status} - "${truncateString(a.headline, 70)}"`);
-        });
-
         const relevantCandidates = assessedCandidates.filter(a => a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD);
         runStats.relevantHeadlines = relevantCandidates.length;
 
@@ -79,7 +74,7 @@ export async function runPipeline(isRefreshMode = false) {
             logger.info('No headlines met the relevance threshold for event synthesis.');
             return;
         }
-        logger.info(`Found ${relevantCandidates.length} relevant headlines for enrichment.`);
+        logger.info(`Found ${relevantCandidates.length} relevant headlines. Proceeding to enrichment...`);
         
         // --- STEP 4: ENRICHMENT & ARTICLE ASSESSMENT ---
         const enrichedArticles = [];
@@ -95,6 +90,7 @@ export async function runPipeline(isRefreshMode = false) {
             }
         }
         await updateArticlesWithFullData(enrichedArticles);
+        runStats.relevantArticles = enrichedArticles.length;
         logger.info(`Enriched and assessed ${enrichedArticles.length} full articles meeting the relevance threshold.`);
 
         if (enrichedArticles.length === 0) {
@@ -122,13 +118,9 @@ export async function runPipeline(isRefreshMode = false) {
 
             if (synthesizedEvent && !synthesizedEvent.error) {
                 runStats.eventsSynthesized++;
-                logger.info(`Synthesized Event: "${truncateString(synthesizedEvent.headline, 80)}"`);
-                
-                // Find the highest-scoring article to source the assessment reason from.
                 const highestScoringArticle = articlesInCluster.reduce((max, current) => 
                     (current.relevance_article > max.relevance_article) ? current : max, articlesInCluster[0]
                 );
-
                 const aggregatedIndividuals = articlesInCluster.flatMap(a => a.key_individuals || []);
                 const uniqueIndividuals = Array.from(new Map(aggregatedIndividuals.map(p => [p.name, p])).values());
 
@@ -139,26 +131,16 @@ export async function runPipeline(isRefreshMode = false) {
                     ai_assessment_reason: highestScoringArticle.assessment_article || highestScoringArticle.assessment_headline,
                     highest_relevance_score: Math.max(...articlesInCluster.map(a => a.relevance_article)),
                     key_individuals: uniqueIndividuals,
-                    source_articles: articlesInCluster.map(a => ({
-                        article_id: a._id,
-                        headline: a.headline,
-                        link: a.link,
-                        newspaper: a.newspaper
-                    })),
+                    source_articles: articlesInCluster.map(a => ({ article_id: a._id, headline: a.headline, link: a.link, newspaper: a.newspaper })),
                 });
                 synthesizedEventsToSave.push(eventToSave);
+                runStats.synthesizedEventsForReport.push({ synthesized_headline: eventToSave.synthesized_headline, highest_relevance_score: eventToSave.highest_relevance_score });
             }
         }
 
         if (synthesizedEventsToSave.length > 0) {
             await SynthesizedEvent.bulkWrite(
-                synthesizedEventsToSave.map(e => ({
-                    updateOne: {
-                        filter: { event_key: e.event_key },
-                        update: { $set: e },
-                        upsert: true,
-                    }
-                }))
+                synthesizedEventsToSave.map(e => ({ updateOne: { filter: { event_key: e.event_key }, update: { $set: e }, upsert: true } }))
             );
             logger.info(`Successfully saved/updated ${synthesizedEventsToSave.length} synthesized events.`);
         }
@@ -176,11 +158,11 @@ export async function runPipeline(isRefreshMode = false) {
         
         if (dbConnected) {
              await sendSupervisorReportEmail(runStats);
-             await disconnectDatabase();
+             // REMOVED: await disconnectDatabase();
         } else {
-             logger.info('Pipeline halted before DB connection. No supervisor report sent.');
+             logger.warn('Pipeline halted before DB connection. No supervisor report or final stats will be generated.');
         }
        
-        logger.info(`PIPELINE FINISHED in ${duration} seconds. Emailed ${runStats.eventsEmailed} events.`);
+        await logFinalReport(runStats, duration);
     }
 }

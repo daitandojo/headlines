@@ -112,13 +112,13 @@ async function generateAssessment(model, instructions, userContent, fewShotInput
     }
 }
 
-// --- REFACTORED BATCH ASSESSMENT LOGGING ---
+
 export async function assessHeadlinesInBatches(articles) {
     const batches = [];
     for (let i = 0; i < articles.length; i += AI_BATCH_SIZE) {
         batches.push(articles.slice(i, i + AI_BATCH_SIZE));
     }
-    logger.info(`Assessing ${articles.length} headlines in ${batches.length} batches.`);
+    logger.info(`Assessing ${articles.length} headlines in ${batches.length} batches...`);
     const allAssessedPromises = [];
     let completedBatches = 0;
 
@@ -130,7 +130,7 @@ export async function assessHeadlinesInBatches(articles) {
                 
                 completedBatches++;
                 
-                // --- NEW CONCISE LOGGING ---
+                // --- FIX: Restore detailed per-headline logging for debugging ---
                 if (response && response.assessment && Array.isArray(response.assessment)) {
                     logger.info(`--- Batch ${completedBatches}/${batches.length} Results ---`);
                     batch.forEach((article, i) => {
@@ -139,15 +139,17 @@ export async function assessHeadlinesInBatches(articles) {
                             const score = assessment.relevance_headline;
                             const comment = assessment.assessment_headline || 'No comment.';
                             const emoji = score >= HEADLINES_RELEVANCE_THRESHOLD ? '✅' : '❌';
-                            logger.info(`${emoji} [${score}] ${truncateString(article.headline, 70)} | ${truncateString(comment, 60)}`);
+                            const source = article.source || 'Unknown';
+                            logger.info(`${emoji} [${String(score).padStart(3)}] "${truncateString(article.headline, 60)}" (${source}) | ${truncateString(comment, 45)}`);
                         } else {
-                            logger.warn(`- Malformed assessment for: ${truncateString(article.headline, 70)}`);
+                            const source = article.source || 'Unknown';
+                            logger.warn(`- Malformed assessment for: "${truncateString(article.headline, 70)}" (${source})`);
                         }
                     });
                 } else {
                     logger.error(`❌ Headline assessment failed for batch ${completedBatches}/${batches.length}. Reason: ${response.error || 'Malformed response'}`);
                 }
-                // --- END NEW LOGGING ---
+                // --- END FIX ---
 
                 if (response.error || !response.assessment || !Array.isArray(response.assessment) || response.assessment.length !== batch.length) {
                     return batch.map(article => ({ ...article, relevance_headline: 0, assessment_headline: response.error || 'AI assessment failed.' }));
@@ -159,7 +161,7 @@ export async function assessHeadlinesInBatches(articles) {
     }
     
     const assessedBatches = await Promise.all(allAssessedPromises);
-    logger.info(`Finished assessing all ${batches.length} batches.`);
+    logger.info('Finished assessing all headline batches.');
     return assessedBatches.flat();
 }
 
