@@ -13,13 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # MODIFIED: Replaced the failing 'setup-flyctl' action with the direct installer.
+      # Step 1: Install flyctl using the official installer.
       - name: Install flyctl
-        run: |
-          curl -L https://fly.io/install.sh | sh
-          echo "/github/home/.fly/bin" >> $GITHUB_PATH
+        run: curl -L https://fly.io/install.sh | sh
 
+      # Step 2: Deploy to Fly.io using the full path to the flyctl executable.
+      # This is the most robust method to ensure the command is found.
       - name: Deploy to Fly.io
-        run: flyctl deploy --remote-only
+        run: /github/home/.fly/bin/flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

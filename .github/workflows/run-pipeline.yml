@@ -20,19 +20,16 @@ jobs:
       # Step 1: Check out your repository's code
       - uses: actions/checkout@v4
       
-      # Step 2: Set up the flyctl command-line tool
-      # MODIFIED: Replaced the failing 'setup-flyctl' action with the direct installer.
+      # Step 2: Install flyctl using the official installer.
       - name: Install flyctl
-        run: |
-          curl -L https://fly.io/install.sh | sh
-          echo "/github/home/.fly/bin" >> $GITHUB_PATH
+        run: curl -L https://fly.io/install.sh | sh
         
-      # Step 3: Run the command with explicit and consistent configuration
+      # Step 3: Run the command using the full path to the flyctl executable.
       - name: Start a temporary machine and wait for completion
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          # Aligned memory with the valid fly.toml configuration.
-          fly machine run . --region lhr --memory 2048
+          # Use the full path to ensure the command is found.
+          /github/home/.fly/bin/flyctl machine run . --region lhr --memory 2048
           
           echo "The machine has completed its run and has been destroyed."
