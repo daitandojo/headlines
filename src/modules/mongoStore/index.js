@@ -3,12 +3,13 @@ import Article from '../../../models/Article.js';
 import { logger } from '../../utils/logger.js';
 import { truncateString } from '../../utils/helpers.js';
 import { generateEmbedding } from '../../utils/vectorUtils.js';
-import { MIN_HEADLINE_CHARS, MAX_HEADLINE_CHARS, IS_REFRESH_MODE } from '../../config/index.js';
+// MODIFIED: IS_REFRESH_MODE is no longer needed here.
+import { MIN_HEADLINE_CHARS, MAX_HEADLINE_CHARS } from '../../config/index.js';
 
-function validateInitialArticle(article) {
+function validateInitialArticle(article, isRefreshMode) {
     if (!article || typeof article !== 'object') return 'Article object is invalid.';
-    // In refresh mode, the article is already validated.
-    if (article._id && IS_REFRESH_MODE) return null;
+    // In refresh mode, an existing article from the DB is considered pre-validated.
+    if (article._id && isRefreshMode) return null;
     
     if (!article.headline || article.headline.length < MIN_HEADLINE_CHARS) return `Headline is too short (min ${MIN_HEADLINE_CHARS}).`;
     if (article.headline.length > MAX_HEADLINE_CHARS) return `Headline is too long (max ${MAX_HEADLINE_CHARS}).`;
@@ -17,15 +18,24 @@ function validateInitialArticle(article) {
     return null;
 }
 
-export async function filterFreshArticles(articles) {
+export async function filterFreshArticles(articles, isRefreshMode = false) {
     if (!articles || articles.length === 0) return [];
 
-    if (IS_REFRESH_MODE) {
-        logger.warn('REFRESH MODE: Re-fetching all scraped articles from DB to re-process.');
-        const links = articles.map(a => a.link);
-        const refreshedArticles = await Article.find({ link: { $in: links } }).lean();
-        logger.info(`Found ${refreshedArticles.length} existing articles to refresh.`);
-        return refreshedArticles;
+    if (isRefreshMode) {
+        logger.warn('REFRESH MODE: All scraped articles will be processed, pulling existing data from DB where available.');
+        
+        const scrapedLinks = articles.map(a => a.link);
+        const existingDbArticles = await Article.find({ link: { $in: scrapedLinks } }).lean();
+        const existingArticlesMap = new Map(existingDbArticles.map(a => [a.link, a]));
+        
+        const articlesForReprocessing = articles.map(scrapedArticle => {
+            // If the article exists in the DB, use the full DB record.
+            // Otherwise, use the freshly scraped (but minimal) article data.
+            return existingArticlesMap.get(scrapedArticle.link) || scrapedArticle;
+        });
+
+        logger.info(`REFRESH MODE: Prepared ${articlesForReprocessing.length} articles for full re-processing.`);
+        return articlesForReprocessing;
     }
     
     const links = articles.map(a => a.link);
@@ -37,11 +47,11 @@ export async function filterFreshArticles(articles) {
     return freshArticles;
 }
 
-export async function prepareArticlesForPipeline(articles) {
+export async function prepareArticlesForPipeline(articles, isRefreshMode = false) {
     const articlesToProcess = [];
     
     for (const article of articles) {
-        const validationError = validateInitialArticle(article);
+        const validationError = validateInitialArticle(article, isRefreshMode);
         if (validationError) {
             logger.warn(`Initial validation failed for "${truncateString(article.headline, 50)}": ${validationError}`);
             continue;

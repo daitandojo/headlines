@@ -8,11 +8,12 @@ import { findSimilarArticles } from './src/modules/ai/rag.js';
 import Article from './models/Article.js';
 import SynthesizedEvent from './models/SynthesizedEvent.js';
 import { logger } from './src/utils/logger.js';
-import { ARTICLES_RELEVANCE_THRESHOLD, HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, IS_REFRESH_MODE } from './src/config/index.js';
+// MODIFIED: IS_REFRESH_MODE is no longer needed here as it's passed as an argument.
+import { ARTICLES_RELEVANCE_THRESHOLD, HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES } from './src/config/index.js';
 import { sendWealthEventsEmail, sendSupervisorReportEmail } from './src/modules/email/index.js';
 import { truncateString } from './src/utils/helpers.js';
 
-export async function runPipeline() {
+export async function runPipeline(isRefreshMode = false) {
     const runStartTime = Date.now();
     logger.info('🚀 STARTING SYNTHESIS PIPELINE...');
     const runStats = {
@@ -46,7 +47,7 @@ export async function runPipeline() {
         runStats.scraperHealth = scraperHealth;
         runStats.headlinesScraped = scrapedHeadlines.length;
         
-        const articlesToProcess = await filterFreshArticles(scrapedHeadlines);
+        const articlesToProcess = await filterFreshArticles(scrapedHeadlines, isRefreshMode);
         runStats.freshHeadlinesFound = articlesToProcess.length;
 
         if (articlesToProcess.length === 0) {
@@ -54,7 +55,7 @@ export async function runPipeline() {
             return;
         }
         
-        const articlesForPipeline = await prepareArticlesForPipeline(articlesToProcess);
+        const articlesForPipeline = await prepareArticlesForPipeline(articlesToProcess, isRefreshMode);
 
         if (articlesForPipeline.length === 0) {
             logger.info('No articles were successfully prepared for the pipeline. Ending run.');
