@@ -42,11 +42,11 @@ export const SCRAPER_PROXY_URL = getCleanStringEnv('SCRAPER_PROXY_URL') || null;
 
 
 // --- Thresholds ---
-export const HEADLINES_RELEVANCE_THRESHOLD = 30;
-export const ARTICLES_RELEVANCE_THRESHOLD = 70;
+export const HEADLINES_RELEVANCE_THRESHOLD = 20; // MODIFIED: Changed from 10 to 20
+export const ARTICLES_RELEVANCE_THRESHOLD = 50; // MODIFIED: Changed from 30 to 50
 export const MIN_ARTICLE_CHARS = 150;
 export const MAX_ARTICLE_CHARS = 100000;
-export const MIN_HEADLINE_CHARS = 5; // MODIFIED: Changed from 15 to 5
+export const MIN_HEADLINE_CHARS = 5;
 export const MAX_HEADLINE_CHARS = 500;
 export const AI_BATCH_SIZE = 6;
 

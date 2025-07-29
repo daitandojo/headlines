@@ -8,7 +8,7 @@ import { findSimilarArticles } from './src/modules/ai/rag.js';
 import Article from './models/Article.js';
 import SynthesizedEvent from './models/SynthesizedEvent.js';
 import { logger } from './src/utils/logger.js';
-import { HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES } from './src/config/index.js';
+import { ARTICLES_RELEVANCE_THRESHOLD, HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, IS_REFRESH_MODE } from './src/config/index.js';
 import { sendWealthEventsEmail, sendSupervisorReportEmail } from './src/modules/email/index.js';
 import { truncateString } from './src/utils/helpers.js';
 
@@ -86,13 +86,20 @@ export async function runPipeline() {
             const enriched = await scrapeArticleContent(article);
             if (enriched.articleContent && enriched.articleContent.contents.join('').length > 150) {
                 const finalAssessment = await assessArticleContent(enriched);
-                enrichedArticles.push(finalAssessment);
-                runStats.articlesEnriched++;
-                runStats.enrichedBySource[article.source] = (runStats.enrichedBySource[article.source] || 0) + 1;
+                if (finalAssessment.relevance_article >= ARTICLES_RELEVANCE_THRESHOLD) {
+                    enrichedArticles.push(finalAssessment);
+                    runStats.articlesEnriched++;
+                    runStats.enrichedBySource[article.source] = (runStats.enrichedBySource[article.source] || 0) + 1;
+                }
             }
         }
         await updateArticlesWithFullData(enrichedArticles);
-        logger.info(`Enriched and assessed ${enrichedArticles.length} full articles.`);
+        logger.info(`Enriched and assessed ${enrichedArticles.length} full articles meeting the relevance threshold.`);
+
+        if (enrichedArticles.length === 0) {
+            logger.info('No articles met the full article relevance threshold for event synthesis.');
+            return;
+        }
 
         // --- STEP 5: CLUSTERING ---
         const eventClusters = await clusterArticlesIntoEvents(enrichedArticles);
@@ -115,6 +122,12 @@ export async function runPipeline() {
             if (synthesizedEvent && !synthesizedEvent.error) {
                 runStats.eventsSynthesized++;
                 logger.info(`Synthesized Event: "${truncateString(synthesizedEvent.headline, 80)}"`);
+                
+                // Find the highest-scoring article to source the assessment reason from.
+                const highestScoringArticle = articlesInCluster.reduce((max, current) => 
+                    (current.relevance_article > max.relevance_article) ? current : max, articlesInCluster[0]
+                );
+
                 const aggregatedIndividuals = articlesInCluster.flatMap(a => a.key_individuals || []);
                 const uniqueIndividuals = Array.from(new Map(aggregatedIndividuals.map(p => [p.name, p])).values());
 
@@ -122,7 +135,8 @@ export async function runPipeline() {
                     event_key: cluster.event_key,
                     synthesized_headline: synthesizedEvent.headline,
                     synthesized_summary: synthesizedEvent.summary,
-                    highest_relevance_score: Math.max(...articlesInCluster.map(a => a.relevance_article || a.relevance_headline)),
+                    ai_assessment_reason: highestScoringArticle.assessment_article || highestScoringArticle.assessment_headline,
+                    highest_relevance_score: Math.max(...articlesInCluster.map(a => a.relevance_article)),
                     key_individuals: uniqueIndividuals,
                     source_articles: articlesInCluster.map(a => ({
                         article_id: a._id,
@@ -136,10 +150,6 @@ export async function runPipeline() {
         }
 
         if (synthesizedEventsToSave.length > 0) {
-            await SynthesizedEvent.updateMany(
-                { event_key: { $in: synthesizedEventsToSave.map(e => e.event_key) } },
-                { $set: { emailed: false } }
-            );
             await SynthesizedEvent.bulkWrite(
                 synthesizedEventsToSave.map(e => ({
                     updateOne: {

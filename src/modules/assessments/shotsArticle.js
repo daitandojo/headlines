@@ -1,220 +1,122 @@
-// File: headlines_mongo/src/modules/assessments/shotsArticle.js
+// src/modules/assessments/shotsArticle.js
 
 export const shotsInput = [
-  { articleText: 'Nyt anlæg ved Esbjerg skal producere klimavenlig brint' },
-  { articleText: 'Aarstiderne sold to giant' },
-  {
-    articleText:
-      'Many homeowners will see lower property taxes in 2025 and 2026',
-  },
-  { articleText: 'Nordic family sells company for $500M' },
-  { articleText: 'Harald Nyborg billionaire establishes new discount chain' },
-  {
-    articleText:
-      'New green energy plant in Esbjerg to produce climate-friendly hydrogen',
-  },
-  { articleText: 'Homeowners to receive tax relief in 2025' },
-  { articleText: 'CEO of family-owned Nordic tech firm sells for $120M' },
-  { articleText: 'Nordic logistics company IPO to benefit founder' },
+  { articleText: 'Nyt anlæg ved Esbjerg skal producere klimavenlig brint. Direktør Jens Hansen udtaler...' },
+  { articleText: 'Aarstiderne, stiftet af Søren Ejlersen, er blevet solgt til en international fødevaregigant for et trecifret millionbeløb.' },
+  { articleText: 'Many homeowners will see lower property taxes in 2025 and 2026' },
+  { articleText: 'The Møller family has sold their shipping software company, NaviTech, for $500M.' },
+  { articleText: 'Stellantis, the multinational car company, has reported that it stands to lose over 300 million kroner due to new US tariffs.' }, // NEW NEGATIVE EXAMPLE
+  { articleText: 'The family-owned conglomerate USTC, owned by the Østergaard-Nielsen family, is disputing a multimillion-krone claim from the Nordic Waste bankruptcy trustee.' }, // NEW RICH LIST PROXIMITY EXAMPLE
+  { articleText: 'CEO of family-owned Scandinavian tech firm, Anna Schmidt, sells for $120M' },
+  { articleText: 'The Grundfos holding company, owned by the Due Jensen family, has announced a dividend of 300 million kroner to be distributed among family members.' },
   { articleText: 'Rockwool plans massive global expansions' },
-  {
-    articleText: 'Nordic Crowns fyringsrunde er gået hårdt ud over hovedsædet',
-  },
-  { articleText: 'Boeing raises $19 billion to repay debts' },
-  {
-    articleText: 'Homeowners with excessive property tax bills may receive aid',
-  },
-  { articleText: 'Crisis-hit Boeing plans to raise billions to repay debt' },
-  { articleText: 'Novo Nordisk Foundation profits from new obesity drug' },
-  { articleText: 'Nordic billionaire invests in U.S. tech startup' },
-  { articleText: 'Maersk Group reports 30% revenue increase' },
-  {
-    articleText: 'Nordic entrepreneur inherits $60 million from family estate',
-  },
-  { articleText: 'Foreign investor buys stake in Nordic public company' },
 ];
 
-// --- KEY FIX: All shot outputs for a JSON response must be a STRINGIFIED JSON object. ---
-// The AI is trained to respond with a JSON object, so its "speech" in the few-shot examples
-// must be a string that represents that JSON object.
 export const shotsOutput = [
+  // REFINED: Updated to new JSON structure
   JSON.stringify({
     topic: 'Green hydrogen plant in Esbjerg',
     relevance_article: 10,
-    category: 0,
-    assessment_article:
-      'Infrastructure project with no direct personal wealth transfer.',
+    assessment_article: 'Infrastructure project with no direct personal wealth transfer.',
     amount: 0,
-    contacts: [],
+    key_individuals: [],
     background: 'Public or corporate energy initiative.',
   }),
+  // REFINED: Updated to new JSON structure with email inference
   JSON.stringify({
-    topic: 'Aarstiderne sold to giant',
+    topic: 'Sale of Aarstiderne',
     relevance_article: 95,
-    category: 1,
-    assessment_article: 'Clear private wealth event for Nordic founders.',
-    amount: 100,
-    contacts: ['Søren Ejlersen'],
-    background: 'Sale of private Nordic company.',
+    assessment_article: 'Clear private wealth event for Scandinavian founder.',
+    amount: 150, // Assuming DKK millions -> USD
+    key_individuals: [{
+      "name": "Søren Ejlersen",
+      "role_in_event": "Founder & Seller",
+      "company": "Aarstiderne",
+      "email_suggestion": "soren.ejlersen@aarstiderne.com"
+    }],
+    background: 'Sale of private Scandinavian company.',
   }),
+  // REFINED: Updated to new JSON structure
   JSON.stringify({
     topic: 'Property tax cuts for homeowners',
-    relevance_article: 20,
-    category: 0,
-    assessment_article: 'Tax relief is not a substantial direct wealth event.',
+    relevance_article: 15,
+    assessment_article: 'General tax relief is not a substantial direct wealth event.',
     amount: 0,
-    contacts: [],
+    key_individuals: [],
     background: 'Policy affecting many, not enriching individuals.',
   }),
+  // REFINED: Updated to new JSON structure with email inference
   JSON.stringify({
-    topic: 'Nordic family sells company for $500M',
+    topic: 'Sale of NaviTech',
     relevance_article: 100,
-    category: 1,
-    assessment_article:
-      'Substantial wealth event clearly benefiting a Nordic family.',
+    assessment_article: 'Substantial wealth event clearly benefiting a Scandinavian family.',
     amount: 500,
-    contacts: ['Family Name'],
+    key_individuals: [{
+      "name": "Møller family",
+      "role_in_event": "Seller",
+      "company": "NaviTech",
+      "email_suggestion": "contact@navitech.com"
+    }],
     background: 'Private business transaction.',
   }),
+  // NEW: Output for the Stellantis negative example
   JSON.stringify({
-    topic: 'Billionaire starts new chain',
-    relevance_article: 40,
-    category: 0,
-    assessment_article:
-      'No confirmed wealth transfer; potential future impact.',
-    amount: 0,
-    contacts: [],
-    background: 'New business launch.',
+    topic: 'Tariff losses for Stellantis',
+    relevance_article: 5,
+    assessment_article: 'Irrelevant. Article describes financial losses for a foreign multinational corporation.',
+    amount: -300,
+    key_individuals: [],
+    background: 'General automotive industry news.',
   }),
+  // NEW: Output for the USTC Rich List Proximity example
   JSON.stringify({
-    topic: 'Esbjerg green energy plant',
-    relevance_article: 10,
-    category: 0,
-    assessment_article: 'Corporate project, no direct benefit to individuals.',
+    topic: 'USTC legal dispute over Nordic Waste claim',
+    relevance_article: 60,
+    assessment_article: 'High relevance due to the involvement of a Rich List family (Østergaard-Nielsen/USTC) in a significant financial event.',
     amount: 0,
-    contacts: [],
-    background: 'Energy infrastructure development.',
+    key_individuals: [{
+        "name": "Østergaard-Nielsen family",
+        "role_in_event": "Owner",
+        "company": "USTC",
+        "email_suggestion": "contact@ustc.dk"
+    }],
+    background: 'Ongoing legal and financial issue for a major family holding company.',
   }),
+  // REFINED: Updated to new JSON structure with email inference
   JSON.stringify({
-    topic: 'Homeowner tax relief in 2025',
-    relevance_article: 20,
-    category: 0,
-    assessment_article: 'Public policy benefit, not a personal wealth event.',
-    amount: 0,
-    contacts: [],
-    background: 'Government fiscal policy.',
-  }),
-  JSON.stringify({
-    topic: 'Tech CEO sells firm for $120M',
+    topic: 'Sale of Scandinavian tech firm',
     relevance_article: 95,
-    category: 1,
-    assessment_article:
-      'Substantial wealth event for private Nordic individual.',
+    assessment_article: 'Substantial wealth event for private Scandinavian individual.',
     amount: 120,
-    contacts: ['CEO Name'],
+    key_individuals: [{
+      "name": "Anna Schmidt",
+      "role_in_event": "CEO & Seller",
+      "company": "Unknown Tech Firm",
+      "email_suggestion": null
+    }],
     background: 'Private tech company acquisition.',
   }),
+  // REFINED: Updated to new JSON structure
   JSON.stringify({
-    topic: 'IPO benefits Nordic logistics founder',
-    relevance_article: 90,
-    category: 1,
-    assessment_article: 'Clear private wealth generation through IPO.',
-    amount: 150,
-    contacts: ['Founder Name'],
-    background: 'Public offering of private firm.',
+    topic: 'Grundfos family dividend',
+    relevance_article: 95,
+    assessment_article: 'Direct and substantial wealth transfer to a private Scandinavian family.',
+    amount: 45, // 300M DKK -> USD
+    key_individuals: [{
+        "name": "Due Jensen family",
+        "role_in_event": "Recipient",
+        "company": "Grundfos",
+        "email_suggestion": null
+    }],
+    background: 'Dividend from a family-owned holding company.',
   }),
+  // REFINED: Updated to new JSON structure
   JSON.stringify({
     topic: 'Rockwool global expansion',
     relevance_article: 10,
-    category: 0,
-    assessment_article: 'Corporate strategy, no individual wealth generation.',
+    assessment_article: 'Corporate strategy of a public company, no individual wealth generation.',
     amount: 0,
-    contacts: [],
+    key_individuals: [],
     background: 'Public company operations.',
-  }),
-  JSON.stringify({
-    topic: 'Nordic Crown layoffs',
-    relevance_article: 0,
-    category: 0,
-    assessment_article: 'No wealth event present.',
-    amount: 0,
-    contacts: [],
-    background: 'Workforce reduction.',
-  }),
-  JSON.stringify({
-    topic: 'Boeing debt fundraising',
-    relevance_article: 0,
-    category: 0,
-    assessment_article:
-      'Foreign financial activity irrelevant to Nordic private wealth.',
-    amount: 0,
-    contacts: [],
-    background: 'U.S. corporate strategy.',
-  }),
-  JSON.stringify({
-    topic: 'Aid for property tax overpayments',
-    relevance_article: 15,
-    category: 0,
-    assessment_article:
-      'Financial support, not substantial private wealth transfer.',
-    amount: 0,
-    contacts: [],
-    background: 'Public compensation mechanism.',
-  }),
-  JSON.stringify({
-    topic: 'Crisis-hit Boeing raises capital',
-    relevance_article: 0,
-    category: 0,
-    assessment_article: 'Foreign corporate debt issue, not relevant.',
-    amount: 0,
-    contacts: [],
-    background: 'Financial maneuver by U.S. company.',
-  }),
-  JSON.stringify({
-    topic: 'Novo Nordisk Foundation profits',
-    relevance_article: 10,
-    category: 0,
-    assessment_article:
-      'Institutional profit, no personal Nordic wealth event.',
-    amount: 0,
-    contacts: [],
-    background: 'Public foundation income.',
-  }),
-  JSON.stringify({
-    topic: 'Nordic billionaire invests abroad',
-    relevance_article: 20,
-    category: 0,
-    assessment_article: 'Investment activity without clear wealth increase.',
-    amount: 0,
-    contacts: [],
-    background: 'Cross-border financial move.',
-  }),
-  JSON.stringify({
-    topic: 'Maersk revenue up 30%',
-    relevance_article: 5,
-    category: 0,
-    assessment_article:
-      'Corporate earnings report, not a private wealth event.',
-    amount: 0,
-    contacts: [],
-    background: 'Listed company performance.',
-  }),
-  JSON.stringify({
-    topic: 'Nordic entrepreneur inherits $60M',
-    relevance_article: 95,
-    category: 1,
-    assessment_article: 'Direct substantial wealth transfer via inheritance.',
-    amount: 60,
-    contacts: ['Entrepreneur Name'],
-    background: 'Family wealth transition.',
-  }),
-  JSON.stringify({
-    topic: 'Foreign investor buys Nordic shares',
-    relevance_article: 10,
-    category: 0,
-    assessment_article: 'No direct benefit to Nordic individuals.',
-    amount: 0,
-    contacts: [],
-    background: 'Public market transaction.',
   }),
 ];

@@ -14,7 +14,7 @@ const KeyIndividualSchema = new Schema({
     name: String,
     role_in_event: String,
     company: String,
-    email_suggestion: { type: String, required: false }, // NEW FIELD
+    email_suggestion: { type: String, required: false },
 }, { _id: false });
 
 const SynthesizedEventSchema = new Schema(
@@ -29,6 +29,7 @@ const SynthesizedEventSchema = new Schema(
     },
     synthesized_headline: { type: String, required: true, trim: true },
     synthesized_summary: { type: String, required: true, trim: true },
+    ai_assessment_reason: { type: String, required: false }, // NEW FIELD
     source_articles: { type: [SourceArticleSchema], required: true },
     highest_relevance_score: { type: Number, required: true },
     key_individuals: { type: [KeyIndividualSchema], required: true },

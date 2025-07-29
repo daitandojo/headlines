@@ -51,6 +51,40 @@ async function fetchPage(url) {
 
 async function scrapeSite(site) {
     logger.debug(`Scraping headlines from ${site.name}`);
+    
+    // --- SPECIAL API-BASED SCRAPING FOR EQT ---
+    if (site.name === 'EQT') {
+        const pageResponse = await fetchPage(site.url);
+        if (!pageResponse) return { source: site.name, articles: [], success: false };
+
+        const buildIdMatch = pageResponse.data.match(/"buildId":"([a-zA-Z0-9_-]+)"/);
+        if (!buildIdMatch || !buildIdMatch[1]) {
+            logger.warn(`Could not find Build ID for EQT. Site structure may have changed.`);
+            return { source: site.name, articles: [], success: false };
+        }
+        const buildId = buildIdMatch[1];
+        const apiUrl = `${site.url.replace('/news', '')}/_next/data/${buildId}/en/news.json`;
+
+        const apiResponse = await fetchPage(apiUrl);
+        if (!apiResponse) return { source: site.name, articles: [], success: false };
+        
+        try {
+            const hits = apiResponse.data?.pageProps?.page?.pageContent?.find(c => c._type === 'listing')?.initialResults?.main?.hits || [];
+            const articles = hits.map(hit => ({
+                headline: hit.thumbnail.title,
+                link: new URL(hit.thumbnail.path, site.url).href,
+                source: site.name,
+                newspaper: site.newspaper,
+            }));
+            logger.info(`Scraped ${articles.length} unique headlines from ${site.name}.`);
+            return { source: site.name, articles, success: true };
+        } catch (e) {
+            logger.error({ err: e }, `Failed to parse API response from EQT.`);
+            return { source: site.name, articles: [], success: false };
+        }
+    }
+
+    // --- STANDARD HTML SCRAPING FOR ALL OTHER SITES ---
     const response = await fetchPage(site.url);
     if (!response) {
         return { source: site.name, articles: [], success: false };
@@ -99,18 +133,48 @@ export async function scrapeAllHeadlines() {
 
 export async function scrapeArticleContent(article) {
     logger.debug(`Enriching article: ${article.link}`);
+    
+    const pageResponse = await fetchPage(article.link);
+    if (!pageResponse) {
+        return { ...article, enrichment_error: 'Failed to fetch page' };
+    }
+    
+    // --- SPECIAL JSON-BASED ENRICHMENT FOR EQT ARTICLES ---
+    if (article.newspaper === 'EQT') {
+        const $page = cheerio.load(pageResponse.data);
+        const scriptData = $page('script#__NEXT_DATA__').html();
+        if (scriptData) {
+            try {
+                const jsonData = JSON.parse(scriptData);
+                // Navigate through the complex JSON structure to find the article body
+                const pageContent = jsonData?.props?.pageProps?.page?.pageContent;
+                if (pageContent) {
+                    const richTextBlock = pageContent.find(block => block._type === 'richTextBlock');
+                    if (richTextBlock && richTextBlock.body) {
+                        const bodyHtml = richTextBlock.body;
+                        const $body = cheerio.load(bodyHtml);
+                        const fullText = $body.text().replace(/\s\s+/g, ' ').trim();
+                        article.articleContent = { contents: [fullText] };
+                        return article;
+                    }
+                }
+            } catch (e) {
+                logger.warn({ err: e }, `Failed to parse JSON data for EQT article: ${article.link}. Falling back to standard method.`);
+            }
+        }
+    }
+
+    // --- STANDARD METHOD FOR ALL OTHER SITES (AND EQT FALLBACK) ---
     const newspaperName = article.newspaper || article.source;
     const selector = TEXT_SELECTORS[newspaperName];
     if (!selector) {
         logger.warn(`No text selector for newspaper "${newspaperName}".`);
         return { ...article, enrichment_error: 'No selector' };
     }
-    const pageResponse = await fetchPage(article.link);
-    if (!pageResponse) {
-        return { ...article, enrichment_error: 'Failed to fetch page' };
-    }
+
     const $ = cheerio.load(pageResponse.data);
     const fullText = $(selector).map((_, el) => $(el).text()).get().join(' ').replace(/\s\s+/g, ' ').trim();
+    
     if (fullText) {
         article.articleContent = { contents: [fullText] };
     } else {

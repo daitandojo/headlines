@@ -35,14 +35,14 @@ const log = {
 async function main() {
     log.info(`🚀 Starting test scrape for ${HEADLINES_TO_SCRAPE_PER_SITE} articles per site...`);
 
-    const allHeadlines = await scrapeAllHeadlines();
+    const { allArticles } = await scrapeAllHeadlines(); // MODIFIED: Destructure to get the articles array.
     const sites = Object.values(SITES_CONFIG);
 
     for (const site of sites) {
-        console.log(`\n==================== 📰 ${site.name.toUpperCase()} ====================`);
+        log.info(`\n==================== 📰 ${site.name.toUpperCase()} ====================`);
 
         // FIX: Filter by `h.source` which is guaranteed to match `site.name`.
-        const siteHeadlines = allHeadlines
+        const siteHeadlines = allArticles
             .filter(h => h.source === site.name)
             .slice(0, HEADLINES_TO_SCRAPE_PER_SITE);
 

@@ -5,6 +5,7 @@ function createEventBriefCard(event) {
     const {
         synthesized_headline,
         synthesized_summary,
+        ai_assessment_reason, // New property
         source_articles,
         highest_relevance_score,
         key_individuals
@@ -21,6 +22,13 @@ function createEventBriefCard(event) {
            </div>`
         : '';
     
+    // NEW: HTML block for the AI's reasoning
+    const reasoningHtml = ai_assessment_reason 
+        ? `<div style="margin-top: 15px; padding-left: 10px; border-left: 2px solid #eeeeee; font-size: 12px; color: #666666; font-style: italic;">
+             <strong>AI Reasoning:</strong> ${ai_assessment_reason}
+           </div>`
+        : '';
+
     const sourcesHtml = source_articles.map(article => `
         <tr style="vertical-align: top;">
             <td style="padding: 4px 8px 4px 0; color: #555; font-weight: bold; white-space: nowrap;">${article.newspaper}:</td>
@@ -39,6 +47,8 @@ function createEventBriefCard(event) {
         <p style="margin: 0 0 15px; font-size: 15px; color: #555; line-height: 1.6;">${synthesized_summary}</p>
         
         ${contactsHtml}
+
+        ${reasoningHtml}
 
         <h4 style="margin-top: 20px; margin-bottom: 10px; font-size: 14px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">Source Articles</h4>
         <table border="0" cellpadding="0" cellspacing="0" width="100%">${sourcesHtml}</table>
