@@ -49,7 +49,10 @@ Score 0-29 for:
 `,
 
   vitals:
-    'If the article references "Goldman Sachs", "London" or "Morgan Stanley" in the context of a deal involving Scandinavian private entities, it MUST be scored 100 for relevance_article. Pay extremely close attention to articles involving known Scandinavian Rich List individuals and their core business activities.',
+    `If the article references "Goldman Sachs", it MUST be scored 100 for relevance_article. 
+     Pay extremely close attention to articles involving known Scandinavian Rich List individuals and their core business activities.
+     An interview with a founder of a large family company for example (e.g. John Blem being interviewed to tell about Milestone) should score 100.
+    `,
 
   reiteration:
     'Only respond with a properly formatted JSON object. If an article is about a Rich List person discussing their business significantly, assign a relevance score (typically 70+) reflecting this importance. Clearly state the reason in the assessment.',

@@ -22,6 +22,7 @@ export async function runPipeline(isRefreshMode = false) {
         freshHeadlinesFound: 0,
         headlinesAssessed: 0,
         relevantHeadlines: 0,
+        enrichmentOutcomes: [], // To track what happens to each relevant headline
         articlesEnriched: 0,
         relevantArticles: 0, 
         enrichedBySource: {},
@@ -80,14 +81,53 @@ export async function runPipeline(isRefreshMode = false) {
         const enrichedArticles = [];
         for (const article of relevantCandidates) {
             const enriched = await scrapeArticleContent(article);
+            
+            // --- MODIFIED: Capture even more detail for the supervisor email ---
             if (enriched.articleContent && enriched.articleContent.contents.join('').length > 150) {
                 const finalAssessment = await assessArticleContent(enriched);
+                const contentSnippet = (finalAssessment.articleContent?.contents || []).join(' ').substring(0, 300);
+
                 if (finalAssessment.relevance_article >= ARTICLES_RELEVANCE_THRESHOLD) {
                     enrichedArticles.push(finalAssessment);
                     runStats.articlesEnriched++;
                     runStats.enrichedBySource[article.source] = (runStats.enrichedBySource[article.source] || 0) + 1;
+                    runStats.enrichmentOutcomes.push({
+                        headline: article.headline,
+                        link: article.link,
+                        outcome: 'Success',
+                        headlineScore: article.relevance_headline,
+                        assessment_headline: article.assessment_headline,
+                        finalScore: finalAssessment.relevance_article,
+                        assessment_article: finalAssessment.assessment_article,
+                        content_snippet: contentSnippet,
+                    });
+                } else {
+                    // Dropped due to low content score
+                    runStats.enrichmentOutcomes.push({
+                        headline: article.headline,
+                        link: article.link,
+                        outcome: 'Dropped',
+                        headlineScore: article.relevance_headline,
+                        assessment_headline: article.assessment_headline,
+                        finalScore: finalAssessment.relevance_article,
+                        assessment_article: `Score was below threshold [${ARTICLES_RELEVANCE_THRESHOLD}]. AI Reason: ${finalAssessment.assessment_article}`,
+                        content_snippet: contentSnippet,
+                    });
                 }
+            } else {
+                // Dropped due to scraper failure or short content
+                runStats.enrichmentOutcomes.push({
+                    headline: article.headline,
+                    link: article.link,
+                    outcome: 'Dropped',
+                    headlineScore: article.relevance_headline,
+                    assessment_headline: article.assessment_headline,
+                    finalScore: null,
+                    assessment_article: `Enrichment Failed. Reason: ${enriched.enrichment_error || 'Scraped content was too short (< 150 chars)'}`,
+                    content_snippet: 'Could not retrieve article content.',
+                });
             }
+            // --- END MODIFICATION ---
         }
         await updateArticlesWithFullData(enrichedArticles);
         runStats.relevantArticles = enrichedArticles.length;

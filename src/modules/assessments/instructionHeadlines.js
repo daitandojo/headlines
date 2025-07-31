@@ -53,8 +53,9 @@ Examples of Low Relevance (0–29):
 - "ATP sells its stake in Bavarian Nordic" (Pension fund activity)
 `,
   vitals: `
-VITAL: Any mention of "Goldman Sachs" or "Morgan Stanley" or "London" in the context of a private Scandinavian deal must result in a relevance score of 100.
-**VITAL: Headlines mentioning names from the Scandinavian Rich List (e.g., Martin Thorborg, Holch Povlsen, Kirk Kristiansen) involved in significant business transactions, strategy announcements for their core businesses, or substantial investments should be considered highly relevant (score 70-100).**
+  **VITAL: Any mention of "Goldman Sachs" must result in a relevance score of 100.
+  **VITAL: Headlines mentioning names from the Scandinavian Rich List (e.g., Martin Thorborg, Holch Povlsen, Kirk Kristiansen) should be considered highly relevant (score 70-100).**
+    But also an interview with a founder of a large family company for example (e.g. John Blem being interviewed to tell about Milestone) should score 100.
 `,
   outputFormatDescription: `
 Respond in English with a valid JSON object, exactly formatted like below.

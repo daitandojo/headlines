@@ -95,10 +95,10 @@ on:
     # IMPORTANT: GitHub schedules run on UTC time.
     # 10:00 Copenhagen (CEST, UTC+2) is 08:00 UTC
     # 16:30 Copenhagen (CEST, UTC+2) is 14:30 UTC
-    - cron: '0 6 * * *'
-    - cron: '0 8 * * *'
-    - cron: '30 14 * * *'
-    - cron: '39 22 * * *'
+    - cron: '20 20 * * *'
+    - cron: '20 21 * * *'
+    - cron: '15 08 * * *'
+    - cron: '15 12 * * *'
 
 jobs:
   run-on-fly:
@@ -245,7 +245,7 @@ CMD [ "node", "app.js" ]
 
 # File: app-logic.js
 // app-logic.js
-import { connectDatabase, disconnectDatabase } from './src/database.js';
+import { connectDatabase } from './src/database.js'; // REMOVED disconnectDatabase from import
 import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
 import { filterFreshArticles, prepareArticlesForPipeline, updateArticlesWithFullData } from './src/modules/mongoStore/index.js';
 import { assessHeadlinesInBatches, assessArticleContent, performKimiSanityCheck, checkModelPermissions } from './src/modules/ai/index.js';
@@ -254,11 +254,12 @@ import { findSimilarArticles } from './src/modules/ai/rag.js';
 import Article from './models/Article.js';
 import SynthesizedEvent from './models/SynthesizedEvent.js';
 import { logger } from './src/utils/logger.js';
-import { ARTICLES_RELEVANCE_THRESHOLD, HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, IS_REFRESH_MODE } from './src/config/index.js';
+import { logFinalReport } from './src/utils/pipelineLogger.js'; 
+import { ARTICLES_RELEVANCE_THRESHOLD, HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES } from './src/config/index.js';
 import { sendWealthEventsEmail, sendSupervisorReportEmail } from './src/modules/email/index.js';
 import { truncateString } from './src/utils/helpers.js';
 
-export async function runPipeline() {
+export async function runPipeline(isRefreshMode = false) {
     const runStartTime = Date.now();
     logger.info('🚀 STARTING SYNTHESIS PIPELINE...');
     const runStats = {
@@ -268,9 +269,11 @@ export async function runPipeline() {
         headlinesAssessed: 0,
         relevantHeadlines: 0,
         articlesEnriched: 0,
+        relevantArticles: 0, 
         enrichedBySource: {},
         eventsClustered: 0,
         eventsSynthesized: 0,
+        synthesizedEventsForReport: [], 
         eventsEmailed: 0,
         errors: [],
     };
@@ -292,7 +295,7 @@ export async function runPipeline() {
         runStats.scraperHealth = scraperHealth;
         runStats.headlinesScraped = scrapedHeadlines.length;
         
-        const articlesToProcess = await filterFreshArticles(scrapedHeadlines);
+        const articlesToProcess = await filterFreshArticles(scrapedHeadlines, isRefreshMode);
         runStats.freshHeadlinesFound = articlesToProcess.length;
 
         if (articlesToProcess.length === 0) {
@@ -300,8 +303,7 @@ export async function runPipeline() {
             return;
         }
         
-        const articlesForPipeline = await prepareArticlesForPipeline(articlesToProcess);
-
+        const articlesForPipeline = await prepareArticlesForPipeline(articlesToProcess, isRefreshMode);
         if (articlesForPipeline.length === 0) {
             logger.info('No articles were successfully prepared for the pipeline. Ending run.');
             return;
@@ -311,12 +313,6 @@ export async function runPipeline() {
         const assessedCandidates = await assessHeadlinesInBatches(articlesForPipeline);
         runStats.headlinesAssessed = assessedCandidates.length;
 
-        logger.info('--- Headline Assessment Complete ---');
-        assessedCandidates.forEach(a => {
-            const status = a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD ? '✅ Relevant' : '❌ Irrelevant';
-            logger.info(`[${String(a.relevance_headline).padStart(3, ' ')}] ${status} - "${truncateString(a.headline, 70)}"`);
-        });
-
         const relevantCandidates = assessedCandidates.filter(a => a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD);
         runStats.relevantHeadlines = relevantCandidates.length;
 
@@ -324,7 +320,7 @@ export async function runPipeline() {
             logger.info('No headlines met the relevance threshold for event synthesis.');
             return;
         }
-        logger.info(`Found ${relevantCandidates.length} relevant headlines for enrichment.`);
+        logger.info(`Found ${relevantCandidates.length} relevant headlines. Proceeding to enrichment...`);
         
         // --- STEP 4: ENRICHMENT & ARTICLE ASSESSMENT ---
         const enrichedArticles = [];
@@ -340,6 +336,7 @@ export async function runPipeline() {
             }
         }
         await updateArticlesWithFullData(enrichedArticles);
+        runStats.relevantArticles = enrichedArticles.length;
         logger.info(`Enriched and assessed ${enrichedArticles.length} full articles meeting the relevance threshold.`);
 
         if (enrichedArticles.length === 0) {
@@ -367,13 +364,9 @@ export async function runPipeline() {
 
             if (synthesizedEvent && !synthesizedEvent.error) {
                 runStats.eventsSynthesized++;
-                logger.info(`Synthesized Event: "${truncateString(synthesizedEvent.headline, 80)}"`);
-                
-                // Find the highest-scoring article to source the assessment reason from.
                 const highestScoringArticle = articlesInCluster.reduce((max, current) => 
                     (current.relevance_article > max.relevance_article) ? current : max, articlesInCluster[0]
                 );
-
                 const aggregatedIndividuals = articlesInCluster.flatMap(a => a.key_individuals || []);
                 const uniqueIndividuals = Array.from(new Map(aggregatedIndividuals.map(p => [p.name, p])).values());
 
@@ -384,26 +377,16 @@ export async function runPipeline() {
                     ai_assessment_reason: highestScoringArticle.assessment_article || highestScoringArticle.assessment_headline,
                     highest_relevance_score: Math.max(...articlesInCluster.map(a => a.relevance_article)),
                     key_individuals: uniqueIndividuals,
-                    source_articles: articlesInCluster.map(a => ({
-                        article_id: a._id,
-                        headline: a.headline,
-                        link: a.link,
-                        newspaper: a.newspaper
-                    })),
+                    source_articles: articlesInCluster.map(a => ({ article_id: a._id, headline: a.headline, link: a.link, newspaper: a.newspaper })),
                 });
                 synthesizedEventsToSave.push(eventToSave);
+                runStats.synthesizedEventsForReport.push({ synthesized_headline: eventToSave.synthesized_headline, highest_relevance_score: eventToSave.highest_relevance_score });
             }
         }
 
         if (synthesizedEventsToSave.length > 0) {
             await SynthesizedEvent.bulkWrite(
-                synthesizedEventsToSave.map(e => ({
-                    updateOne: {
-                        filter: { event_key: e.event_key },
-                        update: { $set: e },
-                        upsert: true,
-                    }
-                }))
+                synthesizedEventsToSave.map(e => ({ updateOne: { filter: { event_key: e.event_key }, update: { $set: e }, upsert: true } }))
             );
             logger.info(`Successfully saved/updated ${synthesizedEventsToSave.length} synthesized events.`);
         }
@@ -421,31 +404,39 @@ export async function runPipeline() {
         
         if (dbConnected) {
              await sendSupervisorReportEmail(runStats);
-             await disconnectDatabase();
+             // REMOVED: await disconnectDatabase();
         } else {
-             logger.info('Pipeline halted before DB connection. No supervisor report sent.');
+             logger.warn('Pipeline halted before DB connection. No supervisor report or final stats will be generated.');
         }
        
-        logger.info(`PIPELINE FINISHED in ${duration} seconds. Emailed ${runStats.eventsEmailed} events.`);
+        await logFinalReport(runStats, duration);
     }
 }
 
 # File: app.js
 // app.js
-import 'dotenv/config'; // Load environment variables at the very beginning
-import { logger } from './src/utils/logger.js';
-import { runPipeline } from './app-logic.js';
 
-// NEW: Check for a '--refresh' command-line argument to enable re-processing.
+// --- CRITICAL: Set environment based on command-line args BEFORE any other imports ---
+// This ensures that all modules, especially the config, see the correct environment state
+// from the very beginning of the application lifecycle.
 const isRefreshMode = process.argv.includes('--refresh');
 if (isRefreshMode) {
     process.env.REFRESH_MODE = 'true';
+}
+
+import 'dotenv/config'; // Load environment variables from .env file
+import { logger } from './src/utils/logger.js';
+import { runPipeline } from './app-logic.js';
+
+// Now that the logger has been initialized (with the correct mode), we can safely log the warning.
+if (isRefreshMode) {
     logger.warn('🚀 REFRESH MODE ACTIVATED: Previously processed articles from this scrape will be treated as fresh.');
 }
 
 async function start() {
     try {
-        await runPipeline();
+        // Pass the determined mode directly to the pipeline.
+        await runPipeline(isRefreshMode);
         // The process will exit naturally after the pipeline completes.
     } catch (error) {
         logger.fatal({ err: error }, 'A top-level, unhandled exception occurred in the application. The pipeline did not complete.');
@@ -455,6 +446,140 @@ async function start() {
 }
 
 start();
+
+# File: data/facts.json
+[
+  {
+    "headline": "Wealth Profile: Anders Holch Povlsen Confirmed as Denmark's Richest Individual",
+    "link": "https://www.goodreturns.in/billionaires-in-denmark.html#fact1-povlsen",
+    "newspaper": "Wealth Intelligence Briefing",
+    "source": "Internal Fact Sheet",
+    "relevance_article": 100,
+    "assessment_article": "Core intelligence on a top-tier Scandinavian Rich List individual's net worth.",
+    "articleContent": {
+      "contents": [
+        "Anders Holch Povlsen is the richest person in Denmark, with an estimated net worth of $12.36 billion. His wealth is primarily derived from his ownership of the fashion retail company Bestseller and significant shareholdings in companies like ASOS and Zalando."
+      ]
+    },
+    "key_individuals": [
+      {
+        "name": "Anders Holch Povlsen",
+        "role_in_event": "Subject of Wealth Analysis",
+        "company": "Bestseller"
+      }
+    ]
+  },
+  {
+    "headline": "Industry Analysis: Manufacturing Sector Dominates Danish Billionaire List",
+    "link": "https://www.goodreturns.in/billionaires-in-denmark.html#fact2-industry-dominance",
+    "newspaper": "Wealth Intelligence Briefing",
+    "source": "Internal Fact Sheet",
+    "relevance_article": 100,
+    "assessment_article": "Strategic analysis of wealth origins among Denmark's UHNW individuals, crucial for sector-based prospecting.",
+    "articleContent": {
+      "contents": [
+        "An analysis of the top billionaires in Denmark reveals that the majority originate from the Manufacturing industry. This sector accounts for 57% (4 out of 7) of the country's wealthiest individuals, indicating its foundational role in large-scale wealth creation in the region."
+      ]
+    }
+  },
+  {
+    "headline": "Wealth Profile: Niels Peter Louis-Hansen, Denmark's Oldest Top Billionaire",
+    "link": "https://www.goodreturns.in/billionaires-in-denmark.html#fact3-louis-hansen",
+    "newspaper": "Wealth Intelligence Briefing",
+    "source": "Internal Fact Sheet",
+    "relevance_article": 100,
+    "assessment_article": "Core intelligence on a top-tier Scandinavian Rich List individual from the Healthcare sector.",
+    "articleContent": {
+      "contents": [
+        "Denmark's oldest billionaire in the top list is Niels Peter Louis-Hansen, aged 77. His fortune is associated with the Healthcare industry, primarily through his stake in the medical device company Coloplast."
+      ]
+    },
+    "key_individuals": [
+      {
+        "name": "Niels Peter Louis-Hansen",
+        "role_in_event": "Subject of Wealth Analysis",
+        "company": "Coloplast"
+      }
+    ]
+  },
+  {
+    "headline": "Sector Breakdown: Denmark's Top Billionaires Represent Four Key Industries",
+    "link": "https://www.goodreturns.in/billionaires-in-denmark.html#fact4-sector-breakdown",
+    "newspaper": "Wealth Intelligence Briefing",
+    "source": "Internal Fact Sheet",
+    "relevance_article": 100,
+    "assessment_article": "Market intelligence report identifying the primary sectors for wealth creation in Denmark.",
+    "articleContent": {
+      "contents": [
+        "The top billionaires in Denmark derive their wealth from four primary industries: Healthcare, Manufacturing, Logistics, and Fashion & Retail. This highlights the key sectors driving significant private wealth in the country."
+      ]
+    }
+  },
+  {
+    "headline": "Wealth Profile: Agnete Kirk Thinggaard, Denmark's Youngest Top Billionaire",
+    "link": "https://www.goodreturns.in/billionaires-in-denmark.html#fact5-kirk-thinggaard",
+    "newspaper": "Wealth Intelligence Briefing",
+    "source": "Internal Fact Sheet",
+    "relevance_article": 100,
+    "assessment_article": "Core intelligence on a key member of the Kirk Kristiansen (LEGO) family, a top-tier Rich List entity.",
+    "articleContent": {
+      "contents": [
+        "The youngest person among Denmark's top billionaires is Agnete Kirk Thinggaard, at 42 years old. She is one of the heirs to the LEGO fortune, founded by her great-grandfather."
+      ]
+    },
+    "key_individuals": [
+      {
+        "name": "Agnete Kirk Thinggaard",
+        "role_in_event": "Subject of Wealth Analysis",
+        "company": "LEGO (Kirk Kristiansen family)"
+      }
+    ]
+  }
+]
+
+# File: data/rich1.json
+[
+  {
+    "headline": "Wealth Profile #33: Hans Carl Bøgh-Sørensen & Family (Orifarm) Fortune at DKK 6.4 Billion",
+    "link": "https://www.okonomiskugebrev.dk/danmarks-100-rigeste-2024#fact-bogh-sorensen-33-final",
+    "newspaper": "Økonomisk Ugebrev - Danmarks 100 Rigeste 2024",
+    "source": "Wealth Intelligence Briefing",
+    "relevance_article": 100,
+    "assessment_article": "Intelligence on the family behind Orifarm, a major parallel importer of pharmaceuticals, noting a modest wealth increase based on an 18% profit rise.",
+    "articleContent": {
+      "contents": [
+        "Hans Carl Bøgh-Sørensen and family are ranked #33 with a fortune of DKK 6.4 billion, a modest increase from DKK 6.3 billion. Their company, Orifarm Group, is one of Europe's largest in the parallel import of medicine. The family's wealth grew on the back of an 18% increase in company profits."
+      ]
+    },
+    "key_individuals": [
+      {
+        "name": "Hans Carl Bøgh-Sørensen",
+        "role_in_event": "Owner",
+        "company": "Orifarm / Habico Holding"
+      }
+    ]
+  },
+  {
+    "headline": "Wealth Profile #93: Grunnet Family (Primo) Fortune at DKK 2.2 Billion",
+    "link": "https://www.okonomiskugebrev.dk/danmarks-100-rigeste-2024#fact-grunnet-93-final",
+    "newspaper": "Økonomisk Ugebrev - Danmarks 100 Rigeste 2024",
+    "source": "Wealth Intelligence Briefing",
+    "relevance_article": 100,
+    "assessment_article": "Intelligence on the family behind the plastics manufacturing company Inter Primo Group, whose fortune saw a slight increase.",
+    "articleContent": {
+      "contents": [
+        "The Grunnet family, owners of the plastics extrusion company Inter Primo Group, is ranked #93 with a fortune of DKK 2.2 billion, a slight increase from DKK 2.1 billion. Although the company's operating profit saw a decline, the family's overall fortune was supported by positive returns on their financial investments."
+      ]
+    },
+    "key_individuals": [
+      {
+        "name": "Flemming Grunnet",
+        "role_in_event": "Chairman",
+        "company": "Inter Primo Group"
+      }
+    ]
+  }
+]
 
 # File: docker-compose.yml
 # docker-compose.yml (version 1.03)
@@ -784,6 +909,173 @@ main().catch(err => {
     process.exit(1);
 });
 
+# File: scripts/chat.js
+// scripts/chat.js
+// An interactive RAG chatbot with a professional-grade conversational engine.
+// It uses a central "Thinking" AI to synthesize information, deduce insights, handle corrections,
+// and manage memory, ensuring a natural, reliable, and intelligent user experience.
+
+import 'dotenv/config';
+import readline from 'readline';
+import OpenAI from 'openai';
+import { connectDatabase, disconnectDatabase } from '../src/database.js';
+import Article from '../models/Article.js';
+import { generateEmbedding, cosineSimilarity } from '../src/utils/vectorUtils.js';
+import { logger } from '../src/utils/logger.js';
+import { KIMI_API_KEY, LLM_MODEL_HEADLINES } from '../src/config/index.js';
+
+// --- Configuration ---
+const TOP_K_RESULTS = 7;
+const CANDIDATE_POOL_SIZE = 250;
+const DUPLICATE_THRESHOLD = 0.95;
+
+// --- UI Colors ---
+const colors = { reset: "\x1b[0m", cyan: "\x1b[36m", green: "\x1b[32m", yellow: "\x1b[33m" };
+const USER_PROMPT = `${colors.cyan}You > ${colors.reset}`;
+const AI_PROMPT = `${colors.green}Bot >${colors.reset} `;
+
+// --- AI Client Setup ---
+const kimi = new OpenAI({ apiKey: 'dummy-key', baseURL: 'https://api.moonshot.ai/v1', defaultHeaders: { 'Authorization': `Bearer ${KIMI_API_KEY}` } });
+
+/** Embeds and stores a structured fact. */
+async function embedAndStoreFact(structuredFact) {
+    const newArticle = new Article({
+        headline: structuredFact.headline,
+        link: `https://user.facts/fact-entry-${Date.now()}`,
+        newspaper: "User-Provided Fact", source: "Conversational Input",
+        relevance_headline: 100, assessment_headline: "Fact provided by user.",
+        relevance_article: 100, assessment_article: "Fact provided by user.",
+        articleContent: { contents: [structuredFact.summary] },
+        key_individuals: [{ name: structuredFact.key_subject, role_in_event: "Subject of Fact" }],
+        emailed: true,
+    });
+    const textToEmbed = `${newArticle.headline}\n${newArticle.articleContent.contents.join(' ')}`;
+    newArticle.embedding = await generateEmbedding(textToEmbed);
+    await newArticle.save();
+}
+
+/** Main function to run the interactive chat loop. */
+async function main() {
+    console.log('Connecting to database...');
+    await connectDatabase();
+    console.log('Database connected. Wealth Analyst Assistant is ready.\n');
+
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const chatHistory = [];
+    let state = { type: 'idle' };
+
+    async function handleUserInput(userInput) {
+        if (state.type === 'waiting_for_confirmation') {
+            const affirmativeRegex = /^(y|yes|yeah|yep|ok|sure|correct)/i;
+            if (affirmativeRegex.test(userInput)) {
+                await embedAndStoreFact(state.factToStore);
+                console.log(`${AI_PROMPT}Got it. I'll remember that.`);
+                chatHistory.push({ role: 'user', content: userInput });
+                chatHistory.push({ role: 'assistant', content: `Acknowledged. Stored fact: ${state.factToStore.summary}` });
+            } else {
+                console.log(`${AI_PROMPT}${colors.yellow}Okay, I won't store that.${colors.reset}`);
+            }
+            state = { type: 'idle' };
+            rl.setPrompt(USER_PROMPT);
+            rl.prompt();
+            return;
+        }
+
+        // --- 1. CONTEXT GATHERING ---
+        const queryEmbedding = await generateEmbedding(userInput);
+        const candidateArticles = await Article.find({ embedding: { $exists: true, $ne: null } }).sort({ createdAt: -1 }).limit(CANDIDATE_POOL_SIZE).lean();
+        let dbContext = "The database contains no relevant information on this topic.";
+        if (candidateArticles.length > 0) {
+            const scoredArticles = candidateArticles.map(article => ({ ...article, score: cosineSimilarity(queryEmbedding, article.embedding) }));
+            scoredArticles.sort((a, b) => b.score - a.score);
+            const retrievedArticles = scoredArticles.slice(0, TOP_K_RESULTS);
+            if (retrievedArticles.length > 0 && retrievedArticles[0].score > 0.4) {
+                dbContext = "### Database Context:\n" + retrievedArticles.map(article => `- ${article.headline}: ${article.articleContent.contents.join(' ')}`).join('\n');
+            }
+        }
+        const conversationContext = "### Conversation History:\n" + chatHistory.slice(-8).map(h => `${h.role}: ${h.content}`).join('\n');
+
+        // --- 2. THE UNIFIED "THINKING" PROMPT ---
+        const systemPrompt = `You are an elite intelligence analyst for a wealth management firm. Your goal is to be a concise, intelligent conversational partner. Analyze the user's LATEST input in the context of the full conversation and database.
+
+        **Your Mandate & Hierarchy of Truth:**
+        1.  **Synthesize All Known Information:** Formulate a concise, direct answer by synthesizing facts from BOTH the "Database Context" AND the "Conversation History". Treat the conversation history as a primary source of truth to avoid amnesia.
+        2.  **Deduce and Infer:** Act like an analyst. Make logical deductions. If someone founded a major company, you can deduce they are wealthy. If you know X advises Y, you can answer questions about Y's advisor.
+        3.  **Use General Knowledge Fluidly:** If the answer is not in your known information, state this clearly and then seamlessly provide the answer from your general knowledge (e.g., "The database doesn't have details on his company, but from my general knowledge, Stig Holledig is the founder of Holledig Capital..."). Do NOT ask for permission.
+        4.  **Handle Corrections Gracefully:** If the user corrects you ("No, that's wrong..."), accept the correction immediately and prioritize their new information as the truth.
+        5.  **Identify New, Valuable Facts:** If the user provides a genuinely new, valuable, non-contradictory fact, identify it for storage. Check if it's a duplicate of existing knowledge first.
+
+        **Your JSON Output:**
+        Respond ONLY with a valid JSON object:
+        {
+          "thought": "Your brief, one-sentence thought process. Example: 'The user is correcting me about John Blem. I will acknowledge the correction and propose storing the new fact.'",
+          "responseText": "The natural, conversational text to display to the user. This is your primary output. Keep it concise.",
+          "action": "One of: 'answer', 'confirm_fact', 'clarify'",
+          "factToConfirm": {
+            "headline": "Structured headline for the new fact",
+            "summary": "Structured summary for the new fact",
+            "key_subject": "Primary person/company"
+          } OR null
+        }`;
+
+        const userPrompt = `${dbContext}\n\n${conversationContext}\n\n### User's Latest Input:\n"${userInput}"`;
+        const messages = [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }];
+
+        // --- 3. EXECUTE AND ACT ---
+        let plan;
+        try {
+            const response = await kimi.chat.completions.create({ model: LLM_MODEL_HEADLINES, messages, response_format: { type: 'json_object' } });
+            plan = JSON.parse(response.choices[0].message.content);
+        } catch (e) {
+            console.log(`${AI_PROMPT}${colors.yellow}I'm having a little trouble processing that. Could you please rephrase?${colors.reset}`);
+            rl.prompt(); return;
+        }
+
+        chatHistory.push({ role: 'user', content: userInput });
+        if (plan.responseText) {
+            console.log(`${AI_PROMPT}${plan.responseText}`);
+            chatHistory.push({ role: 'assistant', content: plan.responseText });
+        }
+
+        if (plan.action === 'confirm_fact' && plan.factToConfirm) {
+            const factSummary = plan.factToConfirm.summary;
+            const factEmbedding = await generateEmbedding(factSummary);
+            const similarities = candidateArticles.map(art => cosineSimilarity(factEmbedding, art.embedding || []));
+            if (similarities.length > 0 && Math.max(...similarities) > DUPLICATE_THRESHOLD) {
+                // It's a duplicate, do nothing further.
+            } else {
+                state = { type: 'waiting_for_confirmation', factToStore: plan.factToConfirm };
+                rl.setPrompt('');
+                rl.question(`${AI_PROMPT}${colors.yellow}Should I remember that? (y/n) > ${colors.reset}`, (answer) => {
+                    handleUserInput(answer);
+                });
+                return;
+            }
+        }
+        rl.prompt();
+    }
+
+    rl.setPrompt(USER_PROMPT);
+    rl.prompt();
+    rl.on('line', (line) => {
+        const trimmedLine = line.trim();
+        if (trimmedLine.toLowerCase() === 'exit' || trimmedLine.toLowerCase() === 'quit') rl.close();
+        else if (trimmedLine) handleUserInput(trimmedLine);
+        else rl.prompt();
+    });
+
+    rl.on('close', async () => {
+        console.log('\nExiting. Goodbye!');
+        await disconnectDatabase();
+        process.exit(0);
+    });
+}
+
+main().catch(err => {
+    logger.fatal({ err }, 'Chatbot encountered a fatal error.');
+    process.exit(1);
+});
+
 # File: scripts/embedPastArticles.js
 // scripts/embedPastArticles.js
 import 'dotenv/config';
@@ -842,6 +1134,103 @@ async function embedPastArticles() {
 
 embedPastArticles().catch(err => {
     logger.fatal({ err }, 'An unhandled error occurred during the embedding backfill process.');
+    process.exit(1);
+});
+
+# File: scripts/list.js
+// scripts/showHighRelevance.js
+// A script to connect to the database and list all articles with a high relevance score.
+// Usage:
+//   node scripts/showHighRelevance.js       (uses default threshold of 10)
+//   node scripts/showHighRelevance.js 50    (uses a threshold of 50)
+
+import 'dotenv/config';
+import { connectDatabase, disconnectDatabase } from '../src/database.js';
+import Article from '../models/Article.js';
+import { logger } from '../src/utils/logger.js';
+
+// --- Console Colors for Readability ---
+const colors = {
+    reset: "\x1b[0m",
+    red: "\x1b[31m",
+    green: "\x1b[32m",
+    yellow: "\x1b[33m",
+    cyan: "\x1b[36m",
+    grey: "\x1b[90m",
+};
+
+/**
+ * Main function to fetch and display high-relevance articles.
+ * @param {number} threshold The minimum relevance score to display.
+ */
+async function showHighRelevanceArticles(threshold) {
+    logger.info(`Connecting to the database to find articles with relevance > ${threshold}...`);
+    await connectDatabase();
+
+    try {
+        // Find articles where either the article score OR the headline score is > threshold.
+        const articles = await Article.find({
+            $or: [
+                { relevance_article: { $gt: threshold } },
+                { relevance_headline: { $gt: threshold } }
+            ]
+        })
+        .sort({ relevance_article: -1, relevance_headline: -1 }) // Sort by highest score first
+        .limit(200) // Limit to a reasonable number of results
+        .lean(); // Use .lean() for faster, read-only queries
+
+        if (articles.length === 0) {
+            logger.warn(`No articles found with a relevance score greater than ${threshold}.`);
+            return;
+        }
+
+        logger.info(`✅ Found ${articles.length} articles with a relevance score > ${threshold}. Displaying now:\n`);
+
+        console.log(`${colors.cyan}--- HIGH RELEVANCE ARTICLES (Threshold: ${threshold}) ---${colors.reset}`);
+        articles.forEach(article => {
+            const primaryScore = article.relevance_article ?? article.relevance_headline;
+            const scoreDisplay = String(primaryScore).padStart(3);
+            const scoreColor = primaryScore >= 80 ? colors.green : primaryScore >= 50 ? colors.yellow : colors.reset;
+            
+            console.log(`${scoreColor}[${scoreDisplay}]${colors.reset} "${article.headline}" (${article.newspaper})`);
+            console.log(`  -> ${colors.grey}Scores (Article/Headline): ${article.relevance_article ?? 'N/A'} / ${article.relevance_headline}${colors.reset}`);
+            console.log(`  -> ${colors.grey}Link: ${article.link}${colors.reset}`);
+            
+            const reason = article.assessment_article || article.assessment_headline;
+            if (reason) {
+                console.log(`  -> ${colors.grey}AI Reason: ${reason}${colors.reset}`);
+            }
+            console.log('---------------------------------');
+        });
+
+    } catch (error) {
+        logger.error({ err: error }, 'An error occurred while fetching articles.');
+    } finally {
+        await disconnectDatabase();
+    }
+}
+
+// --- Parse Command-Line Argument and Execute Script ---
+
+// process.argv contains command-line arguments:
+// [0] is the node executable path
+// [1] is the script file path
+// [2] is the first user-provided argument
+const thresholdArg = process.argv[2];
+let threshold = 10; // Default threshold
+
+if (thresholdArg) {
+    const parsedThreshold = parseInt(thresholdArg, 10);
+    if (!isNaN(parsedThreshold) && parsedThreshold >= 0) {
+        threshold = parsedThreshold;
+    } else {
+        logger.error(`Invalid threshold provided: "${thresholdArg}". Please provide a non-negative number.`);
+        process.exit(1);
+    }
+}
+
+showHighRelevanceArticles(threshold).catch(err => {
+    logger.fatal({ err }, 'The script encountered a fatal error.');
     process.exit(1);
 });
 
@@ -957,6 +1346,104 @@ else
     echo -e "${RED}❌ An error occurred during deployment. Please check the output above.${NC}"
     exit 1
 fi
+
+# File: scripts/seedFacts.js
+// scripts/seedFacts.js
+// A script to read a JSON file of factual data and upload it to the 'articles' collection,
+// treating each fact as a highly relevant, pre-assessed article.
+//
+// Usage:
+//   node scripts/seedFacts.js <path_to_json_file>
+// Example:
+//   node scripts/seedFacts.js ./data/facts.json
+
+import 'dotenv/config';
+import fs from 'fs/promises';
+import { connectDatabase, disconnectDatabase } from '../src/database.js';
+import Article from '../models/Article.js';
+import { generateEmbedding } from '../src/utils/vectorUtils.js';
+import { logger } from '../src/utils/logger.js';
+
+/**
+ * Main function to read, process, and upload facts from a given file path.
+ * @param {string} filePath The path to the JSON file containing the facts.
+ */
+async function seedFacts(filePath) {
+    logger.info(`Starting fact seeding process from ${filePath}...`);
+    await connectDatabase();
+
+    try {
+        const data = await fs.readFile(filePath, 'utf-8');
+        const facts = JSON.parse(data);
+
+        if (!Array.isArray(facts) || facts.length === 0) {
+            logger.warn('No facts found in the JSON file. Exiting.');
+            return;
+        }
+
+        logger.info(`Found ${facts.length} facts to process and embed.`);
+        const operations = [];
+
+        for (const fact of facts) {
+            // 1. Create a cohesive text block for embedding
+            const textToEmbed = `${fact.headline}\n${(fact.articleContent?.contents || []).join(' ')}`;
+            
+            // 2. Generate the vector embedding
+            const embedding = await generateEmbedding(textToEmbed);
+            
+            // 3. Prepare the final payload for the database
+            const articlePayload = {
+                ...fact,
+                embedding: embedding,
+                emailed: true, // Mark as already "processed" to prevent emailing
+                createdAt: new Date(), // Set creation date to now
+            };
+            
+            // 4. Create an upsert operation to avoid duplicates on re-runs
+            operations.push({
+                updateOne: {
+                    filter: { link: fact.link }, // Use the unique link as the key
+                    update: { $set: articlePayload },
+                    upsert: true
+                }
+            });
+            logger.info(`Prepared and embedded: "${fact.headline}"`);
+        }
+
+        if (operations.length > 0) {
+            logger.info(`Bulk writing ${operations.length} facts to the database...`);
+            const result = await Article.bulkWrite(operations, { ordered: false });
+            logger.info(`✅ Fact seeding complete. Upserted: ${result.upsertedCount}, Modified: ${result.modifiedCount}.`);
+        }
+
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            logger.error(`Error: The file was not found at the specified path: ${filePath}`);
+        } else if (error instanceof SyntaxError) {
+            logger.error(`Error: The file at ${filePath} contains invalid JSON. Please check the file for syntax errors.`);
+        } else {
+            logger.error({ err: error }, 'An unexpected error occurred during the fact seeding process.');
+        }
+    } finally {
+        await disconnectDatabase();
+    }
+}
+
+// --- Parse Command-Line Argument and Execute Script ---
+
+// process.argv[2] is the first user-provided command-line argument.
+const factsFilePath = process.argv[2];
+
+if (!factsFilePath) {
+    logger.error('Error: Missing required file path argument.');
+    logger.error('Usage: node scripts/seedFacts.js <path_to_json_file>');
+    process.exit(1);
+}
+
+seedFacts(factsFilePath).catch(err => {
+    logger.fatal({ err }, 'The fact seeding script encountered a fatal error.');
+    process.exit(1);
+});
 
 # File: scripts/setFlySecrets.sh
 #!/bin/bash
@@ -1376,6 +1863,9 @@ async function generateJsonResponse(model, instructions, userContent, temperatur
         messages,
         response_format: { type: "json_object" },
         temperature,
+        // --- FIX: Explicitly allow a much larger output ---
+        // This prevents the API from truncating the JSON response when clustering many articles.
+        max_tokens: 8192, 
     }));
 
     if (!result) return { error: 'API call failed' };
@@ -1556,13 +2046,13 @@ async function generateAssessment(model, instructions, userContent, fewShotInput
     }
 }
 
-// --- REFACTORED BATCH ASSESSMENT LOGGING ---
+
 export async function assessHeadlinesInBatches(articles) {
     const batches = [];
     for (let i = 0; i < articles.length; i += AI_BATCH_SIZE) {
         batches.push(articles.slice(i, i + AI_BATCH_SIZE));
     }
-    logger.info(`Assessing ${articles.length} headlines in ${batches.length} batches.`);
+    logger.info(`Assessing ${articles.length} headlines in ${batches.length} batches...`);
     const allAssessedPromises = [];
     let completedBatches = 0;
 
@@ -1574,7 +2064,7 @@ export async function assessHeadlinesInBatches(articles) {
                 
                 completedBatches++;
                 
-                // --- NEW CONCISE LOGGING ---
+                // --- FIX: Restore detailed per-headline logging for debugging ---
                 if (response && response.assessment && Array.isArray(response.assessment)) {
                     logger.info(`--- Batch ${completedBatches}/${batches.length} Results ---`);
                     batch.forEach((article, i) => {
@@ -1583,15 +2073,17 @@ export async function assessHeadlinesInBatches(articles) {
                             const score = assessment.relevance_headline;
                             const comment = assessment.assessment_headline || 'No comment.';
                             const emoji = score >= HEADLINES_RELEVANCE_THRESHOLD ? '✅' : '❌';
-                            logger.info(`${emoji} [${score}] ${truncateString(article.headline, 70)} | ${truncateString(comment, 60)}`);
+                            const source = article.source || 'Unknown';
+                            logger.info(`${emoji} [${String(score).padStart(3)}] "${truncateString(article.headline, 60)}" (${source}) | ${truncateString(comment, 45)}`);
                         } else {
-                            logger.warn(`- Malformed assessment for: ${truncateString(article.headline, 70)}`);
+                            const source = article.source || 'Unknown';
+                            logger.warn(`- Malformed assessment for: "${truncateString(article.headline, 70)}" (${source})`);
                         }
                     });
                 } else {
                     logger.error(`❌ Headline assessment failed for batch ${completedBatches}/${batches.length}. Reason: ${response.error || 'Malformed response'}`);
                 }
-                // --- END NEW LOGGING ---
+                // --- END FIX ---
 
                 if (response.error || !response.assessment || !Array.isArray(response.assessment) || response.assessment.length !== batch.length) {
                     return batch.map(article => ({ ...article, relevance_headline: 0, assessment_headline: response.error || 'AI assessment failed.' }));
@@ -1603,7 +2095,7 @@ export async function assessHeadlinesInBatches(articles) {
     }
     
     const assessedBatches = await Promise.all(allAssessedPromises);
-    logger.info(`Finished assessing all ${batches.length} batches.`);
+    logger.info('Finished assessing all headline batches.');
     return assessedBatches.flat();
 }
 
@@ -1671,35 +2163,62 @@ export async function findSimilarArticles(articlesInCluster) {
 # File: src/modules/assessments/instructionArticle.js
 // src/modules/assessments/instructionArticle.js
 export const instructionArticle = {
-  whoYouAre: 'You are a senior Scandinavian wealth management analyst. Your goal is to qualify leads for an investment bank by analyzing full-text articles.',
-  whatYouDo: 'You determine if an article describes a significant wealth event for a PRIVATE Scandinavian individual, family, or their direct holding company. You also flag any major event concerning a top-tier Rich List family.',
+  whoYouAre:
+    'You are a private wealth relevance analyst specialized in Scandinavian media.',
+
+  whatYouDo:
+    'You analyze full-text articles. Your primary goal is to identify if they report a direct, substantial private wealth event (over $30 million) benefiting private Scandinavian individuals, families, their holding companies, or family offices/foundations. Additionally, you flag articles discussing significant business activities by known Scandinavian Rich List individuals.',
+
+  writingStyle:
+    'Use concise, factual English. Avoid speculation. Maintain a formal tone.',
+
+  outputFormatDescription:
+    'Respond only with a valid JSON object using this structure: { "topic": "Short summary of the event", "relevance_article": 95, "assessment_article": "Reason for the score", "amount": 500, "key_individuals": [{"name": "Name", "role_in_event": "Founder", "company": "Company Name", "email_suggestion": "name@company.com"}], "background": "Contextual info" }',
 
   guidelines: `
-    **Primary Focus (High Score):**
-    - Direct, substantial wealth-generating events (company sales, IPOs, M&A, large dividends) benefiting named private Scandinavian individuals/families, valued over $30M.
+Focus on:
+1.  **Direct Wealth Events**: Articles involving direct wealth transfers (company sales, IPOs, M&A, inheritances, significant asset sales) to named Scandinavian individuals/families, their holding companies, or family offices/foundations, where the new wealth clearly exceeds $30 million. Obituaries of very wealthy individuals are also key.
 
-    **Secondary Focus (Medium Score - Rich List Proximity):**
-    - **VITAL RULE:** Any significant strategic or financial news related to a top-tier Danish/Nordic Rich List family (e.g., the family behind **USTC**, Kirk Kristiansen, Holch Povlsen). This includes large investments, divestments, legal battles over significant assets, or major strategic shifts in their core family-owned businesses. The event itself might be a cost (like a fine) or an investment, but its scale and relation to the family's wealth make it a crucial intelligence point.
+2.  **Rich List Individual Activity (SPECIAL ATTENTION)**: Articles featuring prominent Scandinavian Rich List individuals (e.g., **Martin Thorborg**, Anders Holch Povlsen, Kirk Kristiansen family members, etc.) discussing:
+    *   Significant strategic decisions for their main businesses.
+    *   Major investments or divestments, even if the article doesn't explicitly state a >$30M personal gain but the context implies substantial financial activity.
+    *   Interviews where they speak at length about their company's performance or future plans that could significantly impact their wealth.
+    *   For these Rich List cases, the $30M direct threshold can be relaxed if the activity is clearly significant to their primary wealth-generating entities.
 
-    **Strictly Exclude:**
-    - News primarily about foreign multinational corporations (e.g., Stellantis) that do not directly involve a sale *from* a private Scandinavian owner.
-    - Articles about financial losses, tariffs, or market challenges for public or foreign companies.
-    - General market analysis, corporate performance reports, or mergers of non-family-owned entities.
-  `,
+Exclude any articles primarily about:
+-   A Private Equity or Venture Capital firm's own operational news, such as fundraising or closing a new fund. Focus on their *transactions*.
+-   Investment decisions made by large institutional pension funds (like ATP).
+-   Companies or projects without a clearly identified private Scandinavian individual/family beneficiary (unless it's a known Rich List holding company).
+-   Foreign or institutional beneficiaries (unless it's an acquisition *from* a Scandinavian private owner).
+-   General company performance reports *unless* they directly quote a Rich List owner discussing significant strategic implications.
+-   Minor news or public appearances not related to core business strategy.
+-   Philanthropy.
+`,
 
   scoring: `
-    **Score 90-100:** A clear, confirmed wealth-generating event for a private Scandinavian family.
-    
-    **Score 51-89:**
-    - A strongly implied but not fully detailed wealth-generating event.
-    - An event that falls under the **"Rich List Proximity"** rule. For these, the assessment must state: "High relevance due to the involvement of a Rich List family in a significant financial event."
+Score 90-100 for:
+-   Clear, direct wealth events >$30M for Scandinavian individuals/families.
+-   Articles detailing significant business activities or strategic pronouncements by top-tier Rich List individuals (e.g., Martin Thorborg discussing a major pivot, Anders Holch Povlsen on Bestseller's global strategy). The assessment should note "High relevance due to [Rich List Person]'s strategic involvement."
 
-    **Score 0-50:** Irrelevant news, including anything from the 'Strictly Exclude' list.
-  `,
-  
-  outputFormatDescription: 'Respond only with a valid JSON object. For each key individual, you MUST attempt to provide an email suggestion. The JSON structure is: { "topic": "...", "relevance_article": 95, "assessment_article": "...", "amount": 500, "key_individuals": [{"name": "Name", "role_in_event": "Founder", "company": "Company Name", "email_suggestion": "name@company.com"}], "background": "..." }',
+Score 70-89 for:
+-   Strongly implied (but not fully detailed) wealth events >$30M.
+-   Interviews or articles where a Rich List individual discusses their business in a way that indicates significant ongoing financial activity (e.g., "Martin Thorborg outlines future AI strategy for his business interests"). Assessment: "Moderate-high relevance due to [Rich List Person]'s statements on business direction."
 
-  reiteration: 'Your entire response must be a single, valid JSON object. Your analysis must strictly adhere to the focus on PRIVATE SCANDINAVIAN wealth and the special rules for Rich List families.'
+Score 30-69 for:
+-   Speculative wealth events, smaller transactions (<$30M), or news about Rich List individuals that is business-related but less impactful.
+
+Score 0-29 for:
+-   Irrelevant news, general company news without Rich List owner strategic input, or anything from the 'Exclude' list.
+`,
+
+  vitals:
+    `If the article references "Goldman Sachs", it MUST be scored 100 for relevance_article. 
+     Pay extremely close attention to articles involving known Scandinavian Rich List individuals and their core business activities.
+     An interview with a founder of a large family company for example (e.g. John Blem being interviewed to tell about Milestone) should score 100.
+    `,
+
+  reiteration:
+    'Only respond with a properly formatted JSON object. If an article is about a Rich List person discussing their business significantly, assign a relevance score (typically 70+) reflecting this importance. Clearly state the reason in the assessment.',
 };
 
 # File: src/modules/assessments/instructionCluster.js
@@ -1742,49 +2261,76 @@ export const instructionCluster = {
 # File: src/modules/assessments/instructionHeadlines.js
 // src/modules/assessments/instructionHeadlines.js
 export const instructionHeadlines = {
-  whoYouAre: 'You are a Scandinavian wealth management analyst. Your goal is to identify news headlines that could lead to new business for an investment bank.',
-  whatYouDo: 'You assess if headlines indicate a significant wealth event for a PRIVATE Scandinavian individual, family, or their direct holding company. Your focus is on "new family money."',
-  
+  whoYouAre: 'You are a financial news relevance analyst.',
+  whatYouDo:
+    'You assess whether Scandinavian news headlines describe immediate, substantial private wealth events.',
   guidelines: `
-    **Include ONLY:**
-    - Major liquidity events for private Scandinavian individuals/families (company sales, founder-led IPOs, large asset sales) valued over $30M.
-    - Significant dividend payments from private/family-owned holding companies directly to the family.
-    - Obituaries of ultra-high-net-worth Scandinavian individuals.
+Include only:
+- Major liquidity events for private Scandinavian individuals, families, their family offices, or family foundations (e.g., company sales, IPOs benefiting founders, substantial asset sales) generating >$50M.
+- Obituaries of ultra high net worth Scandinavian individuals leading to substantial wealth transfer/inheritance.
+- Significant transactions or capital events within privately-held/family-owned holding companies of Scandinavian rich list families that clearly indicate a substantial change in the family's private wealth (e.g., large dividend payouts from holding to family, sale of a major subsidiary by the holding company).
+- Any headlines directly indicating substantial (>$50M) wealth generation or transfer for Scandinavian rich list families or their primary business entities where the family is the clear beneficiary (e.g., "Bestseller owner Anders Holch Povlsen acquires major real estate portfolio for DKK 1 billion", "Grundfos owner foundation distributes DKK 500 million to Due Jensen family").
+- **SPECIAL ATTENTION**: News involving known Scandinavian Rich List individuals like **Martin Thorborg**, Anders Holch Povlsen, the Kirk Kristiansen family (LEGO), the Holch Povlsen family (Bestseller), the Due Jensen family (Grundfos), etc., especially related to their significant business activities, investments, or sales, should be scored with high relevance (70-100) if a wealth event is plausible, even if the exact amount is not stated but implied to be substantial.
 
-    **Strictly EXCLUDE:**
-    - News about large, publicly traded, or foreign multinational corporations (e.g., Stellantis, Boeing, Maersk as a public entity) unless the story is about a founding family's direct liquidity event.
-    - General market analysis, stock performance, or corporate earnings reports.
-    - Financial losses, fines, or tariff impacts, UNLESS it involves a Rich List family (see VITAL RULE).
-    - Mergers of publicly listed banks or non-family-owned cooperatives.
-  `,
+Strictly exclude:
+- A Private Equity or Venture Capital firm's own operational news, such as fundraising, closing a new fund, or hiring partners. Focus on their *transactions* (buying/selling companies), not their internal business.
+- Investment decisions made by large institutional pension funds (like ATP), as these do not represent private family wealth.
+- General corporate news such as expansions, new product launches, operational performance (profits/losses of publicly traded companies). **EXCEPTION:** A takeover bid or M&A of a public company is RELEVANT.
+- Headlines without direct, immediate, and substantial (>$50M) wealth impact for private Scandinavian individuals/families (unless it's a Rich List individual per "SPECIAL ATTENTION" rule).
+- Foreign corporate or public institution activity, unless it's a direct acquisition/sale involving a Scandinavian private individual/family.
+- Philanthropic donations by foundations or individuals.
+- Appointments to boards or executive positions.
+- General market commentary or economic trends.
 
+Relevance Scoring:
+- 90–100: Clear and substantial private wealth gain/transfer (>$50M) for Scandinavian individuals/families; news directly concerning Rich List families and significant activities of their primary businesses that clearly impact family wealth. Obituaries of UHNW individuals.
+- 70–89: Likely or partial substantial wealth gain (potentially >$50M, or an IPO of a significant family-owned company). News about significant investments/divestments by Rich List family holdings where the private benefit is strongly implied. For Rich List individuals (like Martin Thorborg), this score applies if the event suggests significant business involvement or strategy shift.
+- 50–69: Moderate or indirect wealth gain (typically <$50M but still a clear private wealth event).
+- 30–49: Minor or future potential gain, or wealth event of unclear substantiality.
+- 0–29: No private wealth relevance, or event clearly below significance thresholds, or anything from the 'Strictly Exclude' list.
+`,
   scoring: `
-    **Score 90-100 (High Relevance):** Clear, direct wealth-generating event for a named private Scandinavian family/individual (e.g., "Family sells tech firm for $100M").
-    
-    **Score 50-89 (Medium Relevance / Rich List Proximity):**
-    - Strongly implied but not explicitly valued wealth events.
-    - **VITAL RULE:** Any significant news (positive or negative, e.g., legal disputes, major investments, fines) involving a top-tier Danish/Nordic Rich List family (e.g., the family behind **USTC**, Kirk Kristiansen, Holch Povlsen). The event itself may not be a gain, but the family's involvement makes it relevant to their wealth management. The assessment should state "Relevant due to Rich List family involvement."
-    
-    **Score 20-49 (Low Relevance):** Minor or speculative wealth events.
-    
-    **Score 0-19 (No Relevance):** Anything in the 'Strictly EXCLUDE' list.
-  `,
+Examples of High Relevance (90–100):
+- "Danish family sells tech company for EUR 150M"
+- "LEGO heir passes away leaving substantial estate"
+- "Grundfos owner Poul Due Jensen's family holding company, KIRKBI A/S, acquires significant UK property portfolio for DKK 2 billion"
+- "Bestseller owner Anders Holch Povlsen receives DKK 1 billion dividend from family holding company"
+- "Martin Thorborg's company Dinero acquired by Visma" 
+- "Anders Holch Povlsen invests DKK 500 million in new green tech venture"
 
-  vitals: 'Any mention of "Goldman Sachs" or "Morgan Stanley" in the context of a private Scandinavian deal is an automatic 100. Always apply the Rich List Proximity rule for families like the owners of USTC.',
-  
+Examples of Moderate/High Relevance (70-89 for Rich List):
+- "Martin Thorborg's new AI venture secures seed funding" (Implies potential future wealth, activity of rich list person)
+- "Business-update: Martin Thorborg erkender: Kunstig intelligens kan true hans forretning" (Significant strategic statement from Rich List individual about their business - score 70-80 to flag for review)
+
+
+Examples of Low Relevance (0–29):
+- "Boeing raises billions to pay debts"
+- "Rockwool plans global expansion"
+- "Homeowners to receive tax relief"
+- "Grundfos (the company) announces record profits"
+- "Danfoss heir appointed to new board" 
+- "Martin Thorborg gives a public lecture on entrepreneurship" (Not a wealth event for him)
+- "Axcel closes its seventh fund at EUR 1.3 billion" (PE firm operational news)
+- "ATP sells its stake in Bavarian Nordic" (Pension fund activity)
+`,
+  vitals: `
+  **VITAL: Any mention of "Goldman Sachs" must result in a relevance score of 100.
+  **VITAL: Headlines mentioning names from the Scandinavian Rich List (e.g., Martin Thorborg, Holch Povlsen, Kirk Kristiansen) should be considered highly relevant (score 70-100).**
+    But also an interview with a founder of a large family company for example (e.g. John Blem being interviewed to tell about Milestone) should score 100.
+`,
   outputFormatDescription: `
-    Respond in English with a valid JSON object, exactly formatted like below.
-    Like shown here, it is vital that your response has a top-level "assessment" key:
+Respond in English with a valid JSON object, exactly formatted like below.
+It is vital that your response has a top-level "assessment" key:
+{
+  "assessment": [
     {
-      "assessment": [
-        {
-          "relevance_headline": 95,
-          "assessment_headline": "Imminent personal wealth generation due to company sale."
-        }
-      ]
+      "relevance_headline": 95,
+      "assessment_headline": "Imminent personal wealth generation due to company sale."
     }
-    NEVER RETURN A PLAIN ARRAY.
-  `,
+  ]
+}
+NEVER RETURN A PLAIN ARRAY.
+`,
 };
 
 # File: src/modules/assessments/instructionSynthesize.js
@@ -2669,12 +3215,13 @@ import Article from '../../../models/Article.js';
 import { logger } from '../../utils/logger.js';
 import { truncateString } from '../../utils/helpers.js';
 import { generateEmbedding } from '../../utils/vectorUtils.js';
-import { MIN_HEADLINE_CHARS, MAX_HEADLINE_CHARS, IS_REFRESH_MODE } from '../../config/index.js';
+// MODIFIED: IS_REFRESH_MODE is no longer needed here.
+import { MIN_HEADLINE_CHARS, MAX_HEADLINE_CHARS } from '../../config/index.js';
 
-function validateInitialArticle(article) {
+function validateInitialArticle(article, isRefreshMode) {
     if (!article || typeof article !== 'object') return 'Article object is invalid.';
-    // In refresh mode, the article is already validated.
-    if (article._id && IS_REFRESH_MODE) return null;
+    // In refresh mode, an existing article from the DB is considered pre-validated.
+    if (article._id && isRefreshMode) return null;
     
     if (!article.headline || article.headline.length < MIN_HEADLINE_CHARS) return `Headline is too short (min ${MIN_HEADLINE_CHARS}).`;
     if (article.headline.length > MAX_HEADLINE_CHARS) return `Headline is too long (max ${MAX_HEADLINE_CHARS}).`;
@@ -2683,15 +3230,24 @@ function validateInitialArticle(article) {
     return null;
 }
 
-export async function filterFreshArticles(articles) {
+export async function filterFreshArticles(articles, isRefreshMode = false) {
     if (!articles || articles.length === 0) return [];
 
-    if (IS_REFRESH_MODE) {
-        logger.warn('REFRESH MODE: Re-fetching all scraped articles from DB to re-process.');
-        const links = articles.map(a => a.link);
-        const refreshedArticles = await Article.find({ link: { $in: links } }).lean();
-        logger.info(`Found ${refreshedArticles.length} existing articles to refresh.`);
-        return refreshedArticles;
+    if (isRefreshMode) {
+        logger.warn('REFRESH MODE: All scraped articles will be processed, pulling existing data from DB where available.');
+        
+        const scrapedLinks = articles.map(a => a.link);
+        const existingDbArticles = await Article.find({ link: { $in: scrapedLinks } }).lean();
+        const existingArticlesMap = new Map(existingDbArticles.map(a => [a.link, a]));
+        
+        const articlesForReprocessing = articles.map(scrapedArticle => {
+            // If the article exists in the DB, use the full DB record.
+            // Otherwise, use the freshly scraped (but minimal) article data.
+            return existingArticlesMap.get(scrapedArticle.link) || scrapedArticle;
+        });
+
+        logger.info(`REFRESH MODE: Prepared ${articlesForReprocessing.length} articles for full re-processing.`);
+        return articlesForReprocessing;
     }
     
     const links = articles.map(a => a.link);
@@ -2703,11 +3259,11 @@ export async function filterFreshArticles(articles) {
     return freshArticles;
 }
 
-export async function prepareArticlesForPipeline(articles) {
+export async function prepareArticlesForPipeline(articles, isRefreshMode = false) {
     const articlesToProcess = [];
     
     for (const article of articles) {
-        const validationError = validateInitialArticle(article);
+        const validationError = validateInitialArticle(article, isRefreshMode);
         if (validationError) {
             logger.warn(`Initial validation failed for "${truncateString(article.headline, 50)}": ${validationError}`);
             continue;
@@ -3044,6 +3600,130 @@ if (!IS_PRODUCTION) {
 }
 
 export const logger = pino(pinoConfig);
+
+# File: src/utils/pipelineLogger.js
+// src/utils/pipelineLogger.js
+import { logger } from './logger.js';
+import Article from '../../models/Article.js';
+import SynthesizedEvent from '../../models/SynthesizedEvent.js';
+import { truncateString } from './helpers.js';
+import { disconnectDatabase } from '../database.js';
+
+// --- Console Colors for Readability ---
+const colors = {
+    reset: "\x1b[0m",
+    red: "\x1b[31m",
+    green: "\x1b[32m",
+    yellow: "\x1b[33m",
+    cyan: "\x1b[36m",
+    magenta: "\x1b[35m",
+    grey: "\x1b[90m",
+};
+
+/**
+ * Fetches and calculates comprehensive statistics from the database.
+ * @returns {Promise<Object>} An object containing various database stats.
+ */
+async function getDatabaseStats() {
+    try {
+        const [totalArticles, totalEvents, relevanceAggregation, sourceAggregation] = await Promise.all([
+            Article.countDocuments(),
+            SynthesizedEvent.countDocuments(),
+            Article.aggregate([
+                {
+                    $bucket: {
+                        groupBy: "$relevance_article",
+                        boundaries: [0, 30, 50, 80, 101],
+                        default: "Other",
+                        output: { count: { $sum: 1 } }
+                    }
+                }
+            ]),
+            Article.aggregate([
+                { $group: { _id: '$newspaper', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 10 }
+            ])
+        ]);
+
+        return {
+            totalArticles,
+            totalEvents,
+            relevanceBuckets: relevanceAggregation,
+            topSources: sourceAggregation
+        };
+    } catch (error) {
+        logger.error({ err: error }, "Failed to fetch database statistics.");
+        return null;
+    }
+}
+
+/**
+ * The main function to log the final, comprehensive report for a pipeline run.
+ * @param {Object} runStats - The statistics collected during the pipeline run.
+ * @param {number} duration - The duration of the pipeline run in seconds.
+ */
+export async function logFinalReport(runStats, duration) {
+    const dbStats = await getDatabaseStats();
+
+    let report = `\n\n${colors.cyan}=============================================================${colors.reset}\n`;
+    report += `${colors.cyan} 🚀 PIPELINE RUN SUMMARY${colors.reset}\n`;
+    report += `${colors.cyan}=============================================================${colors.reset}\n\n`;
+    report += `  ${colors.magenta}Duration:${colors.reset} ${duration} seconds\n\n`;
+
+    // --- Current Run Funnel ---
+    report += `  ${colors.yellow}--- Funnel (This Run) ---${colors.reset}\n`;
+    report += `  ${'Headlines Scraped:'.padEnd(25)} ${runStats.headlinesScraped}\n`;
+    report += `  ${'Fresh/Refreshed Articles:'.padEnd(25)} ${runStats.freshHeadlinesFound}\n`;
+    report += `  ${'Headlines Assessed:'.padEnd(25)} ${runStats.headlinesAssessed}\n`;
+    report += `  ${'  > Relevant (>=20):'.padEnd(25)} ${runStats.relevantHeadlines}\n`;
+    report += `  ${'Articles Enriched:'.padEnd(25)} ${runStats.articlesEnriched}\n`;
+    report += `  ${'  > Relevant (>=50):'.padEnd(25)} ${runStats.relevantArticles}\n`;
+    report += `  ${'Events Clustered:'.padEnd(25)} ${runStats.eventsClustered}\n`;
+    report += `  ${'Events Synthesized:'.padEnd(25)} ${runStats.eventsSynthesized}\n`;
+    report += `  ${colors.green}${'Events Emailed:'.padEnd(25)} ${runStats.eventsEmailed}${colors.reset}\n`;
+    if (runStats.errors && runStats.errors.length > 0) {
+        report += `  ${colors.red}${'Errors Encountered:'.padEnd(25)} ${runStats.errors.length}${colors.reset}\n`;
+    }
+    report += '\n';
+
+    // --- Top Synthesized Events from this Run ---
+    if (runStats.synthesizedEventsForReport && runStats.synthesizedEventsForReport.length > 0) {
+        report += `  ${colors.yellow}--- Top Synthesized Events (This Run) ---${colors.reset}\n`;
+        runStats.synthesizedEventsForReport.slice(0, 5).forEach(event => {
+            report += `  ${colors.green}[${String(event.highest_relevance_score).padStart(3)}]${colors.reset} "${truncateString(event.synthesized_headline, 70)}"\n`;
+        });
+        report += '\n';
+    }
+
+    // --- Database Statistics ---
+    if (dbStats) {
+        report += `  ${colors.yellow}--- Database Statistics (Overall) ---${colors.reset}\n`;
+        report += `  ${'Total Articles:'.padEnd(25)} ${dbStats.totalArticles}\n`;
+        report += `  ${'Total Synthesized Events:'.padEnd(25)} ${dbStats.totalEvents}\n\n`;
+        
+        report += `  ${colors.magenta}Article Relevance Breakdown:${colors.reset}\n`;
+        dbStats.relevanceBuckets.forEach(bucket => {
+            // FIX: Handle potential undefined boundaries
+            const rangeEnd = bucket.boundaries && bucket.boundaries.length > 1 ? bucket.boundaries[1] - 1 : '...';
+            const range = bucket._id === 'Other' ? 'N/A' : `${bucket._id} - ${rangeEnd}`;
+            report += `  ${`  Score ${range}:`.padEnd(25)} ${bucket.count} articles\n`;
+        });
+        report += '\n';
+
+        report += `  ${colors.magenta}Top 10 Article Sources:${colors.reset}\n`;
+        dbStats.topSources.forEach(source => {
+            report += `  ${`  ${source._id}:`.padEnd(25)} ${source.count} articles\n`;
+        });
+    }
+
+    report += `\n${colors.cyan}=============================================================${colors.reset}\n`;
+
+    // --- FIX: Only log the formatted string, not the raw objects ---
+    logger.info(report);
+
+    await disconnectDatabase();
+}
 
 # File: src/utils/vectorUtils.js
 // src/utils/vectorUtils.js

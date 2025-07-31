@@ -1,7 +1,7 @@
 // scripts/chat.js
 // An interactive RAG chatbot with a professional-grade conversational engine.
 // It uses a central "Thinking" AI to synthesize information, deduce insights, handle corrections,
-// and manage memory, ensuring a natural and reliable user experience.
+// and manage memory, ensuring a natural, reliable, and intelligent user experience.
 
 import 'dotenv/config';
 import readline from 'readline';
@@ -53,10 +53,26 @@ async function main() {
     let state = { type: 'idle' };
 
     async function handleUserInput(userInput) {
+        if (state.type === 'waiting_for_confirmation') {
+            const affirmativeRegex = /^(y|yes|yeah|yep|ok|sure|correct)/i;
+            if (affirmativeRegex.test(userInput)) {
+                await embedAndStoreFact(state.factToStore);
+                console.log(`${AI_PROMPT}Got it. I'll remember that.`);
+                chatHistory.push({ role: 'user', content: userInput });
+                chatHistory.push({ role: 'assistant', content: `Acknowledged. Stored fact: ${state.factToStore.summary}` });
+            } else {
+                console.log(`${AI_PROMPT}${colors.yellow}Okay, I won't store that.${colors.reset}`);
+            }
+            state = { type: 'idle' };
+            rl.setPrompt(USER_PROMPT);
+            rl.prompt();
+            return;
+        }
+
         // --- 1. CONTEXT GATHERING ---
         const queryEmbedding = await generateEmbedding(userInput);
         const candidateArticles = await Article.find({ embedding: { $exists: true, $ne: null } }).sort({ createdAt: -1 }).limit(CANDIDATE_POOL_SIZE).lean();
-        let dbContext = "The database contains no relevant information.";
+        let dbContext = "The database contains no relevant information on this topic.";
         if (candidateArticles.length > 0) {
             const scoredArticles = candidateArticles.map(article => ({ ...article, score: cosineSimilarity(queryEmbedding, article.embedding) }));
             scoredArticles.sort((a, b) => b.score - a.score);
@@ -67,25 +83,25 @@ async function main() {
         }
         const conversationContext = "### Conversation History:\n" + chatHistory.slice(-8).map(h => `${h.role}: ${h.content}`).join('\n');
 
-        // --- 2. THE "THINKING" PROMPT ---
-        const systemPrompt = `You are an elite intelligence analyst for a wealth management firm focusing on the Danish market. Your goal is to be a concise, intelligent conversational partner. Analyze the user's LATEST input in the context of the full conversation history and the database context.
+        // --- 2. THE UNIFIED "THINKING" PROMPT ---
+        const systemPrompt = `You are an elite intelligence analyst for a wealth management firm. Your goal is to be a concise, intelligent conversational partner. Analyze the user's LATEST input in the context of the full conversation and database.
 
         **Your Mandate & Hierarchy of Truth:**
-        1.  **Synthesize All Known Information:** Your primary goal is to answer the user's question by synthesizing facts from BOTH the "Database Context" AND the "Conversation History". Treat the conversation history as a source of truth.
-        2.  **Deduce and Infer:** Act like an analyst. Make logical deductions. For example, if you know someone is a CEO and has a wealth advisor, you can deduce they are likely wealthy. State your deduction clearly.
-        3.  **Use General Knowledge (Restricted):** If the answer is not in the provided information, you MUST state this clearly (e.g., "The database has no details on that..."). Only then may you use your general knowledge, and you must declare it (e.g., "...but from my general knowledge..."). **CRITICAL: NEVER use general knowledge to state facts about specific people or private companies not already in the context. It is for general concepts only.**
-        4.  **Handle Corrections Gracefully:** If the user corrects you, accept the correction immediately and prioritize their information as the new truth for the rest of the conversation.
-        5.  **Identify and Propose New Facts:** If the user provides a genuinely new, valuable, non-contradictory fact, identify it for storage.
+        1.  **Synthesize All Known Information:** Formulate a concise, direct answer by synthesizing facts from BOTH the "Database Context" AND the "Conversation History". Treat the conversation history as a primary source of truth to avoid amnesia.
+        2.  **Deduce and Infer:** Act like an analyst. Make logical deductions. If someone founded a major company, you can deduce they are wealthy. If you know X advises Y, you can answer questions about Y's advisor.
+        3.  **Use General Knowledge Fluidly:** If the answer is not in your known information, state this clearly and then seamlessly provide the answer from your general knowledge (e.g., "The database doesn't have details on his company, but from my general knowledge, Stig Holledig is the founder of Holledig Capital..."). Do NOT ask for permission.
+        4.  **Handle Corrections Gracefully:** If the user corrects you ("No, that's wrong..."), accept the correction immediately and prioritize their new information as the truth.
+        5.  **Identify New, Valuable Facts:** If the user provides a genuinely new, valuable, non-contradictory fact, identify it for storage. Check if it's a duplicate of existing knowledge first.
 
         **Your JSON Output:**
-        Respond ONLY with a valid JSON object with the following structure:
+        Respond ONLY with a valid JSON object:
         {
-          "thought": "A brief, one-sentence thought process on how you arrived at your conclusion and action.",
+          "thought": "Your brief, one-sentence thought process. Example: 'The user is correcting me about John Blem. I will acknowledge the correction and propose storing the new fact.'",
+          "responseText": "The natural, conversational text to display to the user. This is your primary output. Keep it concise.",
           "action": "One of: 'answer', 'confirm_fact', 'clarify'",
-          "responseText": "The natural, conversational text to display to the user. This is your primary output.",
           "factToConfirm": {
-            "headline": "Structured headline of the new fact",
-            "summary": "Structured summary of the new fact",
+            "headline": "Structured headline for the new fact",
+            "summary": "Structured summary for the new fact",
             "key_subject": "Primary person/company"
           } OR null
         }`;
@@ -112,25 +128,16 @@ async function main() {
         if (plan.action === 'confirm_fact' && plan.factToConfirm) {
             const factSummary = plan.factToConfirm.summary;
             const factEmbedding = await generateEmbedding(factSummary);
-            const similarities = candidateArticles.map(art => cosineSimilarity(factEmbedding, art.embedding));
+            const similarities = candidateArticles.map(art => cosineSimilarity(factEmbedding, art.embedding || []));
             if (similarities.length > 0 && Math.max(...similarities) > DUPLICATE_THRESHOLD) {
                 // It's a duplicate, do nothing further.
             } else {
                 state = { type: 'waiting_for_confirmation', factToStore: plan.factToConfirm };
                 rl.setPrompt('');
                 rl.question(`${AI_PROMPT}${colors.yellow}Should I remember that? (y/n) > ${colors.reset}`, (answer) => {
-                    if (answer.toLowerCase().startsWith('y')) {
-                        embedAndStoreFact(state.factToStore);
-                        console.log(`${AI_PROMPT}Got it. I'll remember that.`);
-                        chatHistory.push({ role: 'assistant', content: `Acknowledged. Stored fact: ${state.factToStore.summary}` });
-                    } else {
-                        console.log(`${AI_PROMPT}Okay, I won't store it.`);
-                    }
-                    state = { type: 'idle' };
-                    rl.setPrompt(USER_PROMPT);
-                    rl.prompt();
+                    handleUserInput(answer);
                 });
-                return; // Wait for confirmation input
+                return;
             }
         }
         rl.prompt();
