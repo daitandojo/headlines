@@ -33,24 +33,23 @@ Exclude any articles primarily about:
 `,
 
   scoring: `
-Score 90-100 for:
+Score 91-100 for:
 -   Clear, direct wealth events >$30M for Scandinavian individuals/families.
 -   Articles detailing significant business activities or strategic pronouncements by top-tier Rich List individuals (e.g., Martin Thorborg discussing a major pivot, Anders Holch Povlsen on Bestseller's global strategy). The assessment should note "High relevance due to [Rich List Person]'s strategic involvement."
 
-Score 70-89 for:
+Score 71-90 for:
 -   Strongly implied (but not fully detailed) wealth events >$30M.
 -   Interviews or articles where a Rich List individual discusses their business in a way that indicates significant ongoing financial activity (e.g., "Martin Thorborg outlines future AI strategy for his business interests"). Assessment: "Moderate-high relevance due to [Rich List Person]'s statements on business direction."
 
-Score 30-69 for:
+Score 51-70 for:
 -   Speculative wealth events, smaller transactions (<$30M), or news about Rich List individuals that is business-related but less impactful.
 
-Score 0-29 for:
+Score 0-50 for:
 -   Irrelevant news, general company news without Rich List owner strategic input, or anything from the 'Exclude' list.
 `,
 
   vitals:
-    `If the article references "Goldman Sachs", it MUST be scored 100 for relevance_article. 
-     Pay extremely close attention to articles involving known Scandinavian Rich List individuals and their core business activities.
+    `Pay extremely close attention to articles involving known Scandinavian Rich List individuals and their core business activities.
      An interview with a founder of a large family company for example (e.g. John Blem being interviewed to tell about Milestone) should score 100.
     `,
 
