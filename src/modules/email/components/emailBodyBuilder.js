@@ -49,7 +49,16 @@ export function createEmailBody(events) {
             <br><br>
             Here are the latest potential wealth events identified and synthesized by our AI Agent:
         </p>
+
+        <div style="text-align: center; margin: 25px 0;">
+            <p style="font-size: 14px; color: #555; margin-bottom: 10px;">💥 <strong>New Feature!</strong></p>
+            <a href="https://headlines-client.vercel.app" target="_blank" style="background-color: #ffc107; color: #212529; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; display: inline-block;">
+                View History
+            </a>
+        </div>
+        
         ${formattedEventsHtml}
+
         <p style="font-size: 16px; color: #555555; text-align: left;">
             Best Regards,<br>The Wealth Insight Team
         </p>
