@@ -4,7 +4,41 @@
 
 export const SITES_CONFIG = {
     berlingske: { name: 'Berlingske', url: 'https://www.berlingske.dk/business', selector: 'h4.teaser__title a.teaser__title-link', extract: (el, site) => ({ headline: el.text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.name }) },
-    borsen: { name: 'Børsen', url: 'https://borsen.dk/nyheder', useJsonLd: true },
+    
+    // --- Børsen (Multi-Source Configuration) ---
+    // Børsen uses JSON-LD, which is reliable. We scrape multiple key sections 
+    // to ensure comprehensive coverage of this high-value source.
+    borsen_frontpage: {
+        name: 'Børsen Frontpage',
+        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        url: 'https://borsen.dk/',
+        useJsonLd: true
+    },
+    borsen_nyheder: {
+        name: 'Børsen Nyheder',
+        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        url: 'https://borsen.dk/nyheder',
+        useJsonLd: true
+    },
+    borsen_finans: {
+        name: 'Børsen Finans',
+        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        url: 'https://borsen.dk/nyheder/finans',
+        useJsonLd: true
+    },
+    borsen_virksomheder: {
+        name: 'Børsen Virksomheder',
+        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        url: 'https://borsen.dk/nyheder/virksomheder',
+        useJsonLd: true
+    },
+    borsen_investor: {
+        name: 'Børsen Investor',
+        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        url: 'https://borsen.dk/nyheder/investor',
+        useJsonLd: true
+    },
+
     politiken: { name: 'Politiken', url: 'https://politiken.dk/danmark/oekonomi/', selector: 'article', extract: (el, site) => { const h = el.find('h2, h3, h4').first().text().trim(); const a = el.find('a[href*="/art"]').first().attr('href'); return h && a ? { headline: h, link: new URL(a, site.url).href, source: site.name, newspaper: site.name } : null; } },
     finans: { name: 'Finans.dk', url: 'https://finans.dk/seneste-nyt', selector: 'article a h3', extract: (el, site) => ({ headline: el.text().trim(), link: el.closest('a').attr('href'), source: site.name, newspaper: site.name }) },
     
