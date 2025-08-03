@@ -6,35 +6,33 @@ export const SITES_CONFIG = {
     berlingske: { name: 'Berlingske', url: 'https://www.berlingske.dk/business', selector: 'h4.teaser__title a.teaser__title-link', extract: (el, site) => ({ headline: el.text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.name }) },
     
     // --- Børsen (Multi-Source Configuration) ---
-    // Børsen uses JSON-LD, which is reliable. We scrape multiple key sections 
-    // to ensure comprehensive coverage of this high-value source.
     borsen_frontpage: {
         name: 'Børsen Frontpage',
-        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        newspaper: 'Børsen',
         url: 'https://borsen.dk/',
         useJsonLd: true
     },
     borsen_nyheder: {
         name: 'Børsen Nyheder',
-        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        newspaper: 'Børsen',
         url: 'https://borsen.dk/nyheder',
         useJsonLd: true
     },
     borsen_finans: {
         name: 'Børsen Finans',
-        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        newspaper: 'Børsen',
         url: 'https://borsen.dk/nyheder/finans',
         useJsonLd: true
     },
     borsen_virksomheder: {
         name: 'Børsen Virksomheder',
-        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        newspaper: 'Børsen',
         url: 'https://borsen.dk/nyheder/virksomheder',
         useJsonLd: true
     },
     borsen_investor: {
         name: 'Børsen Investor',
-        newspaper: 'Børsen', // FIX: Standardize newspaper key
+        newspaper: 'Børsen',
         url: 'https://borsen.dk/nyheder/investor',
         useJsonLd: true
     },
@@ -42,14 +40,6 @@ export const SITES_CONFIG = {
     politiken: { name: 'Politiken', url: 'https://politiken.dk/danmark/oekonomi/', selector: 'article', extract: (el, site) => { const h = el.find('h2, h3, h4').first().text().trim(); const a = el.find('a[href*="/art"]').first().attr('href'); return h && a ? { headline: h, link: new URL(a, site.url).href, source: site.name, newspaper: site.name } : null; } },
     finans: { name: 'Finans.dk', url: 'https://finans.dk/seneste-nyt', selector: 'article a h3', extract: (el, site) => ({ headline: el.text().trim(), link: el.closest('a').attr('href'), source: site.name, newspaper: site.name }) },
     
-    // MODIFIED: Removing DN Investor as it is un-scrapable with the current method (JS-driven, no href links).
-    // dn_investor: {
-    //     name: 'DN Investor',
-    //     url: 'https://www.dn.no/investor',
-    //     newspaper: 'DN.no',
-    //     ...
-    // },
-
     axcel: {
         name: 'Axcel',
         url: 'https://axcel.com/news',
@@ -75,29 +65,48 @@ export const SITES_CONFIG = {
             return null;
         }
     },
+    // --- Finansavisen (NEW Unified JSON Scraper) ---
     finansavisen: {
         name: 'Finansavisen',
         url: 'https://www.finansavisen.no/',
-        newspaper: 'Finansavisen',
-        selector: 'article.dre-item a.dre-item__title',
-        extract: (el, site) => ({
-            headline: el.text().trim(),
-            link: new URL(el.attr('href'), site.url).href,
-            source: site.name,
-            newspaper: site.newspaper
-        })
-    },
-    finansavisen_kapital: {
-        name: 'Finansavisen Kapital',
-        url: 'https://www.finansavisen.no/kapital',
-        newspaper: 'Kapital',
-        selector: 'article.dre-item a.dre-item__title',
-        extract: (el, site) => ({
-            headline: el.text().trim(),
-            link: new URL(el.attr('href'), site.url).href,
-            source: site.name,
-            newspaper: site.newspaper
-        })
+        newspaper: 'Finansavisen', // Default newspaper
+        selector: 'script', // Target script tags to find embedded JSON data
+        extract: (el, site) => {
+            const scriptContent = el.html();
+            if (scriptContent && scriptContent.includes('window.app')) {
+                try {
+                    // Isolate the componentData JSON string from the script content
+                    const match = scriptContent.match(/componentData: '(.*)'/);
+                    if (!match || !match[1]) return null;
+
+                    // Clean the heavily escaped string
+                    const jsonString = match[1].replace(/\\"/g, '"');
+                    const data = JSON.parse(jsonString);
+                    
+                    const articles = [];
+                    // Iterate over all components in the data to find any that contain article lists
+                    Object.values(data).forEach(component => {
+                        if (component && component.articles && Array.isArray(component.articles)) {
+                            component.articles.forEach(article => {
+                                if (article.url && article.title) {
+                                    articles.push({
+                                        headline: article.title,
+                                        link: new URL(article.url, site.url).href,
+                                        source: site.name,
+                                        // Use the article's product (e.g., Kapital) as the newspaper if available
+                                        newspaper: article.product || site.newspaper 
+                                    });
+                                }
+                            });
+                        }
+                    });
+                    return articles.length > 0 ? articles : null;
+                } catch (e) {
+                    return null; // Ignore script tags that don't contain the expected JSON
+                }
+            }
+            return null;
+        }
     },
     e24: {
         name: 'E24',
@@ -135,11 +144,12 @@ export const SITES_CONFIG = {
         }
     },
     // --- PRIVATE EQUITY FIRMS ---
-    eqt: {
-        name: 'EQT',
-        url: 'https://eqtgroup.com/news',
-        newspaper: 'EQT',
-    },
+    // REMOVED: EQT is currently broken due to site changes. Will require a separate fix.
+    // eqt: {
+    //     name: 'EQT',
+    //     url: 'https://eqtgroup.com/news',
+    //     newspaper: 'EQT',
+    // },
     fsn_capital: {
         name: 'FSN Capital',
         url: 'https://fsncapital.com/en/news/',
@@ -190,14 +200,23 @@ export const SITES_CONFIG = {
 
 export const TEXT_SELECTORS = {
   'Berlingske': '.article-body p',
-  'Børsen': '.article-content',
+  'Børsen': [
+    '.article-content', 
+    'meta[name="description"]'
+  ],
   'Politiken': 'section#js-article-body .font-serif-body-20 p',
   'Finans.dk': 'p.container-text:not([class*="italic"])',
   'DN.no': '.dn-article-top .lead, .dn-content .dn-text p',
   'Axcel': 'div.article-content p',
   'Polaris': 'div.fl-module-fl-post-content p',
-  'Finansavisen': '.c-article-regular__body__preamble, .c-article-regular__body p',
-  'Kapital': '.c-article-regular__body__preamble, .c-article-regular__body p',
+  'Finansavisen': [
+      '.c-article-regular__body__preamble, .c-article-regular__body p',
+      'meta[name="description"]'
+    ],
+  'Kapital': [
+      '.c-article-regular__body__preamble, .c-article-regular__body p',
+      'meta[name="description"]'
+    ],
   'E24': 'article p[data-test-tag="lead-text"], article p.hyperion-css-1lemvax',
   'Nordic Capital': '.multi-column-rich-text--content-block .block-content p',
   'EQT': '.body-l-body-m p', 

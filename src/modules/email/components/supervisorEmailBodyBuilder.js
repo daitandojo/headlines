@@ -28,6 +28,34 @@ function createSupervisorEmailWrapper(bodyContent) {
     </html>`;
 }
 
+function createScraperFailureAlertHtml(enrichmentOutcomes) {
+    if (!enrichmentOutcomes || enrichmentOutcomes.length === 0) return '';
+    
+    const scraperFailures = enrichmentOutcomes.filter(item => 
+        item.outcome === 'Dropped' && item.assessment_article.includes('Enrichment Failed')
+    );
+
+    if (scraperFailures.length === 0) return '';
+
+    let listItems = scraperFailures.map(item => `
+        <li style="margin-bottom: 10px;">
+            <strong>${escapeHtml(item.newspaper)}:</strong> 
+            <a href="${item.link}">${escapeHtml(item.headline)}</a><br/>
+            <em style="font-size:12px; color: #555;">${escapeHtml(item.assessment_article)}</em>
+        </li>
+    `).join('');
+
+    return `
+    <div style="border: 2px solid #c0392b; background-color: #fbeae5; padding: 15px; margin: 20px 0; border-radius: 8px;">
+        <h2 style="color: #c0392b; margin-top: 0;">⚠️ Scraper Action Required</h2>
+        <p>The following relevant headlines failed the enrichment stage, likely due to an outdated or incorrect article text selector. Please review the selectors for these sources in <strong>src/config/sources.js</strong>.</p>
+        <ul style="padding-left: 20px; margin-top: 15px;">
+            ${listItems}
+        </ul>
+    </div>
+    `;
+}
+
 function createScraperHealthTable(healthStats) {
     if (!healthStats || healthStats.length === 0) return '';
 
@@ -164,8 +192,8 @@ export async function createSupervisorEmailBody(runStats) {
     }
     statsHtml += `</ul>`;
 
+    const scraperFailureAlertHtml = createScraperFailureAlertHtml(runStats.enrichmentOutcomes); // NEW
     const scraperHealthHtml = createScraperHealthTable(runStats.scraperHealth);
-    
     const enrichmentFunnelHtml = createEnrichmentFunnelHtml(runStats.enrichmentOutcomes);
 
     const [eventsTableHtml, articlesTableHtml] = await Promise.all([
@@ -177,6 +205,8 @@ export async function createSupervisorEmailBody(runStats) {
         <div style="text-align:center;"><img src="${LOGO_URL}" alt="Logo" style="max-width:150px;"></div>
         <h1 style="text-align:center;">${SUPERVISOR_EMAIL_CONFIG.subject}</h1>
         <p style="text-align:center;">Run completed: ${runTimestamp}</p>
+        
+        ${scraperFailureAlertHtml} <!-- The new, prominent alert -->
         
         ${statsHtml}
         

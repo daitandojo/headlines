@@ -94,6 +94,7 @@ export async function runPipeline(isRefreshMode = false) {
                     runStats.enrichmentOutcomes.push({
                         headline: article.headline,
                         link: article.link,
+                        newspaper: article.newspaper, // Capture newspaper for reporting
                         outcome: 'Success',
                         headlineScore: article.relevance_headline,
                         assessment_headline: article.assessment_headline,
@@ -106,6 +107,7 @@ export async function runPipeline(isRefreshMode = false) {
                     runStats.enrichmentOutcomes.push({
                         headline: article.headline,
                         link: article.link,
+                        newspaper: article.newspaper, // Capture newspaper for reporting
                         outcome: 'Dropped',
                         headlineScore: article.relevance_headline,
                         assessment_headline: article.assessment_headline,
@@ -119,6 +121,7 @@ export async function runPipeline(isRefreshMode = false) {
                 runStats.enrichmentOutcomes.push({
                     headline: article.headline,
                     link: article.link,
+                    newspaper: article.newspaper, // Capture newspaper for reporting
                     outcome: 'Dropped',
                     headlineScore: article.relevance_headline,
                     assessment_headline: article.assessment_headline,

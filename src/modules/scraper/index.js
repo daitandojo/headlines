@@ -4,8 +4,8 @@ import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { logger } from '../../utils/logger.js';
-import { safeExecute } from '../../utils/helpers.js';
-import { CONCURRENCY_LIMIT, SCRAPER_PROXY_URL } from '../../config/index.js';
+import { safeExecute, truncateString } from '../../utils/helpers.js'; // FIX: truncateString is now imported
+import { CONCURRENCY_LIMIT, SCRAPER_PROXY_URL, MIN_ARTICLE_CHARS } from '../../config/index.js';
 import { SITES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js';
 
 const limit = pLimit(CONCURRENCY_LIMIT);
@@ -49,8 +49,9 @@ async function fetchPage(url) {
     return result;
 }
 
-async function scrapeSite(site) {
-    logger.debug(`Scraping headlines from ${site.name}`);
+export async function scrapeSite(site) {
+    // This function is now used by both the main app and the scrape.js script.
+    // We avoid logging here to keep the scrape.js output clean.
     
     // --- SPECIAL API-BASED SCRAPING FOR EQT ---
     if (site.name === 'EQT') {
@@ -76,7 +77,6 @@ async function scrapeSite(site) {
                 source: site.name,
                 newspaper: site.newspaper,
             }));
-            logger.info(`Scraped ${articles.length} unique headlines from ${site.name}.`);
             return { source: site.name, articles, success: true };
         } catch (e) {
             logger.error({ err: e }, `Failed to parse API response from EQT.`);
@@ -99,7 +99,11 @@ async function scrapeSite(site) {
                 const jsonData = JSON.parse($(el).html());
                 if (jsonData['@type'] === 'ItemList' && jsonData.itemListElement) {
                     jsonData.itemListElement.forEach(item => {
-                        if (item.name && item.url) articles.push({ headline: item.name, link: item.url, source: site.name, newspaper: site.name });
+                        if (item.name && item.url) {
+                           // FIX: Ensure URL is absolute before pushing
+                           const absoluteUrl = new URL(item.url, site.url).href;
+                           articles.push({ headline: item.name, link: absoluteUrl, source: site.name, newspaper: site.newspaper || site.name });
+                        }
                     });
                 }
             } catch (e) { 
@@ -110,13 +114,15 @@ async function scrapeSite(site) {
         $(site.selector).each((_, el) => {
             const articleData = site.extract($(el), site);
             if (articleData && articleData.headline && articleData.link) {
+                // Ensure URL is absolute
+                articleData.link = new URL(articleData.link, site.url).href;
+                articleData.newspaper = site.newspaper || site.name;
                 articles.push(articleData);
             }
         });
     }
     
     const uniqueArticles = Array.from(new Map(articles.map(a => [a.link, a])).values());
-    logger.info(`Scraped ${uniqueArticles.length} unique headlines from ${site.name}.`);
     return { source: site.name, articles: uniqueArticles, success: true };
 }
 
@@ -124,10 +130,15 @@ export async function scrapeAllHeadlines() {
     logger.info('📰 Starting headline scraping from all sources...');
     const promises = Object.values(SITES_CONFIG).map(site => limit(() => scrapeSite(site)));
     const results = await Promise.all(promises);
+    
+    results.forEach(r => {
+        logger.info(`Scraped ${r.articles.length} unique headlines from ${r.source}.`);
+    });
 
     const allArticles = results.flatMap(r => r.articles);
     const scraperHealth = results.map(r => ({ source: r.source, success: r.success, count: r.articles.length }));
 
+    logger.info(`Scraping complete. Found a total of ${allArticles.length} headlines.`);
     return { allArticles, scraperHealth };
 }
 
@@ -146,7 +157,6 @@ export async function scrapeArticleContent(article) {
         if (scriptData) {
             try {
                 const jsonData = JSON.parse(scriptData);
-                // Navigate through the complex JSON structure to find the article body
                 const pageContent = jsonData?.props?.pageProps?.page?.pageContent;
                 if (pageContent) {
                     const richTextBlock = pageContent.find(block => block._type === 'richTextBlock');
@@ -164,22 +174,40 @@ export async function scrapeArticleContent(article) {
         }
     }
 
-    // --- STANDARD METHOD FOR ALL OTHER SITES (AND EQT FALLBACK) ---
     const newspaperName = article.newspaper || article.source;
-    const selector = TEXT_SELECTORS[newspaperName];
-    if (!selector) {
+    let selectors = TEXT_SELECTORS[newspaperName];
+    if (!selectors) {
         logger.warn(`No text selector for newspaper "${newspaperName}".`);
-        return { ...article, enrichment_error: 'No selector' };
+        return { ...article, enrichment_error: `No selector for "${newspaperName}"` };
+    }
+    if (!Array.isArray(selectors)) {
+        selectors = [selectors];
     }
 
     const $ = cheerio.load(pageResponse.data);
-    const fullText = $(selector).map((_, el) => $(el).text()).get().join(' ').replace(/\s\s+/g, ' ').trim();
+    let fullText = '';
+
+    for (const selector of selectors) {
+        let extractedText = '';
+        if (selector.startsWith('meta[')) {
+            extractedText = $(selector).attr('content') || '';
+        } else {
+            extractedText = $(selector).map((_, el) => $(el).text()).get().join(' ');
+        }
+        
+        fullText = extractedText.replace(/\s\s+/g, ' ').trim();
+
+        if (fullText.length >= MIN_ARTICLE_CHARS) {
+            logger.debug(`Successfully extracted content for "${truncateString(article.headline, 50)}" using selector: "${selector}"`);
+            break; 
+        }
+    }
     
-    if (fullText) {
+    if (fullText.length >= MIN_ARTICLE_CHARS) {
         article.articleContent = { contents: [fullText] };
     } else {
-        logger.warn(`Could not find text for "${article.headline}" with selector "${selector}"`);
-        article.enrichment_error = 'Content not found';
+        logger.warn(`Could not find sufficient text for "${truncateString(article.headline, 50)}" with any configured selectors.`);
+        article.enrichment_error = 'Content not found or too short with all selectors';
     }
     return article;
 }

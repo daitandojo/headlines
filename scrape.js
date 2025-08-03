@@ -1,16 +1,22 @@
 // scrape.js
-// A utility script to scrape a few headlines and articles from each configured source.
+// A utility script to perform a diagnostic scrape on configured sources.
 // This is useful for testing, debugging, and adding new newspapers.
-// It now directly uses the main application's scraping modules for consistency.
-// To run: `node scrape.js` from the project root.
+//
+// Usage:
+//   - Test all sources: `node scrape.js`
+//   - Test a single source: `node scrape.js <site_key>`
+//     (e.g., `node scrape.js borsen_frontpage`)
 
 import 'dotenv/config';
+import pLimit from 'p-limit';
 import { SITES_CONFIG } from './src/config/sources.js';
-import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
-import { truncateString } from './src/utils/helpers.js';
+import { scrapeSite, scrapeArticleContent } from './src/modules/scraper/index.js'; // NOTE: scrapeSite must be exported
+import { CONCURRENCY_LIMIT } from './src/config/index.js';
+import { logger } from './src/utils/logger.js';
 
 // --- Configuration ---
-const HEADLINES_TO_SCRAPE_PER_SITE = 3;
+// Temporarily set logger to 'info' to suppress verbose debug messages during the test run.
+logger.level = 'info';
 
 // --- Console Colors for Readability ---
 const colors = {
@@ -21,61 +27,97 @@ const colors = {
     cyan: "\x1b[36m",
     grey: "\x1b[90m",
 };
-const log = {
-    info: (msg) => console.log(`${colors.cyan}${msg}${colors.reset}`),
-    success: (msg) => console.log(`${colors.green}${msg}${colors.reset}`),
-    warn: (msg) => console.log(`${colors.yellow}${msg}${colors.reset}`),
-    error: (msg) => console.log(`${colors.red}${msg}${colors.reset}`),
-};
 
+const log = (msg) => console.log(msg);
 
 /**
- * Main function to orchestrate the test scrape.
+ * Runs a diagnostic test on a single site configuration.
+ * @param {object} site The site configuration from SITES_CONFIG.
+ * @returns {Promise<{success: boolean, message: string}>} The result of the test.
+ */
+async function testSite(site) {
+    const statusLine = [`${colors.cyan}${site.name.padEnd(25)}${colors.reset}`];
+
+    try {
+        // Step 1: Scrape headlines for this site only.
+        const { articles, success: headlineSuccess } = await scrapeSite(site);
+        const headlineCount = articles.length;
+        
+        if (!headlineSuccess || headlineCount === 0) {
+            statusLine.push(`${String(headlineCount).padStart(3)} headlines scraped`);
+            statusLine.push(`${colors.red}Headline scraping FAILED or returned zero articles.${colors.reset}`);
+            return { success: false, message: statusLine.join(' > ') };
+        }
+        
+        statusLine.push(`${colors.green}${String(headlineCount).padStart(3)} headlines scraped${colors.reset}`);
+
+        // Step 2: Test content scraping on the very first article.
+        const firstArticle = articles[0];
+        const articleWithContent = await scrapeArticleContent(firstArticle);
+
+        const content = articleWithContent.articleContent?.contents?.join('') || '';
+        const contentLength = content.length;
+
+        if (contentLength > 150) { // Using 150 as a "good enough" threshold
+            statusLine.push(`${colors.green}First article OK (${contentLength} chars)${colors.reset}`);
+            return { success: true, message: statusLine.join(' > ') };
+        } else {
+            const reason = articleWithContent.enrichment_error || `Content too short (< 150 chars)`;
+            // MODIFIED: Add the failed URL to the error message for easy debugging.
+            const failedLink = `(Link: ${firstArticle.link})`;
+            statusLine.push(`${colors.red}Content FAILED: ${reason}${colors.reset} ${colors.grey}${failedLink}${colors.reset}`);
+            return { success: false, message: statusLine.join(' > ') };
+        }
+    } catch (error) {
+        statusLine.push(`${colors.red}FATAL SCRIPT ERROR: ${error.message}${colors.reset}`);
+        return { success: false, message: statusLine.join(' > ') };
+    }
+}
+
+/**
+ * Main function to orchestrate the diagnostic scrape.
  */
 async function main() {
-    log.info(`🚀 Starting test scrape for ${HEADLINES_TO_SCRAPE_PER_SITE} articles per site...`);
+    const siteKey = process.argv[2];
+    let sitesToTest = Object.values(SITES_CONFIG);
+    const limit = pLimit(CONCURRENCY_LIMIT);
 
-    const { allArticles } = await scrapeAllHeadlines(); // MODIFIED: Destructure to get the articles array.
-    const sites = Object.values(SITES_CONFIG);
-
-    for (const site of sites) {
-        log.info(`\n==================== 📰 ${site.name.toUpperCase()} ====================`);
-
-        // FIX: Filter by `h.source` which is guaranteed to match `site.name`.
-        const siteHeadlines = allArticles
-            .filter(h => h.source === site.name)
-            .slice(0, HEADLINES_TO_SCRAPE_PER_SITE);
-
-        if (siteHeadlines.length === 0) {
-            log.warn(`No headlines found for ${site.name}.`);
-            continue;
+    if (siteKey) {
+        if (SITES_CONFIG[siteKey]) {
+            sitesToTest = [SITES_CONFIG[siteKey]];
+            log(`${colors.yellow}🚀 Starting targeted diagnostic scrape for: ${siteKey}${colors.reset}`);
+        } else {
+            log(`${colors.red}Error: Site key "${siteKey}" not found in SITES_CONFIG.${colors.reset}`);
+            return;
         }
-
-        log.info(`Found ${siteHeadlines.length} headlines. Fetching full article content...`);
-
-        for (const [index, headline] of siteHeadlines.entries()) {
-            console.log(`\n[${index + 1}/${siteHeadlines.length}] ${truncateString(headline.headline, 80)}`);
-            console.log(`${colors.grey}  -> ${headline.link}${colors.reset}`); // Always show link
-            
-            // Use the main application's function to fetch and parse the article
-            const articleWithContent = await scrapeArticleContent(headline);
-
-            if (articleWithContent.articleContent?.contents?.length > 0) {
-                const contentSnippet = articleWithContent.articleContent.contents.join(' ').trim().replace(/\s\s+/g, ' ').substring(0, 150);
-                log.success(`  ✅ SUCCESS: "${contentSnippet}..."`);
-            } else {
-                const reason = articleWithContent.enrichment_error || 'Selector did not find content (this is expected for live blogs or paywalled articles)';
-                log.error(`  ❌ FAILED: ${reason}`);
-            }
-        }
+    } else {
+        log(`${colors.yellow}🚀 Starting full diagnostic scrape for all ${sitesToTest.length} sources...${colors.reset}`);
     }
+    
+    log('-----------------------------------------------------------------------------------------');
 
-    log.info('\n✅ Test scrape finished.');
+    const promises = sitesToTest.map(site => limit(() => testSite(site)));
+    const results = await Promise.all(promises);
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    results.forEach(result => {
+        log(result.message);
+        if (result.success) {
+            successCount++;
+        } else {
+            failureCount++;
+        }
+    });
+
+    log('-----------------------------------------------------------------------------------------');
+    const summaryColor = failureCount > 0 ? colors.red : colors.green;
+    log(`${summaryColor}✅ Diagnostic finished. Passed: ${successCount}, Failed: ${failureCount}${colors.reset}`);
 }
 
 // --- Execute Script ---
 main().catch(err => {
-    console.error(err);
-    log.error('The test scrape script encountered a fatal error.');
+    console.error(`${colors.red}A critical, unhandled error occurred in the scrape script:${colors.reset}`, err);
     process.exit(1);
 });

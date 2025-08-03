@@ -167,8 +167,12 @@ export async function assessHeadlinesInBatches(articles) {
 
 export async function assessArticleContent(article) {
     logger.info(`Assessing content for: "${truncateString(article.headline, 60)}"`);
-    const articleText = article.articleContent.contents.join('\n');
+    
+    // --- FIX: Combine headline and body to give the AI full context ---
+    const articleText = `HEADLINE: ${article.headline}\n\nBODY:\n${article.articleContent.contents.join('\n')}`;
+    
     const response = await generateAssessment(LLM_MODEL_ARTICLES, instructionArticle, articleText, shotsInputArticle, shotsOutputArticle);
+    
     if (response.error) {
         logger.error(`Article assessment failed for ${article.link}.`);
         return { ...article, error: `AI Error: ${response.error}` };
