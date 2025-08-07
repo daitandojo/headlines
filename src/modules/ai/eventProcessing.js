@@ -1,18 +1,10 @@
-// src/modules/ai/eventProcessing.js
-import OpenAI from 'openai';
-import { KIMI_API_KEY, LLM_MODEL_ARTICLES, CONCURRENCY_LIMIT } from '../../config/index.js';
+// src/modules/ai/eventProcessing.js (version 2.0)
+import groq from './client.js'; // Use the new centralized client
+import { LLM_MODEL_ARTICLES, CONCURRENCY_LIMIT } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { instructionCluster } from '../assessments/instructionCluster.js';
 import { instructionSynthesize } from '../assessments/instructionSynthesize.js';
 import { safeExecute } from '../../utils/helpers.js';
-
-const kimi = new OpenAI({
-    apiKey: 'dummy-key',
-    baseURL: 'https://api.moonshot.ai/v1',
-    defaultHeaders: { 'Authorization': `Bearer ${KIMI_API_KEY}` },
-    timeout: 120 * 1000,
-    maxRetries: 3, // Changed from 1 to 3 for more robustness
-});
 
 async function generateJsonResponse(model, instructions, userContent, temperature = 0.1) {
     const messages = [
@@ -20,12 +12,11 @@ async function generateJsonResponse(model, instructions, userContent, temperatur
         { role: 'user', content: userContent },
     ];
 
-    const result = await safeExecute(() => kimi.chat.completions.create({
+    const result = await safeExecute(() => groq.chat.completions.create({
         model,
         messages,
         response_format: { type: "json_object" },
         temperature,
-        // --- FIX: Explicitly allow a much larger output ---
         // This prevents the API from truncating the JSON response when clustering many articles.
         max_tokens: 8192, 
     }));

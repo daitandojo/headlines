@@ -1,7 +1,7 @@
-// src/modules/ai/index.js
-import OpenAI from 'openai';
+// src/modules/ai/index.js (version 2.0)
 import pLimit from 'p-limit';
-import { KIMI_API_KEY, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, AI_BATCH_SIZE, CONCURRENCY_LIMIT, HEADLINES_RELEVANCE_THRESHOLD } from '../../config/index.js';
+import groq from './client.js'; // Use the new centralized client
+import { LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, AI_BATCH_SIZE, CONCURRENCY_LIMIT, HEADLINES_RELEVANCE_THRESHOLD } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { instructionHeadlines } from '../assessments/instructionHeadlines.js';
 import { shotsInput as shotsInputHeadlines, shotsOutput as shotsOutputHeadlines } from '../assessments/shotsHeadlines.js';
@@ -9,65 +9,61 @@ import { instructionArticle } from '../assessments/instructionArticle.js';
 import { shotsInput as shotsInputArticle, shotsOutput as shotsOutputArticle } from '../assessments/shotsArticle.js';
 import { safeExecute, truncateString } from '../../utils/helpers.js';
 
-if (!KIMI_API_KEY) {
-    throw new Error('KIMI_API_KEY is not defined in the environment variables.');
-}
-
-const kimi = new OpenAI({
-    apiKey: 'dummy-key',
-    baseURL: 'https://api.moonshot.ai/v1',
-    defaultHeaders: { 'Authorization': `Bearer ${KIMI_API_KEY}` },
-    timeout: 90 * 1000,
-    maxRetries: 3,
-});
-
 const limit = pLimit(CONCURRENCY_LIMIT);
 let isApiKeyInvalid = false;
 
-// --- UNCHANGED FUNCTIONS ---
-export async function performKimiSanityCheck() {
+/**
+ * Performs a sanity check against the configured AI service (Groq).
+ * @returns {Promise<boolean>}
+ */
+export async function performAiSanityCheck() {
     try {
-        logger.info('🔬 Performing Kimi AI service sanity check...');
-        const response = await kimi.chat.completions.create({
-            model: "moonshot-v1-8k", messages: [{ role: 'user', content: 'What is in one word the name of the capital of France' }], temperature: 0,
+        logger.info('🔬 Performing AI service sanity check (Groq)...');
+        const response = await groq.chat.completions.create({
+            model: "llama3-8b-8192", // Use a small, fast model for the check
+            messages: [{ role: 'user', content: 'What is in one word the name of the capital of France' }],
+            temperature: 0,
         }, { timeout: 20 * 1000 });
         const answer = response.choices[0].message.content.trim().toLowerCase();
-        if (answer.includes('paris')) { return true; }
-        else {
-            logger.fatal(`Kimi sanity check failed. Expected a response containing "Paris", but got: "${answer}".`);
+        if (answer.includes('paris')) {
+            logger.info('✅ AI service sanity check passed.');
+            return true;
+        } else {
+            logger.fatal(`Groq sanity check failed. Expected a response containing "Paris", but got: "${answer}".`);
             return false;
         }
     } catch (error) {
         if (error.status === 401) {
-            let keyHint = 'The key is either missing, empty, or too short to be valid.';
-            if (KIMI_API_KEY && KIMI_API_KEY.length > 8) {
-                const maskedKey = `${KIMI_API_KEY.substring(0, 5)}...${KIMI_API_KEY.slice(-4)}`;
-                keyHint = `Key being used: ${maskedKey}`;
-            }
-            logger.fatal(`Kimi sanity check failed due to INVALID API KEY (401). ${keyHint}. Please verify your .env file and the baseURL.`);
+            logger.fatal(`Groq sanity check failed due to INVALID API KEY (401). Please verify your GROQ_API_KEY in the .env file.`);
         } else {
-            logger.fatal({ err: error }, 'Kimi sanity check failed with an unexpected API error.');
+            logger.fatal({ err: error }, 'Groq sanity check failed with an unexpected API error.');
         }
         isApiKeyInvalid = true;
         return false;
     }
 }
 
+/**
+ * Verifies that the configured LLM models are available via the AI provider.
+ * @param {string[]} requiredModels - An array of model ID strings to check.
+ * @returns {Promise<boolean>}
+ */
 export async function checkModelPermissions(requiredModels) {
-    logger.info('🔬 Verifying permissions for configured Kimi models...');
+    logger.info('🔬 Verifying permissions for configured Groq models...');
     try {
-        const response = await kimi.models.list();
+        const response = await groq.models.list();
         const availableModels = new Set(response.data.map(model => model.id));
         for (const model of requiredModels) {
             if (!availableModels.has(model)) {
-                logger.fatal(`Model validation failed. The configured model "${model}" is not available or you don't have permission. Please check your .env file.`);
+                logger.fatal(`Model validation failed. The configured model "${model}" is not available on Groq or you don't have permission. Please check your .env file.`);
                 logger.info({ availableModels: [...availableModels] }, 'Available models for your API key:');
                 return false;
             }
         }
+        logger.info('✅ All configured models are available.');
         return true;
     } catch (error) {
-        logger.fatal({ err: error }, 'Failed to retrieve model list from Kimi API.');
+        logger.fatal({ err: error }, 'Failed to retrieve model list from Groq API.');
         isApiKeyInvalid = true;
         return false;
     }
@@ -84,17 +80,17 @@ async function generateAssessment(model, instructions, userContent, fewShotInput
         }
     });
     messages.push({ role: 'user', content: userContent });
-    const apiCallPromise = safeExecute(() => kimi.chat.completions.create({
+    const apiCallPromise = safeExecute(() => groq.chat.completions.create({
         model, messages, response_format: { type: "json_object" }, temperature: 0.1,
     }), {
         errorHandler: (err) => {
             if (err.status === 401) {
                 isApiKeyInvalid = true;
-                logger.fatal('KIMI API KEY IS INVALID. Halting all AI requests.');
-                return { error: 'Invalid Kimi API Key' };
+                logger.fatal('GROQ API KEY IS INVALID. Halting all AI requests.');
+                return { error: 'Invalid Groq API Key' };
             }
-            logger.error(`Kimi API Error: ${err.name} - ${err.message}`);
-            return { error: `Kimi API Error: ${err.message}` };
+            logger.error(`Groq API Error: ${err.name} - ${err.message}`);
+            return { error: `Groq API Error: ${err.message}` };
         }
     });
     let timeoutHandle;

@@ -340,6 +340,7 @@ export async function runPipeline(isRefreshMode = false) {
                     runStats.enrichmentOutcomes.push({
                         headline: article.headline,
                         link: article.link,
+                        newspaper: article.newspaper, // Capture newspaper for reporting
                         outcome: 'Success',
                         headlineScore: article.relevance_headline,
                         assessment_headline: article.assessment_headline,
@@ -352,6 +353,7 @@ export async function runPipeline(isRefreshMode = false) {
                     runStats.enrichmentOutcomes.push({
                         headline: article.headline,
                         link: article.link,
+                        newspaper: article.newspaper, // Capture newspaper for reporting
                         outcome: 'Dropped',
                         headlineScore: article.relevance_headline,
                         assessment_headline: article.assessment_headline,
@@ -365,6 +367,7 @@ export async function runPipeline(isRefreshMode = false) {
                 runStats.enrichmentOutcomes.push({
                     headline: article.headline,
                     link: article.link,
+                    newspaper: article.newspaper, // Capture newspaper for reporting
                     outcome: 'Dropped',
                     headlineScore: article.relevance_headline,
                     assessment_headline: article.assessment_headline,
@@ -868,18 +871,24 @@ main();
 
 # File: scrape.js
 // scrape.js
-// A utility script to scrape a few headlines and articles from each configured source.
+// A utility script to perform a diagnostic scrape on configured sources.
 // This is useful for testing, debugging, and adding new newspapers.
-// It now directly uses the main application's scraping modules for consistency.
-// To run: `node scrape.js` from the project root.
+//
+// Usage:
+//   - Test all sources: `node scrape.js`
+//   - Test a single source: `node scrape.js <site_key>`
+//     (e.g., `node scrape.js borsen_frontpage`)
 
 import 'dotenv/config';
+import pLimit from 'p-limit';
 import { SITES_CONFIG } from './src/config/sources.js';
-import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
-import { truncateString } from './src/utils/helpers.js';
+import { scrapeSite, scrapeArticleContent } from './src/modules/scraper/index.js'; // NOTE: scrapeSite must be exported
+import { CONCURRENCY_LIMIT } from './src/config/index.js';
+import { logger } from './src/utils/logger.js';
 
 // --- Configuration ---
-const HEADLINES_TO_SCRAPE_PER_SITE = 3;
+// Temporarily set logger to 'info' to suppress verbose debug messages during the test run.
+logger.level = 'info';
 
 // --- Console Colors for Readability ---
 const colors = {
@@ -890,62 +899,98 @@ const colors = {
     cyan: "\x1b[36m",
     grey: "\x1b[90m",
 };
-const log = {
-    info: (msg) => console.log(`${colors.cyan}${msg}${colors.reset}`),
-    success: (msg) => console.log(`${colors.green}${msg}${colors.reset}`),
-    warn: (msg) => console.log(`${colors.yellow}${msg}${colors.reset}`),
-    error: (msg) => console.log(`${colors.red}${msg}${colors.reset}`),
-};
 
+const log = (msg) => console.log(msg);
 
 /**
- * Main function to orchestrate the test scrape.
+ * Runs a diagnostic test on a single site configuration.
+ * @param {object} site The site configuration from SITES_CONFIG.
+ * @returns {Promise<{success: boolean, message: string}>} The result of the test.
+ */
+async function testSite(site) {
+    const statusLine = [`${colors.cyan}${site.name.padEnd(25)}${colors.reset}`];
+
+    try {
+        // Step 1: Scrape headlines for this site only.
+        const { articles, success: headlineSuccess } = await scrapeSite(site);
+        const headlineCount = articles.length;
+        
+        if (!headlineSuccess || headlineCount === 0) {
+            statusLine.push(`${String(headlineCount).padStart(3)} headlines scraped`);
+            statusLine.push(`${colors.red}Headline scraping FAILED or returned zero articles.${colors.reset}`);
+            return { success: false, message: statusLine.join(' > ') };
+        }
+        
+        statusLine.push(`${colors.green}${String(headlineCount).padStart(3)} headlines scraped${colors.reset}`);
+
+        // Step 2: Test content scraping on the very first article.
+        const firstArticle = articles[0];
+        const articleWithContent = await scrapeArticleContent(firstArticle);
+
+        const content = articleWithContent.articleContent?.contents?.join('') || '';
+        const contentLength = content.length;
+
+        if (contentLength > 150) { // Using 150 as a "good enough" threshold
+            statusLine.push(`${colors.green}First article OK (${contentLength} chars)${colors.reset}`);
+            return { success: true, message: statusLine.join(' > ') };
+        } else {
+            const reason = articleWithContent.enrichment_error || `Content too short (< 150 chars)`;
+            // MODIFIED: Add the failed URL to the error message for easy debugging.
+            const failedLink = `(Link: ${firstArticle.link})`;
+            statusLine.push(`${colors.red}Content FAILED: ${reason}${colors.reset} ${colors.grey}${failedLink}${colors.reset}`);
+            return { success: false, message: statusLine.join(' > ') };
+        }
+    } catch (error) {
+        statusLine.push(`${colors.red}FATAL SCRIPT ERROR: ${error.message}${colors.reset}`);
+        return { success: false, message: statusLine.join(' > ') };
+    }
+}
+
+/**
+ * Main function to orchestrate the diagnostic scrape.
  */
 async function main() {
-    log.info(`🚀 Starting test scrape for ${HEADLINES_TO_SCRAPE_PER_SITE} articles per site...`);
+    const siteKey = process.argv[2];
+    let sitesToTest = Object.values(SITES_CONFIG);
+    const limit = pLimit(CONCURRENCY_LIMIT);
 
-    const { allArticles } = await scrapeAllHeadlines(); // MODIFIED: Destructure to get the articles array.
-    const sites = Object.values(SITES_CONFIG);
-
-    for (const site of sites) {
-        log.info(`\n==================== 📰 ${site.name.toUpperCase()} ====================`);
-
-        // FIX: Filter by `h.source` which is guaranteed to match `site.name`.
-        const siteHeadlines = allArticles
-            .filter(h => h.source === site.name)
-            .slice(0, HEADLINES_TO_SCRAPE_PER_SITE);
-
-        if (siteHeadlines.length === 0) {
-            log.warn(`No headlines found for ${site.name}.`);
-            continue;
+    if (siteKey) {
+        if (SITES_CONFIG[siteKey]) {
+            sitesToTest = [SITES_CONFIG[siteKey]];
+            log(`${colors.yellow}🚀 Starting targeted diagnostic scrape for: ${siteKey}${colors.reset}`);
+        } else {
+            log(`${colors.red}Error: Site key "${siteKey}" not found in SITES_CONFIG.${colors.reset}`);
+            return;
         }
-
-        log.info(`Found ${siteHeadlines.length} headlines. Fetching full article content...`);
-
-        for (const [index, headline] of siteHeadlines.entries()) {
-            console.log(`\n[${index + 1}/${siteHeadlines.length}] ${truncateString(headline.headline, 80)}`);
-            console.log(`${colors.grey}  -> ${headline.link}${colors.reset}`); // Always show link
-            
-            // Use the main application's function to fetch and parse the article
-            const articleWithContent = await scrapeArticleContent(headline);
-
-            if (articleWithContent.articleContent?.contents?.length > 0) {
-                const contentSnippet = articleWithContent.articleContent.contents.join(' ').trim().replace(/\s\s+/g, ' ').substring(0, 150);
-                log.success(`  ✅ SUCCESS: "${contentSnippet}..."`);
-            } else {
-                const reason = articleWithContent.enrichment_error || 'Selector did not find content (this is expected for live blogs or paywalled articles)';
-                log.error(`  ❌ FAILED: ${reason}`);
-            }
-        }
+    } else {
+        log(`${colors.yellow}🚀 Starting full diagnostic scrape for all ${sitesToTest.length} sources...${colors.reset}`);
     }
+    
+    log('-----------------------------------------------------------------------------------------');
 
-    log.info('\n✅ Test scrape finished.');
+    const promises = sitesToTest.map(site => limit(() => testSite(site)));
+    const results = await Promise.all(promises);
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    results.forEach(result => {
+        log(result.message);
+        if (result.success) {
+            successCount++;
+        } else {
+            failureCount++;
+        }
+    });
+
+    log('-----------------------------------------------------------------------------------------');
+    const summaryColor = failureCount > 0 ? colors.red : colors.green;
+    log(`${summaryColor}✅ Diagnostic finished. Passed: ${successCount}, Failed: ${failureCount}${colors.reset}`);
 }
 
 // --- Execute Script ---
 main().catch(err => {
-    console.error(err);
-    log.error('The test scrape script encountered a fatal error.');
+    console.error(`${colors.red}A critical, unhandled error occurred in the scrape script:${colors.reset}`, err);
     process.exit(1);
 });
 
@@ -1674,18 +1719,42 @@ export const SUPERVISOR_EMAIL_CONFIG = {
 
 export const SITES_CONFIG = {
     berlingske: { name: 'Berlingske', url: 'https://www.berlingske.dk/business', selector: 'h4.teaser__title a.teaser__title-link', extract: (el, site) => ({ headline: el.text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.name }) },
-    borsen: { name: 'Børsen', url: 'https://borsen.dk/nyheder', useJsonLd: true },
+    
+    // --- Børsen (Multi-Source Configuration) ---
+    borsen_frontpage: {
+        name: 'Børsen Frontpage',
+        newspaper: 'Børsen',
+        url: 'https://borsen.dk/',
+        useJsonLd: true
+    },
+    borsen_nyheder: {
+        name: 'Børsen Nyheder',
+        newspaper: 'Børsen',
+        url: 'https://borsen.dk/nyheder',
+        useJsonLd: true
+    },
+    borsen_finans: {
+        name: 'Børsen Finans',
+        newspaper: 'Børsen',
+        url: 'https://borsen.dk/nyheder/finans',
+        useJsonLd: true
+    },
+    borsen_virksomheder: {
+        name: 'Børsen Virksomheder',
+        newspaper: 'Børsen',
+        url: 'https://borsen.dk/nyheder/virksomheder',
+        useJsonLd: true
+    },
+    borsen_investor: {
+        name: 'Børsen Investor',
+        newspaper: 'Børsen',
+        url: 'https://borsen.dk/nyheder/investor',
+        useJsonLd: true
+    },
+
     politiken: { name: 'Politiken', url: 'https://politiken.dk/danmark/oekonomi/', selector: 'article', extract: (el, site) => { const h = el.find('h2, h3, h4').first().text().trim(); const a = el.find('a[href*="/art"]').first().attr('href'); return h && a ? { headline: h, link: new URL(a, site.url).href, source: site.name, newspaper: site.name } : null; } },
     finans: { name: 'Finans.dk', url: 'https://finans.dk/seneste-nyt', selector: 'article a h3', extract: (el, site) => ({ headline: el.text().trim(), link: el.closest('a').attr('href'), source: site.name, newspaper: site.name }) },
     
-    // MODIFIED: Removing DN Investor as it is un-scrapable with the current method (JS-driven, no href links).
-    // dn_investor: {
-    //     name: 'DN Investor',
-    //     url: 'https://www.dn.no/investor',
-    //     newspaper: 'DN.no',
-    //     ...
-    // },
-
     axcel: {
         name: 'Axcel',
         url: 'https://axcel.com/news',
@@ -1711,29 +1780,48 @@ export const SITES_CONFIG = {
             return null;
         }
     },
+    // --- Finansavisen (NEW Unified JSON Scraper) ---
     finansavisen: {
         name: 'Finansavisen',
         url: 'https://www.finansavisen.no/',
-        newspaper: 'Finansavisen',
-        selector: 'article.dre-item a.dre-item__title',
-        extract: (el, site) => ({
-            headline: el.text().trim(),
-            link: new URL(el.attr('href'), site.url).href,
-            source: site.name,
-            newspaper: site.newspaper
-        })
-    },
-    finansavisen_kapital: {
-        name: 'Finansavisen Kapital',
-        url: 'https://www.finansavisen.no/kapital',
-        newspaper: 'Kapital',
-        selector: 'article.dre-item a.dre-item__title',
-        extract: (el, site) => ({
-            headline: el.text().trim(),
-            link: new URL(el.attr('href'), site.url).href,
-            source: site.name,
-            newspaper: site.newspaper
-        })
+        newspaper: 'Finansavisen', // Default newspaper
+        selector: 'script', // Target script tags to find embedded JSON data
+        extract: (el, site) => {
+            const scriptContent = el.html();
+            if (scriptContent && scriptContent.includes('window.app')) {
+                try {
+                    // Isolate the componentData JSON string from the script content
+                    const match = scriptContent.match(/componentData: '(.*)'/);
+                    if (!match || !match[1]) return null;
+
+                    // Clean the heavily escaped string
+                    const jsonString = match[1].replace(/\\"/g, '"');
+                    const data = JSON.parse(jsonString);
+                    
+                    const articles = [];
+                    // Iterate over all components in the data to find any that contain article lists
+                    Object.values(data).forEach(component => {
+                        if (component && component.articles && Array.isArray(component.articles)) {
+                            component.articles.forEach(article => {
+                                if (article.url && article.title) {
+                                    articles.push({
+                                        headline: article.title,
+                                        link: new URL(article.url, site.url).href,
+                                        source: site.name,
+                                        // Use the article's product (e.g., Kapital) as the newspaper if available
+                                        newspaper: article.product || site.newspaper 
+                                    });
+                                }
+                            });
+                        }
+                    });
+                    return articles.length > 0 ? articles : null;
+                } catch (e) {
+                    return null; // Ignore script tags that don't contain the expected JSON
+                }
+            }
+            return null;
+        }
     },
     e24: {
         name: 'E24',
@@ -1771,11 +1859,12 @@ export const SITES_CONFIG = {
         }
     },
     // --- PRIVATE EQUITY FIRMS ---
-    eqt: {
-        name: 'EQT',
-        url: 'https://eqtgroup.com/news',
-        newspaper: 'EQT',
-    },
+    // REMOVED: EQT is currently broken due to site changes. Will require a separate fix.
+    // eqt: {
+    //     name: 'EQT',
+    //     url: 'https://eqtgroup.com/news',
+    //     newspaper: 'EQT',
+    // },
     fsn_capital: {
         name: 'FSN Capital',
         url: 'https://fsncapital.com/en/news/',
@@ -1826,14 +1915,23 @@ export const SITES_CONFIG = {
 
 export const TEXT_SELECTORS = {
   'Berlingske': '.article-body p',
-  'Børsen': '.article-content',
+  'Børsen': [
+    '.article-content', 
+    'meta[name="description"]'
+  ],
   'Politiken': 'section#js-article-body .font-serif-body-20 p',
   'Finans.dk': 'p.container-text:not([class*="italic"])',
   'DN.no': '.dn-article-top .lead, .dn-content .dn-text p',
   'Axcel': 'div.article-content p',
   'Polaris': 'div.fl-module-fl-post-content p',
-  'Finansavisen': '.c-article-regular__body__preamble, .c-article-regular__body p',
-  'Kapital': '.c-article-regular__body__preamble, .c-article-regular__body p',
+  'Finansavisen': [
+      '.c-article-regular__body__preamble, .c-article-regular__body p',
+      'meta[name="description"]'
+    ],
+  'Kapital': [
+      '.c-article-regular__body__preamble, .c-article-regular__body p',
+      'meta[name="description"]'
+    ],
   'E24': 'article p[data-test-tag="lead-text"], article p.hyperion-css-1lemvax',
   'Nordic Capital': '.multi-column-rich-text--content-block .block-content p',
   'EQT': '.body-l-body-m p', 
@@ -2141,8 +2239,12 @@ export async function assessHeadlinesInBatches(articles) {
 
 export async function assessArticleContent(article) {
     logger.info(`Assessing content for: "${truncateString(article.headline, 60)}"`);
-    const articleText = article.articleContent.contents.join('\n');
+    
+    // --- FIX: Combine headline and body to give the AI full context ---
+    const articleText = `HEADLINE: ${article.headline}\n\nBODY:\n${article.articleContent.contents.join('\n')}`;
+    
     const response = await generateAssessment(LLM_MODEL_ARTICLES, instructionArticle, articleText, shotsInputArticle, shotsOutputArticle);
+    
     if (response.error) {
         logger.error(`Article assessment failed for ${article.link}.`);
         return { ...article, error: `AI Error: ${response.error}` };
@@ -2213,47 +2315,46 @@ export const instructionArticle = {
     'Use concise, factual English. Avoid speculation. Maintain a formal tone.',
 
   outputFormatDescription:
-    'Respond only with a valid JSON object using this structure: { "topic": "Short summary of the event", "relevance_article": 95, "assessment_article": "Reason for the score", "amount": 500, "key_individuals": [{"name": "Name", "role_in_event": "Founder", "company": "Company Name", "email_suggestion": "name@company.com"}], "background": "Contextual info" }',
+    'Respond only with a valid JSON object using this structure: { "topic": "Short summary of the event", "relevance_article": 95, "assessment_article": "Rationale for you giving the score", "amount": 500, "key_individuals": [{"name": "Name", "role_in_event": "Founder", "company": "Company Name", "email_suggestion": "name@company.com"}], "background": "Contextual info with a focus on the recipient of the wealth" }',
 
-  guidelines: `
+guidelines: `
 Focus on:
 1.  **Direct Wealth Events**: Articles involving direct wealth transfers (company sales, IPOs, M&A, inheritances, significant asset sales) to named Scandinavian individuals/families, their holding companies, or family offices/foundations, where the new wealth clearly exceeds $30 million. Obituaries of very wealthy individuals are also key.
 
-2.  **Rich List Individual Activity (SPECIAL ATTENTION)**: Articles featuring prominent Scandinavian Rich List individuals (e.g., **Martin Thorborg**, Anders Holch Povlsen, Kirk Kristiansen family members, etc.) discussing:
+2.  **Rich List Individual Activity**: Articles featuring prominent Scandinavian Rich List individuals (e.g., Martin Thorborg, Anders Holch Povlsen, Kirk Kristiansen family members, etc.) discussing:
     *   Significant strategic decisions for their main businesses.
     *   Major investments or divestments, even if the article doesn't explicitly state a >$30M personal gain but the context implies substantial financial activity.
     *   Interviews where they speak at length about their company's performance or future plans that could significantly impact their wealth.
-    *   For these Rich List cases, the $30M direct threshold can be relaxed if the activity is clearly significant to their primary wealth-generating entities.
+
+3.  **High-Value Strategic Intelligence**: News concerning major strategic developments at large, publicly-listed Scandinavian companies that are central to the region's wealth creation landscape (e.g., DSV, Maersk, Novo Nordisk), especially when quoting C-level executives. While not a direct private wealth event, this is crucial context.
 
 Exclude any articles primarily about:
 -   A Private Equity or Venture Capital firm's own operational news, such as fundraising or closing a new fund. Focus on their *transactions*.
 -   Investment decisions made by large institutional pension funds (like ATP).
--   Companies or projects without a clearly identified private Scandinavian individual/family beneficiary (unless it's a known Rich List holding company).
+-   Companies or projects without a clearly identified private Scandinavian individual/family beneficiary (unless it's a known Rich List holding or a key company from Guideline #3).
 -   Foreign or institutional beneficiaries (unless it's an acquisition *from* a Scandinavian private owner).
--   General company performance reports *unless* they directly quote a Rich List owner discussing significant strategic implications.
+-   Routine company performance reports *unless* they directly quote a Rich List owner or CEO discussing significant strategic implications.
 -   Minor news or public appearances not related to core business strategy.
 -   Philanthropy.
 `,
 
   scoring: `
-Score 90-100 for:
--   Clear, direct wealth events >$30M for Scandinavian individuals/families.
--   Articles detailing significant business activities or strategic pronouncements by top-tier Rich List individuals (e.g., Martin Thorborg discussing a major pivot, Anders Holch Povlsen on Bestseller's global strategy). The assessment should note "High relevance due to [Rich List Person]'s strategic involvement."
+  Score 95-100 for:
+  -   **Direct Wealth Events (Guideline #1).** Confirmed, direct, substantial wealth transfers to private individuals/families. Assessment must state "Direct wealth event."
 
-Score 70-89 for:
--   Strongly implied (but not fully detailed) wealth events >$30M.
--   Interviews or articles where a Rich List individual discusses their business in a way that indicates significant ongoing financial activity (e.g., "Martin Thorborg outlines future AI strategy for his business interests"). Assessment: "Moderate-high relevance due to [Rich List Person]'s statements on business direction."
+  Score 75-94 for:
+  -   **Rich List Individual Activity (Guideline #2).** A known Rich List person making significant business moves or statements. Assessment must state "High relevance due to [Rich List Person]'s strategic involvement."
+  -   **High-Value Strategic Intelligence (Guideline #3).** A major update on a key company like DSV or Maersk. Assessment must state "Strategic intelligence on a key wealth-generating entity."
 
-Score 30-69 for:
--   Speculative wealth events, smaller transactions (<$30M), or news about Rich List individuals that is business-related but less impactful.
+  Score 50-74 for:
+  -   Strongly implied but unconfirmed wealth events, smaller transactions (<$30M), or news about Rich List individuals that is business-related but less impactful.
 
-Score 0-29 for:
--   Irrelevant news, general company news without Rich List owner strategic input, or anything from the 'Exclude' list.
-`,
+  Score 0-49 for:
+  -   Irrelevant news, general company news without significant strategic input from top leadership, or anything from the 'Exclude' list.
+  `,
 
   vitals:
-    `If the article references "Goldman Sachs", it MUST be scored 100 for relevance_article. 
-     Pay extremely close attention to articles involving known Scandinavian Rich List individuals and their core business activities.
+    `Pay extremely close attention to articles involving known Scandinavian Rich List individuals and their core business activities.
      An interview with a founder of a large family company for example (e.g. John Blem being interviewed to tell about Milestone) should score 100.
     `,
 
@@ -2301,16 +2402,16 @@ export const instructionCluster = {
 # File: src/modules/assessments/instructionHeadlines.js
 // src/modules/assessments/instructionHeadlines.js
 export const instructionHeadlines = {
-  whoYouAre: 'You are a financial news relevance analyst.',
+  whoYouAre: 'You are a wealth management analyst.',
   whatYouDo:
     'You assess whether Scandinavian news headlines describe immediate, substantial private wealth events.',
   guidelines: `
 Include only:
 - Major liquidity events for private Scandinavian individuals, families, their family offices, or family foundations (e.g., company sales, IPOs benefiting founders, substantial asset sales) generating >$50M.
-- Obituaries of ultra high net worth Scandinavian individuals leading to substantial wealth transfer/inheritance.
+- Obituaries or similar events of ultra high net worth Scandinavian individuals leading to substantial wealth transfer/inheritance.
 - Significant transactions or capital events within privately-held/family-owned holding companies of Scandinavian rich list families that clearly indicate a substantial change in the family's private wealth (e.g., large dividend payouts from holding to family, sale of a major subsidiary by the holding company).
 - Any headlines directly indicating substantial (>$50M) wealth generation or transfer for Scandinavian rich list families or their primary business entities where the family is the clear beneficiary (e.g., "Bestseller owner Anders Holch Povlsen acquires major real estate portfolio for DKK 1 billion", "Grundfos owner foundation distributes DKK 500 million to Due Jensen family").
-- **SPECIAL ATTENTION**: News involving known Scandinavian Rich List individuals like **Martin Thorborg**, Anders Holch Povlsen, the Kirk Kristiansen family (LEGO), the Holch Povlsen family (Bestseller), the Due Jensen family (Grundfos), etc., especially related to their significant business activities, investments, or sales, should be scored with high relevance (70-100) if a wealth event is plausible, even if the exact amount is not stated but implied to be substantial.
+- **SPECIAL ATTENTION**: News involving known Scandinavian Rich List individuals like **Martin Thorborg**, Anders Holch Povlsen, the Kirk Kristiansen family (LEGO), the Holch Povlsen family (Bestseller), the Due Jensen family (Grundfos), etc., especially related to their business or investment activities should be scored with high relevance (70-100).
 
 Strictly exclude:
 - A Private Equity or Venture Capital firm's own operational news, such as fundraising, closing a new fund, or hiring partners. Focus on their *transactions* (buying/selling companies), not their internal business.
@@ -2318,19 +2419,19 @@ Strictly exclude:
 - General corporate news such as expansions, new product launches, operational performance (profits/losses of publicly traded companies). **EXCEPTION:** A takeover bid or M&A of a public company is RELEVANT.
 - Headlines without direct, immediate, and substantial (>$50M) wealth impact for private Scandinavian individuals/families (unless it's a Rich List individual per "SPECIAL ATTENTION" rule).
 - Foreign corporate or public institution activity, unless it's a direct acquisition/sale involving a Scandinavian private individual/family.
-- Philanthropic donations by foundations or individuals.
+- Philanthropic donations by foundations or individuals (unless on the rich list)
 - Appointments to boards or executive positions.
 - General market commentary or economic trends.
 
 Relevance Scoring:
-- 90–100: Clear and substantial private wealth gain/transfer (>$50M) for Scandinavian individuals/families; news directly concerning Rich List families and significant activities of their primary businesses that clearly impact family wealth. Obituaries of UHNW individuals.
-- 70–89: Likely or partial substantial wealth gain (potentially >$50M, or an IPO of a significant family-owned company). News about significant investments/divestments by Rich List family holdings where the private benefit is strongly implied. For Rich List individuals (like Martin Thorborg), this score applies if the event suggests significant business involvement or strategy shift.
-- 50–69: Moderate or indirect wealth gain (typically <$50M but still a clear private wealth event).
-- 30–49: Minor or future potential gain, or wealth event of unclear substantiality.
-- 0–29: No private wealth relevance, or event clearly below significance thresholds, or anything from the 'Strictly Exclude' list.
+- 91–100: Clear and substantial private wealth gain/transfer (>$50M) for Scandinavian individuals/families; news directly concerning Rich List families and significant activities of their primary businesses that clearly impact family wealth. Obituaries of UHNW individuals.
+- 71–90: Likely or partial substantial wealth gain (potentially >$50M, or an IPO of a significant family-owned company). News about significant investments/divestments by Rich List family holdings where the private benefit is strongly implied. For Rich List individuals (like Martin Thorborg), this score applies if the event suggests significant business involvement or strategy shift.
+- 51–70: Moderate or indirect wealth gain (typically <$50M but still a clear private wealth event).
+- 31–50: Minor or future potential gain, or wealth event of unclear substantiality.
+- 0–30: No private wealth relevance, or event clearly below significance thresholds, or anything from the 'Strictly Exclude' list.
 `,
   scoring: `
-Examples of High Relevance (90–100):
+Examples of High Relevance (91–100):
 - "Danish family sells tech company for EUR 150M"
 - "LEGO heir passes away leaving substantial estate"
 - "Grundfos owner Poul Due Jensen's family holding company, KIRKBI A/S, acquires significant UK property portfolio for DKK 2 billion"
@@ -2342,19 +2443,17 @@ Examples of Moderate/High Relevance (70-89 for Rich List):
 - "Martin Thorborg's new AI venture secures seed funding" (Implies potential future wealth, activity of rich list person)
 - "Business-update: Martin Thorborg erkender: Kunstig intelligens kan true hans forretning" (Significant strategic statement from Rich List individual about their business - score 70-80 to flag for review)
 
-
 Examples of Low Relevance (0–29):
 - "Boeing raises billions to pay debts"
 - "Rockwool plans global expansion"
 - "Homeowners to receive tax relief"
 - "Grundfos (the company) announces record profits"
 - "Danfoss heir appointed to new board" 
-- "Martin Thorborg gives a public lecture on entrepreneurship" (Not a wealth event for him)
+- "Martin Wellesen gives a public lecture on entrepreneurship" (Not a wealth event for him, and not on rich list)
 - "Axcel closes its seventh fund at EUR 1.3 billion" (PE firm operational news)
 - "ATP sells its stake in Bavarian Nordic" (Pension fund activity)
 `,
   vitals: `
-  **VITAL: Any mention of "Goldman Sachs" must result in a relevance score of 100.
   **VITAL: Headlines mentioning names from the Scandinavian Rich List (e.g., Martin Thorborg, Holch Povlsen, Kirk Kristiansen) should be considered highly relevant (score 70-100).**
     But also an interview with a founder of a large family company for example (e.g. John Blem being interviewed to tell about Milestone) should score 100.
 `,
@@ -2854,7 +2953,16 @@ export function createEmailBody(events) {
             <br><br>
             Here are the latest potential wealth events identified and synthesized by our AI Agent:
         </p>
+
+        <div style="text-align: center; margin: 25px 0;">
+            <p style="font-size: 14px; color: #555; margin-bottom: 10px;">💥 <strong>New Feature!</strong></p>
+            <a href="https://headlines-client.vercel.app" target="_blank" style="background-color: #ffc107; color: #212529; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; display: inline-block;">
+                View History
+            </a>
+        </div>
+        
         ${formattedEventsHtml}
+
         <p style="font-size: 16px; color: #555555; text-align: left;">
             Best Regards,<br>The Wealth Insight Team
         </p>
@@ -2969,6 +3077,34 @@ function createSupervisorEmailWrapper(bodyContent) {
         </table>
     </body>
     </html>`;
+}
+
+function createScraperFailureAlertHtml(enrichmentOutcomes) {
+    if (!enrichmentOutcomes || enrichmentOutcomes.length === 0) return '';
+    
+    const scraperFailures = enrichmentOutcomes.filter(item => 
+        item.outcome === 'Dropped' && item.assessment_article.includes('Enrichment Failed')
+    );
+
+    if (scraperFailures.length === 0) return '';
+
+    let listItems = scraperFailures.map(item => `
+        <li style="margin-bottom: 10px;">
+            <strong>${escapeHtml(item.newspaper)}:</strong> 
+            <a href="${item.link}">${escapeHtml(item.headline)}</a><br/>
+            <em style="font-size:12px; color: #555;">${escapeHtml(item.assessment_article)}</em>
+        </li>
+    `).join('');
+
+    return `
+    <div style="border: 2px solid #c0392b; background-color: #fbeae5; padding: 15px; margin: 20px 0; border-radius: 8px;">
+        <h2 style="color: #c0392b; margin-top: 0;">⚠️ Scraper Action Required</h2>
+        <p>The following relevant headlines failed the enrichment stage, likely due to an outdated or incorrect article text selector. Please review the selectors for these sources in <strong>src/config/sources.js</strong>.</p>
+        <ul style="padding-left: 20px; margin-top: 15px;">
+            ${listItems}
+        </ul>
+    </div>
+    `;
 }
 
 function createScraperHealthTable(healthStats) {
@@ -3107,8 +3243,8 @@ export async function createSupervisorEmailBody(runStats) {
     }
     statsHtml += `</ul>`;
 
+    const scraperFailureAlertHtml = createScraperFailureAlertHtml(runStats.enrichmentOutcomes); // NEW
     const scraperHealthHtml = createScraperHealthTable(runStats.scraperHealth);
-    
     const enrichmentFunnelHtml = createEnrichmentFunnelHtml(runStats.enrichmentOutcomes);
 
     const [eventsTableHtml, articlesTableHtml] = await Promise.all([
@@ -3120,6 +3256,8 @@ export async function createSupervisorEmailBody(runStats) {
         <div style="text-align:center;"><img src="${LOGO_URL}" alt="Logo" style="max-width:150px;"></div>
         <h1 style="text-align:center;">${SUPERVISOR_EMAIL_CONFIG.subject}</h1>
         <p style="text-align:center;">Run completed: ${runTimestamp}</p>
+        
+        ${scraperFailureAlertHtml} <!-- The new, prominent alert -->
         
         ${statsHtml}
         
@@ -3461,8 +3599,8 @@ import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { logger } from '../../utils/logger.js';
-import { safeExecute } from '../../utils/helpers.js';
-import { CONCURRENCY_LIMIT, SCRAPER_PROXY_URL } from '../../config/index.js';
+import { safeExecute, truncateString } from '../../utils/helpers.js'; // FIX: truncateString is now imported
+import { CONCURRENCY_LIMIT, SCRAPER_PROXY_URL, MIN_ARTICLE_CHARS } from '../../config/index.js';
 import { SITES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js';
 
 const limit = pLimit(CONCURRENCY_LIMIT);
@@ -3506,8 +3644,9 @@ async function fetchPage(url) {
     return result;
 }
 
-async function scrapeSite(site) {
-    logger.debug(`Scraping headlines from ${site.name}`);
+export async function scrapeSite(site) {
+    // This function is now used by both the main app and the scrape.js script.
+    // We avoid logging here to keep the scrape.js output clean.
     
     // --- SPECIAL API-BASED SCRAPING FOR EQT ---
     if (site.name === 'EQT') {
@@ -3533,7 +3672,6 @@ async function scrapeSite(site) {
                 source: site.name,
                 newspaper: site.newspaper,
             }));
-            logger.info(`Scraped ${articles.length} unique headlines from ${site.name}.`);
             return { source: site.name, articles, success: true };
         } catch (e) {
             logger.error({ err: e }, `Failed to parse API response from EQT.`);
@@ -3556,7 +3694,11 @@ async function scrapeSite(site) {
                 const jsonData = JSON.parse($(el).html());
                 if (jsonData['@type'] === 'ItemList' && jsonData.itemListElement) {
                     jsonData.itemListElement.forEach(item => {
-                        if (item.name && item.url) articles.push({ headline: item.name, link: item.url, source: site.name, newspaper: site.name });
+                        if (item.name && item.url) {
+                           // FIX: Ensure URL is absolute before pushing
+                           const absoluteUrl = new URL(item.url, site.url).href;
+                           articles.push({ headline: item.name, link: absoluteUrl, source: site.name, newspaper: site.newspaper || site.name });
+                        }
                     });
                 }
             } catch (e) { 
@@ -3567,13 +3709,15 @@ async function scrapeSite(site) {
         $(site.selector).each((_, el) => {
             const articleData = site.extract($(el), site);
             if (articleData && articleData.headline && articleData.link) {
+                // Ensure URL is absolute
+                articleData.link = new URL(articleData.link, site.url).href;
+                articleData.newspaper = site.newspaper || site.name;
                 articles.push(articleData);
             }
         });
     }
     
     const uniqueArticles = Array.from(new Map(articles.map(a => [a.link, a])).values());
-    logger.info(`Scraped ${uniqueArticles.length} unique headlines from ${site.name}.`);
     return { source: site.name, articles: uniqueArticles, success: true };
 }
 
@@ -3581,10 +3725,15 @@ export async function scrapeAllHeadlines() {
     logger.info('📰 Starting headline scraping from all sources...');
     const promises = Object.values(SITES_CONFIG).map(site => limit(() => scrapeSite(site)));
     const results = await Promise.all(promises);
+    
+    results.forEach(r => {
+        logger.info(`Scraped ${r.articles.length} unique headlines from ${r.source}.`);
+    });
 
     const allArticles = results.flatMap(r => r.articles);
     const scraperHealth = results.map(r => ({ source: r.source, success: r.success, count: r.articles.length }));
 
+    logger.info(`Scraping complete. Found a total of ${allArticles.length} headlines.`);
     return { allArticles, scraperHealth };
 }
 
@@ -3603,7 +3752,6 @@ export async function scrapeArticleContent(article) {
         if (scriptData) {
             try {
                 const jsonData = JSON.parse(scriptData);
-                // Navigate through the complex JSON structure to find the article body
                 const pageContent = jsonData?.props?.pageProps?.page?.pageContent;
                 if (pageContent) {
                     const richTextBlock = pageContent.find(block => block._type === 'richTextBlock');
@@ -3621,22 +3769,40 @@ export async function scrapeArticleContent(article) {
         }
     }
 
-    // --- STANDARD METHOD FOR ALL OTHER SITES (AND EQT FALLBACK) ---
     const newspaperName = article.newspaper || article.source;
-    const selector = TEXT_SELECTORS[newspaperName];
-    if (!selector) {
+    let selectors = TEXT_SELECTORS[newspaperName];
+    if (!selectors) {
         logger.warn(`No text selector for newspaper "${newspaperName}".`);
-        return { ...article, enrichment_error: 'No selector' };
+        return { ...article, enrichment_error: `No selector for "${newspaperName}"` };
+    }
+    if (!Array.isArray(selectors)) {
+        selectors = [selectors];
     }
 
     const $ = cheerio.load(pageResponse.data);
-    const fullText = $(selector).map((_, el) => $(el).text()).get().join(' ').replace(/\s\s+/g, ' ').trim();
+    let fullText = '';
+
+    for (const selector of selectors) {
+        let extractedText = '';
+        if (selector.startsWith('meta[')) {
+            extractedText = $(selector).attr('content') || '';
+        } else {
+            extractedText = $(selector).map((_, el) => $(el).text()).get().join(' ');
+        }
+        
+        fullText = extractedText.replace(/\s\s+/g, ' ').trim();
+
+        if (fullText.length >= MIN_ARTICLE_CHARS) {
+            logger.debug(`Successfully extracted content for "${truncateString(article.headline, 50)}" using selector: "${selector}"`);
+            break; 
+        }
+    }
     
-    if (fullText) {
+    if (fullText.length >= MIN_ARTICLE_CHARS) {
         article.articleContent = { contents: [fullText] };
     } else {
-        logger.warn(`Could not find text for "${article.headline}" with selector "${selector}"`);
-        article.enrichment_error = 'Content not found';
+        logger.warn(`Could not find sufficient text for "${truncateString(article.headline, 50)}" with any configured selectors.`);
+        article.enrichment_error = 'Content not found or too short with all selectors';
     }
     return article;
 }

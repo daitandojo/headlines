@@ -1,8 +1,8 @@
-// app-logic.js
+// app-logic.js (version 2.0)
 import { connectDatabase } from './src/database.js'; // REMOVED disconnectDatabase from import
 import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
 import { filterFreshArticles, prepareArticlesForPipeline, updateArticlesWithFullData } from './src/modules/mongoStore/index.js';
-import { assessHeadlinesInBatches, assessArticleContent, performKimiSanityCheck, checkModelPermissions } from './src/modules/ai/index.js';
+import { assessHeadlinesInBatches, assessArticleContent, performAiSanityCheck, checkModelPermissions } from './src/modules/ai/index.js';
 import { clusterArticlesIntoEvents, synthesizeEvent } from './src/modules/ai/eventProcessing.js';
 import { findSimilarArticles } from './src/modules/ai/rag.js';
 import Article from './models/Article.js';
@@ -37,8 +37,8 @@ export async function runPipeline(isRefreshMode = false) {
 
     try {
         // --- STEP 1: PRE-FLIGHT CHECKS & DB CONNECTION ---
-        const requiredModels = [LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES];
-        if (!await performKimiSanityCheck() || !await checkModelPermissions(requiredModels)) {
+        const requiredModels = [...new Set([LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES])];
+        if (!await performAiSanityCheck() || !await checkModelPermissions(requiredModels)) {
             logger.fatal('AI service checks failed. Aborting pipeline.');
             return;
         }

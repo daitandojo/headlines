@@ -1,16 +1,12 @@
-// scripts/chat.js
-// An interactive RAG chatbot with a professional-grade conversational engine.
-// It uses a central "Thinking" AI to synthesize information, deduce insights, handle corrections,
-// and manage memory, ensuring a natural, reliable, and intelligent user experience.
-
+// scripts/chat.js (version 2.0)
 import 'dotenv/config';
 import readline from 'readline';
-import OpenAI from 'openai';
+import groq from '../modules/ai/client.js'; // Use the new centralized client
 import { connectDatabase, disconnectDatabase } from '../src/database.js';
 import Article from '../models/Article.js';
 import { generateEmbedding, cosineSimilarity } from '../src/utils/vectorUtils.js';
 import { logger } from '../src/utils/logger.js';
-import { KIMI_API_KEY, LLM_MODEL_HEADLINES } from '../src/config/index.js';
+import { LLM_MODEL_HEADLINES } from '../src/config/index.js';
 
 // --- Configuration ---
 const TOP_K_RESULTS = 7;
@@ -21,9 +17,6 @@ const DUPLICATE_THRESHOLD = 0.95;
 const colors = { reset: "\x1b[0m", cyan: "\x1b[36m", green: "\x1b[32m", yellow: "\x1b[33m" };
 const USER_PROMPT = `${colors.cyan}You > ${colors.reset}`;
 const AI_PROMPT = `${colors.green}Bot >${colors.reset} `;
-
-// --- AI Client Setup ---
-const kimi = new OpenAI({ apiKey: 'dummy-key', baseURL: 'https://api.moonshot.ai/v1', defaultHeaders: { 'Authorization': `Bearer ${KIMI_API_KEY}` } });
 
 /** Embeds and stores a structured fact. */
 async function embedAndStoreFact(structuredFact) {
@@ -112,7 +105,7 @@ async function main() {
         // --- 3. EXECUTE AND ACT ---
         let plan;
         try {
-            const response = await kimi.chat.completions.create({ model: LLM_MODEL_HEADLINES, messages, response_format: { type: 'json_object' } });
+            const response = await groq.chat.completions.create({ model: LLM_MODEL_HEADLINES, messages, response_format: { type: 'json_object' } });
             plan = JSON.parse(response.choices[0].message.content);
         } catch (e) {
             console.log(`${AI_PROMPT}${colors.yellow}I'm having a little trouble processing that. Could you please rephrase?${colors.reset}`);
