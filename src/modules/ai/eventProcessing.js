@@ -1,5 +1,5 @@
-// src/modules/ai/eventProcessing.js (version 2.0)
-import groq from './client.js'; // Use the new centralized client
+// src/modules/ai/eventProcessing.js (version 2.1)
+import client from './client.js'; // Use the new centralized client
 import { LLM_MODEL_ARTICLES, CONCURRENCY_LIMIT } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { instructionCluster } from '../assessments/instructionCluster.js';
@@ -12,7 +12,7 @@ async function generateJsonResponse(model, instructions, userContent, temperatur
         { role: 'user', content: userContent },
     ];
 
-    const result = await safeExecute(() => groq.chat.completions.create({
+    const result = await safeExecute(() => client.chat.completions.create({
         model,
         messages,
         response_format: { type: "json_object" },

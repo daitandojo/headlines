@@ -1,7 +1,7 @@
-// scripts/chat.js (version 2.0)
+// scripts/chat.js (version 2.1)
 import 'dotenv/config';
 import readline from 'readline';
-import groq from '../modules/ai/client.js'; // Use the new centralized client
+import client from '../src/modules/ai/client.js'; // Use the new centralized client
 import { connectDatabase, disconnectDatabase } from '../src/database.js';
 import Article from '../models/Article.js';
 import { generateEmbedding, cosineSimilarity } from '../src/utils/vectorUtils.js';
@@ -105,7 +105,7 @@ async function main() {
         // --- 3. EXECUTE AND ACT ---
         let plan;
         try {
-            const response = await groq.chat.completions.create({ model: LLM_MODEL_HEADLINES, messages, response_format: { type: 'json_object' } });
+            const response = await client.chat.completions.create({ model: LLM_MODEL_HEADLINES, messages, response_format: { type: 'json_object' } });
             plan = JSON.parse(response.choices[0].message.content);
         } catch (e) {
             console.log(`${AI_PROMPT}${colors.yellow}I'm having a little trouble processing that. Could you please rephrase?${colors.reset}`);

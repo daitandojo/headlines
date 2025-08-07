@@ -1,6 +1,6 @@
-// src/modules/ai/index.js (version 2.0)
+// src/modules/ai/index.js (version 2.1)
 import pLimit from 'p-limit';
-import groq from './client.js'; // Use the new centralized client
+import client from './client.js'; // Use the new centralized client
 import { LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, AI_BATCH_SIZE, CONCURRENCY_LIMIT, HEADLINES_RELEVANCE_THRESHOLD } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { instructionHeadlines } from '../assessments/instructionHeadlines.js';
@@ -13,14 +13,14 @@ const limit = pLimit(CONCURRENCY_LIMIT);
 let isApiKeyInvalid = false;
 
 /**
- * Performs a sanity check against the configured AI service (Groq).
+ * Performs a sanity check against the configured AI service (OpenAI).
  * @returns {Promise<boolean>}
  */
 export async function performAiSanityCheck() {
     try {
-        logger.info('🔬 Performing AI service sanity check (Groq)...');
-        const response = await groq.chat.completions.create({
-            model: "llama3-8b-8192", // Use a small, fast model for the check
+        logger.info('🔬 Performing AI service sanity check (OpenAI)...');
+        const response = await client.chat.completions.create({
+            model: "gpt-3.5-turbo", // Use a known, stable model for the check
             messages: [{ role: 'user', content: 'What is in one word the name of the capital of France' }],
             temperature: 0,
         }, { timeout: 20 * 1000 });
@@ -29,14 +29,14 @@ export async function performAiSanityCheck() {
             logger.info('✅ AI service sanity check passed.');
             return true;
         } else {
-            logger.fatal(`Groq sanity check failed. Expected a response containing "Paris", but got: "${answer}".`);
+            logger.fatal(`OpenAI sanity check failed. Expected a response containing "Paris", but got: "${answer}".`);
             return false;
         }
     } catch (error) {
         if (error.status === 401) {
-            logger.fatal(`Groq sanity check failed due to INVALID API KEY (401). Please verify your GROQ_API_KEY in the .env file.`);
+            logger.fatal(`OpenAI sanity check failed due to INVALID API KEY (401). Please verify your OPENAI_API_KEY in the .env file.`);
         } else {
-            logger.fatal({ err: error }, 'Groq sanity check failed with an unexpected API error.');
+            logger.fatal({ err: error }, 'OpenAI sanity check failed with an unexpected API error.');
         }
         isApiKeyInvalid = true;
         return false;
@@ -49,13 +49,13 @@ export async function performAiSanityCheck() {
  * @returns {Promise<boolean>}
  */
 export async function checkModelPermissions(requiredModels) {
-    logger.info('🔬 Verifying permissions for configured Groq models...');
+    logger.info('🔬 Verifying permissions for configured OpenAI models...');
     try {
-        const response = await groq.models.list();
+        const response = await client.models.list();
         const availableModels = new Set(response.data.map(model => model.id));
         for (const model of requiredModels) {
             if (!availableModels.has(model)) {
-                logger.fatal(`Model validation failed. The configured model "${model}" is not available on Groq or you don't have permission. Please check your .env file.`);
+                logger.fatal(`Model validation failed. The configured model "${model}" is not available on OpenAI or you don't have permission. Please check your .env file.`);
                 logger.info({ availableModels: [...availableModels] }, 'Available models for your API key:');
                 return false;
             }
@@ -63,7 +63,7 @@ export async function checkModelPermissions(requiredModels) {
         logger.info('✅ All configured models are available.');
         return true;
     } catch (error) {
-        logger.fatal({ err: error }, 'Failed to retrieve model list from Groq API.');
+        logger.fatal({ err: error }, 'Failed to retrieve model list from OpenAI API.');
         isApiKeyInvalid = true;
         return false;
     }
@@ -80,17 +80,17 @@ async function generateAssessment(model, instructions, userContent, fewShotInput
         }
     });
     messages.push({ role: 'user', content: userContent });
-    const apiCallPromise = safeExecute(() => groq.chat.completions.create({
+    const apiCallPromise = safeExecute(() => client.chat.completions.create({
         model, messages, response_format: { type: "json_object" }, temperature: 0.1,
     }), {
         errorHandler: (err) => {
             if (err.status === 401) {
                 isApiKeyInvalid = true;
-                logger.fatal('GROQ API KEY IS INVALID. Halting all AI requests.');
-                return { error: 'Invalid Groq API Key' };
+                logger.fatal('OPENAI API KEY IS INVALID. Halting all AI requests.');
+                return { error: 'Invalid OpenAI API Key' };
             }
-            logger.error(`Groq API Error: ${err.name} - ${err.message}`);
-            return { error: `Groq API Error: ${err.message}` };
+            logger.error(`OpenAI API Error: ${err.name} - ${err.message}`);
+            return { error: `OpenAI API Error: ${err.message}` };
         }
     });
     let timeoutHandle;

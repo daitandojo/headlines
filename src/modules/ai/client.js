@@ -1,20 +1,20 @@
-// src/modules/ai/client.js (version 1.0)
+// src/modules/ai/client.js (version 2.0)
 import OpenAI from 'openai';
-import { GROQ_API_KEY } from '../../config/index.js';
+import { OPENAI_API_KEY } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 
-if (!GROQ_API_KEY) {
-    throw new Error('GROQ_API_KEY is not defined in the environment variables.');
+if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not defined in the environment variables.');
 }
 
-logger.info('🤖 Initializing Groq AI client...');
+logger.info('🤖 Initializing OpenAI AI client...');
 
 // The timeout and maxRetries are configured for robustness, suitable for production use.
-const groq = new OpenAI({
-    apiKey: GROQ_API_KEY,
-    baseURL: 'https://api.groq.com/openai/v1',
+const client = new OpenAI({
+    apiKey: OPENAI_API_KEY,
+    // BaseURL is omitted to use the official OpenAI endpoint by default.
     timeout: 90 * 1000, // 90 seconds
     maxRetries: 3,
 });
 
-export default groq;
+export default client;
