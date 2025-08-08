@@ -21,6 +21,7 @@
 !package-lock.json
 
 # File: .env.template
+      
 # .env.template
 # This file provides a template for the required environment variables.
 # Copy this file to .env and fill in your actual values.
@@ -35,10 +36,11 @@ FORCE_EMAIL_SEND_DEV=true # Set to 'true' to force emails to be sent even if NOD
 # --- MongoDB Configuration ---
 MONGO_URI="mongodb+srv://user:password@cluster.mongodb.net/database?retryWrites=true&w=majority"
 
-# --- Kimi API Configuration ---
-KIMI_API_KEY="sk-..."
-LLM_MODEL_HEADLINES="moonshot-v1-8k" # Example Kimi model
-LLM_MODEL_ARTICLES="moonshot-v1-32k" # Example Kimi model
+# --- AI API Configuration ---
+OPENAI_API_KEY=sk-proj-....
+# The model to be used for all AI tasks (triage, analysis, synthesis).
+# The officially supported identifier
+LLM_MODEL="gpt-5-mini"
 
 # --- Email Sending Configuration (via Nodemailer) ---
 SMTP_HOST=smtp.gmail.com
@@ -55,6 +57,8 @@ HEADLINE_RECIPIENTS="recipient1@example.com,recipient2@example.com"
 SUPERVISOR_EMAIL="supervisor@example.com"
 # Set to false to disable sending to supervisor if the email is the default placeholder
 SEND_TO_DEFAULT_SUPERVISOR=true
+
+    
 
 # File: .github/workflows/fly-deploy.yml
 # See https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
@@ -244,11 +248,11 @@ USER node
 CMD [ "node", "app.js" ]
 
 # File: app-logic.js
-// app-logic.js
+// app-logic.js (version 2.0)
 import { connectDatabase } from './src/database.js'; // REMOVED disconnectDatabase from import
 import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
 import { filterFreshArticles, prepareArticlesForPipeline, updateArticlesWithFullData } from './src/modules/mongoStore/index.js';
-import { assessHeadlinesInBatches, assessArticleContent, performKimiSanityCheck, checkModelPermissions } from './src/modules/ai/index.js';
+import { assessHeadlinesInBatches, assessArticleContent, performAiSanityCheck, checkModelPermissions } from './src/modules/ai/index.js';
 import { clusterArticlesIntoEvents, synthesizeEvent } from './src/modules/ai/eventProcessing.js';
 import { findSimilarArticles } from './src/modules/ai/rag.js';
 import Article from './models/Article.js';
@@ -283,8 +287,8 @@ export async function runPipeline(isRefreshMode = false) {
 
     try {
         // --- STEP 1: PRE-FLIGHT CHECKS & DB CONNECTION ---
-        const requiredModels = [LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES];
-        if (!await performKimiSanityCheck() || !await checkModelPermissions(requiredModels)) {
+        const requiredModels = [...new Set([LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES])];
+        if (!await performAiSanityCheck() || !await checkModelPermissions(requiredModels)) {
             logger.fatal('AI service checks failed. Aborting pipeline.');
             return;
         }
@@ -624,6 +628,241 @@ start();
   }
 ]
 
+# File: debug/Algemeen_Dagblad__ad_nl_.html
+<!DOCTYPE html><html lang="nl"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="https://myprivacy-static.dpgmedia.net" rel="preconnect">
+
+    <script async="" src="https://www.googletagmanager.com/gtm.js?id=GTM-NT4WR7C"></script><script type="text/javascript">
+        window._privacy = window._privacy || [];
+        window.cmpProperties = {
+            baseUrl: 'https://www.ad.nl',
+            language: 'nl',
+            siteUrl: 'https://www.ad.nl/privacy-gate/accept-tcf2?redirectUri=%2Feconomie%2F&authId=a317194f-7ac7-4534-b3a4-400968066c3e',
+            darkModeEnabled: 'false',
+        }
+
+        function redirect() {
+            document.getElementById('message').style.visibility = 'visible';
+            window.location.href = 'https://www.ad.nl/privacy-gate/accept-tcf2?redirectUri=%2Feconomie%2F&authId=a317194f-7ac7-4534-b3a4-400968066c3e';
+        }
+
+        function handleError(error) {
+            console.error('privacy-gate error: ' + error)
+            redirect();
+        }
+
+        window._privacy.push(['functional', redirect]);
+        window._privacy.push(['error', handleError]);
+    </script>
+    <script type="text/javascript" src="https://myprivacy-static.dpgmedia.net/consent.js"></script>
+    <style>
+
+        h2 {
+            font-family: "Trebuchet MS", Arial, sans-serif;
+            font-size: 26px;
+            text-transform: uppercase;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Trebuchet MS", Arial, sans-serif;
+            font-size: 16px;
+        }
+
+        .container {
+            /*noinspection CssUnknownTarget*/
+            background-image: url("https://myprivacy-static.dpgmedia.net/consent/resources/backgrounds/ad.webp");
+            width: 100vw;
+            height: 100vh;
+            background-position: top center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-color: #f5f5f5;
+        }
+
+        @media only screen and (max-width: 768px) {
+            .container {
+                /*noinspection CssUnknownTarget*/
+                background-image: url("https://myprivacy-static.dpgmedia.net/consent/resources/backgrounds/medium/ad.webp");
+            }
+        }
+
+        @media only screen and (max-width: 600px) {
+            .container {
+                /*noinspection CssUnknownTarget*/
+                background-image: url("https://myprivacy-static.dpgmedia.net/consent/resources/backgrounds/small/ad.webp");
+            }
+        }
+
+        .modal {
+            position: fixed;
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            height: 74vh;
+            z-index: 999;
+            pointer-events: auto;
+            transition: all 0.5s;
+            visibility: hidden;
+            box-shadow: 0 5px 15px rgba(25, 25, 25, 0.5);
+            max-width: 640px;
+            margin: 13vh auto;
+        }
+
+        .modal__header {
+            flex: 0 10%;
+            width: 100%;
+            display: flex;
+            flex-flow: row nowrap;
+            justify-content: center;
+            align-items: center;
+            border-bottom: #b4b4b4 solid 1px;
+            min-height: 40px;
+            horiz-align: center;
+        }
+
+        .modal__header__logo > img {
+            height: 35px;
+        }
+
+        .modal__body {
+            flex: 0 85%;
+            display: flex;
+            flex-flow: column wrap;
+            justify-content: space-evenly;
+            align-items: center;
+        }
+
+        .modal__body__text {
+            flex: 0 60%
+        }
+
+        .dpg-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 72px;
+        }
+
+        .inline-block {
+            display: inline-block;
+        }
+
+        .h-auto {
+            height: auto;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        @keyframes schrinky {
+
+            0% {
+                transform: scaleY(1);
+            }
+
+            100% {
+                transform: scaleY(0.4);
+            }
+        }
+
+        .animate-schrinky {
+            animation: schrinky 600ms alternate infinite cubic-bezier(0.59, -0.1, 0.29, 1.1);
+        }
+
+        .animation-delay-150ms {
+            animation-delay: 150ms;
+        }
+
+        .animation-delay-300ms {
+            animation-delay: 300ms;
+        }
+
+        .animation-delay-450ms {
+            animation-delay: 450ms;
+        }
+
+        @media (max-width: 960px) {
+            .modal {
+                height: 100vh;
+                width: 100vw;
+                margin: 0;
+                max-width: none;
+            }
+
+            .modal__body {
+                padding: 0 10vw;
+            }
+        }
+    </style>
+    <title>DPG Media Privacy Gate</title>
+
+    <!-- Google Tag Manager -->
+    <script>(function (w, d, s, l, i) {
+        w[l] = w[l] || []
+        w[l].push({
+            'gtm.start':
+                new Date().getTime(), event: 'gtm.js'
+        });
+        var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+        j.async = true;
+        j.src =
+            'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+    })(window, document, 'script', 'dataLayer', 'GTM-NT4WR7C');</script>
+    <!-- End Google Tag Manager -->
+
+</head>
+<body>
+
+<!-- Google Tag Manager (noscript) -->
+<noscript>
+    <iframe title="gtm" src="https://www.googletagmanager.com/ns.html?id=GTM-NT4WR7C"
+            height="0" width="0" style="display:none;visibility:hidden"></iframe>
+</noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<div class="container">
+    <div id="message" class="modal">
+        <div class="modal__header">
+            <div class="modal__header__logo">
+                <img src="https://myprivacy-static.dpgmedia.net/consent/resources/logos/logo-dpgmedia.svg" alt="dpg media logo">
+            </div>
+        </div>
+        <div class="modal__body">
+            <div class="modal__body__text">
+                <div class="dpg-loader">
+                    <div aria-busy="true" class="wrapper inline-block" data-testid="dpg-loader">
+                        <svg class="w-full h-auto" width="255px" height="211px" viewBox="0 0 255 211" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                <rect class="animate-schrinky" fill="#783C96" fill-rule="nonzero" x="0" y="112" width="43" height="70" style="transform-origin: 0px 147px;"></rect>
+                                <rect class="animate-schrinky animation-delay-150ms" fill="#D23278" fill-rule="nonzero" x="70.322" y="58" width="43" height="152" style="transform-origin: 0px 134px;"></rect>
+                                <rect class="animate-schrinky animation-delay-300ms" fill="#E6463C" fill-rule="nonzero" x="140.697" y="0" width="43" height="184" style="transform-origin: 0px 92px;"></rect>
+                                <rect class="animate-schrinky animation-delay-450ms" fill="#FABB22" fill-rule="nonzero" x="210.997" y="58" width="43" height="76" style="transform-origin: 0px 96px;"></rect>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="pg-host-shadow-root"></div><iframe name="__tcfapiLocator" style="display: none;"></iframe></body></html>
+
 # File: docker-compose.yml
 # docker-compose.yml (version 1.03)
 # This file is for LOCAL DEVELOPMENT and TESTING ONLY.
@@ -864,10 +1103,10 @@ main();
     "openai": "^4.47.3",
     "p-limit": "^5.0.0",
     "pino": "^9.1.0",
-    "pino-pretty": "^11.1.0"
+    "pino-pretty": "^11.1.0",
+    "playwright": "^1.45.1"
   }
 }
-
 
 # File: scrape.js
 // scrape.js
@@ -995,19 +1234,15 @@ main().catch(err => {
 });
 
 # File: scripts/chat.js
-// scripts/chat.js
-// An interactive RAG chatbot with a professional-grade conversational engine.
-// It uses a central "Thinking" AI to synthesize information, deduce insights, handle corrections,
-// and manage memory, ensuring a natural, reliable, and intelligent user experience.
-
+// scripts/chat.js (version 2.1)
 import 'dotenv/config';
 import readline from 'readline';
-import OpenAI from 'openai';
+import client from '../src/modules/ai/client.js'; // Use the new centralized client
 import { connectDatabase, disconnectDatabase } from '../src/database.js';
 import Article from '../models/Article.js';
 import { generateEmbedding, cosineSimilarity } from '../src/utils/vectorUtils.js';
 import { logger } from '../src/utils/logger.js';
-import { KIMI_API_KEY, LLM_MODEL_HEADLINES } from '../src/config/index.js';
+import { LLM_MODEL_HEADLINES } from '../src/config/index.js';
 
 // --- Configuration ---
 const TOP_K_RESULTS = 7;
@@ -1018,9 +1253,6 @@ const DUPLICATE_THRESHOLD = 0.95;
 const colors = { reset: "\x1b[0m", cyan: "\x1b[36m", green: "\x1b[32m", yellow: "\x1b[33m" };
 const USER_PROMPT = `${colors.cyan}You > ${colors.reset}`;
 const AI_PROMPT = `${colors.green}Bot >${colors.reset} `;
-
-// --- AI Client Setup ---
-const kimi = new OpenAI({ apiKey: 'dummy-key', baseURL: 'https://api.moonshot.ai/v1', defaultHeaders: { 'Authorization': `Bearer ${KIMI_API_KEY}` } });
 
 /** Embeds and stores a structured fact. */
 async function embedAndStoreFact(structuredFact) {
@@ -1109,7 +1341,7 @@ async function main() {
         // --- 3. EXECUTE AND ACT ---
         let plan;
         try {
-            const response = await kimi.chat.completions.create({ model: LLM_MODEL_HEADLINES, messages, response_format: { type: 'json_object' } });
+            const response = await client.chat.completions.create({ model: LLM_MODEL_HEADLINES, messages, response_format: { type: 'json_object' } });
             plan = JSON.parse(response.choices[0].message.content);
         } catch (e) {
             console.log(`${AI_PROMPT}${colors.yellow}I'm having a little trouble processing that. Could you please rephrase?${colors.reset}`);
@@ -1220,6 +1452,825 @@ async function embedPastArticles() {
 embedPastArticles().catch(err => {
     logger.fatal({ err }, 'An unhandled error occurred during the embedding backfill process.');
     process.exit(1);
+});
+
+# File: scripts/find-selectors.js
+// scripts/find-selectors.js (version 10.0 - Intelligent HTML Analysis)
+import 'dotenv/config';
+import fs from 'fs/promises';
+import path from 'path';
+import * as cheerio from 'cheerio';
+import readline from 'readline';
+import playwright from 'playwright';
+import client from '../src/modules/ai/client.js';
+import { LLM_MODEL } from '../src/config/index.js';
+import { logger } from '../src/utils/logger.js';
+
+// --- Configuration ---
+const PAPERS_CONFIG_PATH = path.join(process.cwd(), 'src', 'config', 'papers.json');
+const DEBUG_DIR = path.join(process.cwd(), 'debug');
+const MIN_HEADLINES_THRESHOLD = 8;
+const MIN_ARTICLE_LENGTH_THRESHOLD = 500;
+const SAVE_HTML_FLAG = process.argv.includes('--save-html') || true; // Always save for debugging
+const NO_HEADLESS_FLAG = process.argv.includes('--no-headless');
+
+const colors = { reset: "\x1b[0m", red: "\x1b[31m", green: "\x1b[32m", yellow: "\x1b[33m", cyan: "\x1b[36m", grey: "\x1b[90m" };
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+// --- Helper & Utility Functions ---
+function pause() { return new Promise(resolve => rl.question(`\n${colors.yellow}Press Enter to continue...${colors.reset}`, () => resolve())); }
+
+async function saveDebugHtml(filename, html) {
+    if (!SAVE_HTML_FLAG) return;
+    try {
+        await fs.mkdir(DEBUG_DIR, { recursive: true });
+        const filePath = path.join(DEBUG_DIR, filename);
+        await fs.writeFile(filePath, html);
+        logger.info(`${colors.grey}Saved HTML snapshot to ${filePath}${colors.reset}`);
+    } catch (error) { logger.error(`Failed to save debug HTML: ${error.message}`); }
+}
+
+function sanitizeUrl(url, baseUrl) {
+    if (!url || typeof url !== 'string') return null;
+    
+    const lastHttp = url.lastIndexOf('http');
+    if (lastHttp > 0) {
+        const potentialUrl = url.substring(lastHttp);
+        try {
+            const corrected = new URL(potentialUrl).href;
+            logger.info(`${colors.grey}  -> URL sanitizer recovered malformed URL: "${corrected}"${colors.reset}`);
+            return corrected;
+        } catch (e) { return null; }
+    }
+    
+    try {
+        return new URL(url, baseUrl).href;
+    } catch (e) {
+        return null;
+    }
+}
+
+// --- Agentic Browser & AI Functions ---
+async function findAndClickConsentButton(page, country) {
+    logger.info(`> AI Task: Identifying consent button...`);
+    const buttons = await page.evaluate(() => 
+        Array.from(document.querySelectorAll('button, a[role="button"]'))
+             .map(el => el.innerText.trim())
+             .filter(text => text.length > 2 && text.length < 30)
+    );
+    
+    if (buttons.length === 0) {
+        logger.info(`${colors.grey}  -> No buttons found to analyze for consent.${colors.reset}`);
+        return false;
+    }
+    
+    const sysPrompt = `You are a web automation expert. From this JSON array of button texts from a website in ${country}, identify the SINGLE button text that accepts cookies, privacy, or consent. Prioritize clear "accept" actions (like 'Accept', 'Agree', 'OK') over ambiguous "settings" links. Respond ONLY with a valid JSON object: { "text_to_click": "The exact text of the button to click" } OR { "text_to_click": null }`;
+    
+    try {
+        const res = await client.chat.completions.create({
+            model: LLM_MODEL,
+            messages: [
+                { role: 'system', content: sysPrompt },
+                { role: 'user', content: JSON.stringify(buttons) }
+            ],
+            response_format: { type: 'json_object' }
+        });
+        
+        const { text_to_click } = JSON.parse(res.choices[0].message.content);
+        if (text_to_click) {
+            logger.info(`  -> AI advised clicking button: "${text_to_click}"`);
+            await page.getByRole('button', { name: text_to_click, exact: true }).first().click({ timeout: 5000 });
+            logger.info(`${colors.green}  -> Successfully clicked consent button.${colors.reset}`);
+            return true;
+        }
+    } catch (e) {
+        logger.error(`  -> AI consent analysis failed: ${e.message}`);
+    }
+    
+    logger.info(`${colors.grey}  -> No consent button identified.${colors.reset}`);
+    return false;
+}
+
+async function getPageHtmlWithPlaywright(url, outletName, country) {
+    logger.info(`> Deploying browser agent to: ${colors.cyan}${url}${colors.reset}`);
+    const browser = await playwright.chromium.launch({ headless: !NO_HEADLESS_FLAG });
+    const context = await browser.newContext({ userAgent: 'Mozilla/5.0' });
+    const page = await context.newPage();
+    let consentButtonClicked = false;
+    
+    try {
+        const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        if (response && !response.ok() && response.status() === 404) {
+            return { html: null, status: 404, consentButtonClicked: false };
+        }
+        
+        consentButtonClicked = await findAndClickConsentButton(page, country);
+        if (consentButtonClicked) await page.waitForLoadState('networkidle', { timeout: 10000 });
+        
+        const html = await page.content();
+        await saveDebugHtml(`${outletName.replace(/[^a-z0-9]/gi, '_')}.html`, html);
+        return { html, status: response?.status() || 200, consentButtonClicked };
+    } catch (error) {
+        logger.error(`  -> Browser agent failed: ${error.message.split('\n')[0]}`);
+        return { html: null, status: null, consentButtonClicked };
+    } finally {
+        await browser.close();
+    }
+}
+
+// --- Intelligent HTML Analysis Functions ---
+function analyzeHtmlStructure(html) {
+    logger.info(`> Performing intelligent HTML structure analysis...`);
+    const $ = cheerio.load(html);
+    
+    // First, let's see what we're working with
+    const totalLinks = $('a[href]').length;
+    const totalElements = $('*').length;
+    logger.info(`  -> HTML contains ${totalElements} total elements, ${totalLinks} links with href`);
+    
+    // Remove noise elements that aren't content
+    const beforeCleanup = $('*').length;
+    $('nav, footer, header .search, .cookie-banner, .advertisement, .ads, script, style, noscript').remove();
+    const afterCleanup = $('*').length;
+    logger.info(`  -> Cleaned HTML: removed ${beforeCleanup - afterCleanup} elements, ${afterCleanup} remain`);
+    
+    const cleanedLinks = $('a[href]').length;
+    logger.info(`  -> After cleanup: ${cleanedLinks} links remaining`);
+    
+    const linkAnalysis = [];
+    let processedLinks = 0;
+    let skippedLinks = 0;
+    
+    $('a[href]').each((index, element) => {
+        const $el = $(element);
+        const href = $el.attr('href');
+        
+        // Log first few links for debugging
+        if (index < 10) {
+            logger.info(`${colors.grey}    Link ${index + 1}: href="${href}", text="${$el.text().trim().substring(0, 50)}..."${colors.reset}`);
+        }
+        
+        // Skip non-content links
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) {
+            skippedLinks++;
+            if (index < 5) logger.info(`${colors.grey}      -> Skipped: invalid href${colors.reset}`);
+            return;
+        }
+        
+        processedLinks++;
+        
+        // Get all text content and structural information
+        const allText = $el.text().trim().replace(/\s+/g, ' ');
+        const directText = $el.clone().children().remove().end().text().trim().replace(/\s+/g, ' ');
+        
+        // Debug text extraction for first few links
+        if (index < 5) {
+            logger.info(`${colors.grey}      -> All text: "${allText.substring(0, 100)}..."${colors.reset}`);
+            logger.info(`${colors.grey}      -> Direct text: "${directText.substring(0, 100)}..."${colors.reset}`);
+        }
+        
+        // Analyze nested structure
+        const hasImage = $el.find('img, picture').length > 0;
+        const hasVideo = $el.find('video').length > 0;
+        const headingElements = $el.find('h1, h2, h3, h4, h5, h6');
+        const strongElements = $el.find('strong, b, .title, .headline');
+        
+        if (index < 5) {
+            logger.info(`${colors.grey}      -> Structure: img=${hasImage}, video=${hasVideo}, headings=${headingElements.length}, strong=${strongElements.length}${colors.reset}`);
+        }
+        
+        // Get the most prominent text (usually the headline)
+        let prominentText = '';
+        if (headingElements.length > 0) {
+            prominentText = headingElements.first().text().trim().replace(/\s+/g, ' ');
+            if (index < 5) logger.info(`${colors.grey}      -> Using heading text: "${prominentText.substring(0, 50)}..."${colors.reset}`);
+        } else if (strongElements.length > 0) {
+            prominentText = strongElements.first().text().trim().replace(/\s+/g, ' ');
+            if (index < 5) logger.info(`${colors.grey}      -> Using strong text: "${prominentText.substring(0, 50)}..."${colors.reset}`);
+        } else {
+            // Look for the largest text block
+            const textElements = $el.find('*').filter(function() {
+                const text = $(this).clone().children().remove().end().text().trim();
+                return text.length > 20;
+            });
+            if (textElements.length > 0) {
+                prominentText = textElements.first().text().trim().replace(/\s+/g, ' ');
+                if (index < 5) logger.info(`${colors.grey}      -> Using largest text block: "${prominentText.substring(0, 50)}..."${colors.reset}`);
+            } else {
+                prominentText = allText;
+                if (index < 5) logger.info(`${colors.grey}      -> Using all text: "${prominentText.substring(0, 50)}..."${colors.reset}`);
+            }
+        }
+        
+        // Clean up common prefixes
+        const originalText = prominentText;
+        prominentText = prominentText.replace(/^(premium artikel:|artikel:|nieuws:|breaking:|live:|video:|foto:|premium:)/i, '').trim();
+        if (originalText !== prominentText && index < 5) {
+            logger.info(`${colors.grey}      -> Text after cleanup: "${prominentText.substring(0, 50)}..."${colors.reset}`);
+        }
+        
+        // Analyze context and positioning
+        const parentClasses = $el.parent().attr('class') || '';
+        const parentTag = $el.parent().prop('tagName')?.toLowerCase() || '';
+        const elementClasses = $el.attr('class') || '';
+        const elementId = $el.attr('id') || '';
+        
+        if (index < 5) {
+            logger.info(`${colors.grey}      -> Context: parent=${parentTag}.${parentClasses}, element=${elementClasses}${colors.reset}`);
+        }
+        
+        // Check if it's in a content area vs navigation
+        const isInNav = $el.closest('nav, .navigation, .menu, .sidebar, footer, header .user-actions').length > 0;
+        const isInMain = $el.closest('main, .main, .content, .articles, .news').length > 0;
+        
+        if (index < 5) {
+            logger.info(`${colors.grey}      -> Location: inNav=${isInNav}, inMain=${isInMain}${colors.reset}`);
+        }
+        
+        // Calculate positioning metrics
+        const position = index;
+        const depth = $el.parents().length;
+        
+        // Analyze siblings to detect listing patterns
+        const siblings = $el.parent().children('a').length;
+        const siblingIndex = $el.parent().children('a').index($el);
+        
+        if (index < 5) {
+            logger.info(`${colors.grey}      -> Metrics: position=${position}, depth=${depth}, siblings=${siblings}, siblingIndex=${siblingIndex}${colors.reset}`);
+        }
+        
+        // Apply filtering criteria with detailed logging
+        const textLengthOk = prominentText.length >= 15 && prominentText.length <= 200;
+        const notInNav = !isInNav;
+        
+        if (index < 10) {
+            logger.info(`${colors.grey}      -> Filters: textLength(${prominentText.length})=${textLengthOk}, notInNav=${notInNav}${colors.reset}`);
+        }
+        
+        if (textLengthOk && notInNav) {
+            const linkData = {
+                text: prominentText,
+                href,
+                allText,
+                directText,
+                hasImage,
+                hasVideo,
+                headingElements: headingElements.length,
+                strongElements: strongElements.length,
+                parentClasses,
+                parentTag,
+                elementClasses,
+                elementId,
+                isInMain,
+                position,
+                depth,
+                siblings,
+                siblingIndex,
+                textLength: prominentText.length,
+                selector: generateOptimalSelector($, $el)
+            };
+            
+            linkAnalysis.push(linkData);
+            
+            if (index < 5) {
+                logger.info(`${colors.green}      -> ✅ ADDED to analysis: "${prominentText.substring(0, 40)}..."${colors.reset}`);
+            }
+        } else {
+            if (index < 10) {
+                logger.info(`${colors.grey}      -> ❌ FILTERED OUT${colors.reset}`);
+            }
+        }
+    });
+    
+    logger.info(`  -> Link processing complete:`);
+    logger.info(`     - Total links processed: ${processedLinks}`);
+    logger.info(`     - Links skipped (invalid href): ${skippedLinks}`);
+    logger.info(`     - Links passing filters: ${linkAnalysis.length}`);
+    
+    if (linkAnalysis.length > 0) {
+        logger.info(`  -> Sample of filtered links:`);
+        linkAnalysis.slice(0, 5).forEach((link, i) => {
+            logger.info(`     ${i + 1}. "${link.text.substring(0, 60)}..." (${link.href.substring(0, 50)}...)`);
+        });
+    } else {
+        logger.warn(`${colors.yellow}  -> No links passed the filtering criteria!${colors.reset}`);
+        logger.info(`  -> Debugging: Let's check what links exist without filters...`);
+        
+        let debugCount = 0;
+        $('a[href]').each((index, element) => {
+            if (debugCount >= 10) return;
+            const $el = $(element);
+            const href = $el.attr('href');
+            const text = $el.text().trim().replace(/\s+/g, ' ');
+            
+            if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.startsWith('mailto:')) {
+                logger.info(`       Debug Link ${debugCount + 1}: "${text.substring(0, 50)}..." -> ${href.substring(0, 50)}...`);
+                logger.info(`         - Text length: ${text.length}`);
+                logger.info(`         - In nav: ${$el.closest('nav, .navigation, .menu, .sidebar, footer, header .user-actions').length > 0}`);
+                debugCount++;
+            }
+        });
+    }
+    
+    logger.info(`  -> Analysis complete: ${linkAnalysis.length} potential headline links identified`);
+    return linkAnalysis;
+}
+
+function generateOptimalSelector($, element) {
+    const $el = $(element);
+    const classes = $el.attr('class');
+    const id = $el.attr('id');
+    const tag = $el.prop('tagName')?.toLowerCase();
+    
+    // Priority: ID > specific class > data attributes > tag + class
+    if (id) return `#${id}`;
+    
+    if (classes) {
+        const classList = classes.split(' ');
+        // Look for semantic class names
+        const semanticClasses = classList.filter(cls => 
+            cls.includes('headline') || cls.includes('title') || cls.includes('link') || 
+            cls.includes('teaser') || cls.includes('story') || cls.includes('article')
+        );
+        if (semanticClasses.length > 0) {
+            return `.${semanticClasses[0]}`;
+        }
+    }
+    
+    // Check for data attributes
+    const dataAttrs = Object.keys($el[0].attribs || {}).filter(attr => attr.startsWith('data-'));
+    if (dataAttrs.length > 0) {
+        const semanticData = dataAttrs.find(attr => 
+            attr.includes('category') || attr.includes('type') || attr.includes('content')
+        );
+        if (semanticData) {
+            return `${tag}[${semanticData}="${$el.attr(semanticData)}"]`;
+        }
+    }
+    
+    // Fallback to tag + first class
+    if (classes) {
+        const firstClass = classes.split(' ')[0];
+        return `${tag}.${firstClass}`;
+    }
+    
+    return tag;
+}
+
+async function identifyHeadlinesWithAI(linkAnalysis, baseUrl, country) {
+    logger.info(`> AI Task: Analyzing ${linkAnalysis.length} links to identify headlines...`);
+    
+    if (linkAnalysis.length === 0) return { headlines: [], method: 'No links found', selector: null };
+    
+    // Prepare data for AI analysis - include key metrics but limit size
+    const analysisData = linkAnalysis.slice(0, 100).map(link => ({
+        text: link.text,
+        href: link.href,
+        hasImage: link.hasImage,
+        hasVideo: link.hasVideo,
+        headingElements: link.headingElements,
+        strongElements: link.strongElements,
+        isInMain: link.isInMain,
+        siblings: link.siblings,
+        textLength: link.textLength,
+        position: link.position,
+        elementClasses: link.elementClasses,
+        parentClasses: link.parentClasses,
+        selector: link.selector
+    }));
+    
+    const sysPrompt = `You are an expert web scraping analyst. Analyze this JSON array of links from a news website in ${country}. Your task is to identify which links are most likely to be NEWS HEADLINES (not navigation, ads, or utility links).
+
+Consider these factors:
+- Headlines are usually 20-150 characters long
+- They often have images associated with them
+- They're typically in main content areas
+- They often appear in groups (siblings)
+- They may use semantic HTML (headings, strong text)
+- Class names might indicate content type
+- Position matters (earlier links often more important)
+
+Respond with a JSON object containing:
+{
+  "headline_links": [
+    {
+      "text": "The headline text",
+      "href": "the-url",
+      "reasoning": "Why this is likely a headline",
+      "confidence": 0.95
+    }
+  ],
+  "pattern_analysis": "Description of the common pattern you identified",
+  "recommended_selector": "CSS selector that would capture these headlines"
+}
+
+Select the TOP 15-25 most likely headlines, prioritizing quality over quantity.`;
+
+    try {
+        const res = await client.chat.completions.create({
+            model: LLM_MODEL,
+            messages: [
+                { role: 'system', content: sysPrompt },
+                { role: 'user', content: JSON.stringify(analysisData) }
+            ],
+            response_format: { type: 'json_object' }
+        });
+        
+        const analysis = JSON.parse(res.choices[0].message.content);
+        
+        logger.info(`${colors.green}  -> AI identified ${analysis.headline_links?.length || 0} headlines${colors.reset}`);
+        logger.info(`${colors.grey}     Pattern: ${analysis.pattern_analysis}${colors.reset}`);
+        logger.info(`${colors.grey}     Recommended selector: ${analysis.recommended_selector}${colors.reset}`);
+        
+        if (analysis.headline_links && analysis.headline_links.length > 0) {
+            // Convert to expected format and sanitize URLs
+            const headlines = analysis.headline_links.map(link => ({
+                headline: link.text,
+                link: sanitizeUrl(link.href, baseUrl)
+            })).filter(h => h.link);
+            
+            return {
+                headlines,
+                method: 'AI Structural Analysis',
+                selector: analysis.recommended_selector || 'AI-identified pattern',
+                aiAnalysis: {
+                    pattern: analysis.pattern_analysis,
+                    confidence: analysis.headline_links.map(h => h.confidence).reduce((a, b) => a + b, 0) / analysis.headline_links.length
+                }
+            };
+        }
+    } catch (e) {
+        logger.error(`  -> AI analysis failed: ${e.message}`);
+    }
+    
+    return null;
+}
+
+// --- JSON-LD Analysis (Golden Path) ---
+async function tryJsonLdExtraction(html, baseUrl) {
+    logger.info(`  -> Trying golden path (JSON-LD structured data)...`);
+    const $ = cheerio.load(html);
+    let ldJsonHeadlines = [];
+    
+    $('script[type="application/ld+json"]').each((_, el) => {
+        try {
+            const jsonString = $(el).html();
+            if (!jsonString) return;
+            
+            const data = JSON.parse(jsonString);
+            const items = data.itemListElement || 
+                         (data['@graph'] && data['@graph'].find(item => item.itemListElement)?.itemListElement) || 
+                         (Array.isArray(data) && data.find(i => i.itemListElement)?.itemListElement);
+            
+            if (items && Array.isArray(items)) {
+                items.forEach(item => {
+                    const headline = item.name || item.item?.name;
+                    const url = item.url || item.item?.url;
+                    if (headline && url) {
+                        const finalUrl = sanitizeUrl(url, baseUrl);
+                        if (finalUrl) {
+                            ldJsonHeadlines.push({ headline: headline.replace(/\s+/g, ' ').trim(), link: finalUrl });
+                        }
+                    }
+                });
+            }
+        } catch(e) { 
+            logger.warn(`${colors.yellow}  -> Warning: Failed to parse JSON-LD block${colors.reset}`);
+        }
+    });
+    
+    if (ldJsonHeadlines.length >= MIN_HEADLINES_THRESHOLD) {
+        logger.info(`${colors.green}  -> Golden path SUCCESS! Found ${ldJsonHeadlines.length} headlines in JSON-LD${colors.reset}`);
+        return { headlines: ldJsonHeadlines, method: 'JSON-LD', selector: 'script[type="application/ld+json"]' };
+    }
+    
+    return null;
+}
+
+// --- Main Analysis Pipeline ---
+async function getHeadlineData(html, baseUrl, country) {
+    logger.info(`> Stage 2: Intelligent headline detection...`);
+    
+    // Try golden path first
+    const jsonLdResult = await tryJsonLdExtraction(html, baseUrl);
+    if (jsonLdResult) return jsonLdResult;
+    
+    logger.info(`${colors.yellow}  -> Golden path failed. Analyzing HTML structure...${colors.reset}`);
+    
+    // Intelligent structure analysis
+    const linkAnalysis = analyzeHtmlStructure(html);
+    
+    if (linkAnalysis.length === 0) {
+        logger.error(`  -> No analyzable links found in HTML`);
+        return null;
+    }
+    
+    // AI-powered headline identification
+    const aiResult = await identifyHeadlinesWithAI(linkAnalysis, baseUrl, country);
+    
+    if (aiResult && aiResult.headlines.length >= MIN_HEADLINES_THRESHOLD) {
+        logger.info(`${colors.green}  -> AI analysis SUCCESS!${colors.reset}`);
+        return aiResult;
+    } else if (aiResult && aiResult.headlines.length > 0) {
+        logger.warn(`${colors.yellow}  -> AI found ${aiResult.headlines.length} headlines (below threshold of ${MIN_HEADLINES_THRESHOLD})${colors.reset}`);
+        // Still return it - might be a smaller page
+        return aiResult;
+    }
+    
+    logger.error(`  -> All headline detection methods failed`);
+    return null;
+}
+
+async function getArticleData(url, outletName, country, learnedSelectors) {
+    logger.info(`> Stage 3: Analyzing article content...`);
+    const { html } = await getPageHtmlWithPlaywright(url, `${outletName}_article`, country);
+    if (!html) return null;
+    
+    const $ = cheerio.load(html);
+    
+    // Intelligent content analysis
+    logger.info(`  -> Performing intelligent content analysis...`);
+    
+    const contentAnalysis = [];
+    
+    // Analyze different potential content containers
+    const potentialSelectors = [
+        'article p', 'main p', '.content p', '.article-body p', '.post-content p',
+        'div[class*="content"] p', 'div[class*="body"] p', 'div[class*="text"] p',
+        '.story-body p', '.article-text p', 'meta[name="description"]'
+    ];
+    
+    // Add learned selectors
+    if (learnedSelectors && learnedSelectors.length > 0) {
+        potentialSelectors.unshift(...learnedSelectors);
+    }
+    
+    for (const selector of potentialSelectors) {
+        try {
+            let text = '';
+            if (selector.startsWith('meta')) {
+                text = $(selector).attr('content') || '';
+            } else {
+                text = $(selector).map((_, el) => $(el).text().trim()).get().join(' ').replace(/\s+/g, ' ');
+            }
+            
+            if (text.length > 0) {
+                contentAnalysis.push({
+                    selector,
+                    text,
+                    length: text.length,
+                    paragraphs: selector.includes('meta') ? 1 : $(selector).length
+                });
+            }
+        } catch (e) {
+            // Skip invalid selectors
+        }
+    }
+    
+    // Sort by length and find the best content
+    contentAnalysis.sort((a, b) => b.length - a.length);
+    
+    if (contentAnalysis.length > 0 && contentAnalysis[0].length >= MIN_ARTICLE_LENGTH_THRESHOLD) {
+        logger.info(`${colors.green}  -> Found article content (${contentAnalysis[0].length} chars)${colors.reset}`);
+        return {
+            selector: contentAnalysis[0].selector,
+            text: contentAnalysis[0].text,
+            method: 'Intelligent Content Analysis'
+        };
+    }
+    
+    // Fallback: full page text extraction
+    logger.warn(`  -> Using fallback full-page text extraction...`);
+    $('nav, header, footer, aside, .sidebar, .comments, .ads, script, style, noscript').remove();
+    const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
+    
+    if (bodyText.length >= MIN_ARTICLE_LENGTH_THRESHOLD) {
+        return {
+            selector: 'body.cleaned',
+            text: bodyText,
+            method: 'Full-Page Text Extraction'
+        };
+    }
+    
+    return null;
+}
+
+async function findBusinessUrlWithAI(html, baseUrl, country) {
+    logger.info(`> AI Task: Finding business/news section URL...`);
+    const $ = cheerio.load(html);
+    const links = [];
+    
+    $('nav a, header a').each((_, el) => {
+        const text = $(el).text().trim();
+        const href = $(el).attr('href');
+        if (text && href) {
+            try {
+                links.push({ text, url: new URL(href, baseUrl).href });
+            } catch(e) {}
+        }
+    });
+    
+    if (links.length === 0) {
+        logger.warn(`  -> No navigation links found`);
+        return null;
+    }
+    
+    logger.info(`  -> Analyzing ${links.length} navigation links`);
+    
+    const sysPrompt = `You are a multilingual media analyst. From this JSON of navigation links from a news website in ${country}, identify the single URL that most likely leads to the main "News", "Latest News", "Business", or "Economy" section. Respond ONLY with a valid JSON object: { "best_url": "the-full-url", "reasoning": "Your brief reasoning." }`;
+    
+    try {
+        const res = await client.chat.completions.create({
+            model: LLM_MODEL,
+            messages: [
+                { role: 'system', content: sysPrompt },
+                { role: 'user', content: JSON.stringify(links) }
+            ],
+            response_format: { type: 'json_object' }
+        });
+        
+        const { best_url, reasoning } = JSON.parse(res.choices[0].message.content);
+        logger.info(`${colors.green}  -> AI identified: ${best_url}${colors.reset}`);
+        logger.info(`${colors.grey}     Reasoning: ${reasoning}${colors.reset}`);
+        return best_url;
+    } catch (e) {
+        logger.error(`  -> AI navigation analysis failed: ${e.message}`);
+        return null;
+    }
+}
+
+// --- Main Outlet Analysis ---
+async function analyzeOutlet(outlet, learnedSelectors) {
+    console.log(`\n\n======================================================================`);
+    console.log(`${colors.yellow}🔍 ANALYZING: ${outlet.name} (${outlet.country})${colors.reset}`);
+    console.log(`======================================================================`);
+    
+    logger.info(`> Stage 1: Locating content page...`);
+    let finalUrl = outlet.url;
+    let urlDiscoveryMethod = 'initial';
+    let { html, status, consentButtonClicked } = await getPageHtmlWithPlaywright(finalUrl, outlet.name, outlet.country);
+
+    if (status === 404) {
+        logger.warn(`  -> Initial URL returned 404. Attempting root domain analysis...`);
+        urlDiscoveryMethod = 'AI-discovered';
+        const rootUrl = new URL(finalUrl).origin;
+        const rootResult = await getPageHtmlWithPlaywright(rootUrl, `${outlet.name}_root`, outlet.country);
+        
+        if (rootResult.html) {
+            const correctedUrl = await findBusinessUrlWithAI(rootResult.html, rootUrl, outlet.country);
+            if (correctedUrl) {
+                finalUrl = correctedUrl;
+                ({ html, consentButtonClicked } = await getPageHtmlWithPlaywright(finalUrl, outlet.name, outlet.country));
+            } else {
+                html = null;
+            }
+        } else {
+            html = null;
+        }
+    }
+
+    if (!html) {
+        console.log(`\n${colors.red}❌ ANALYSIS FAILED: Could not retrieve valid page content${colors.reset}`);
+        return null;
+    }
+
+    const headlineData = await getHeadlineData(html, finalUrl, outlet.country);
+    if (!headlineData) {
+        console.log(`\n${colors.red}❌ ANALYSIS FAILED: Could not identify headline pattern${colors.reset}`);
+        return null;
+    }
+
+    const firstArticleUrl = headlineData.headlines[0]?.link;
+    if (!firstArticleUrl) {
+        logger.error(`❌ No valid article URLs found in headlines`);
+        return null;
+    }
+
+    const articleData = await getArticleData(firstArticleUrl, outlet.name, outlet.country, learnedSelectors.articles);
+
+    const analysisResult = {
+        urlDiscoveryMethod,
+        finalUrl,
+        technology: 'playwright + AI',
+        headlineSelectorMethod: headlineData.method,
+        headlineSelector: headlineData.selector,
+        headlinesFound: headlineData.headlines.length,
+        articleContentSelector: articleData ? articleData.selector : null,
+        sampleArticleLength: articleData ? articleData.text.length : 0,
+        aiInsights: headlineData.aiAnalysis || null,
+        notes: consentButtonClicked ? 'Consent button clicked by agent.' : 'No interaction required.'
+    };
+
+    console.log(`\n--- ✅ CONFIGURATION DISCOVERED FOR: ${outlet.name} ---`);
+    console.log(JSON.stringify(analysisResult, null, 2));
+    console.log(`-----------------------------------------------------------\n`);
+
+    return analysisResult;
+}
+
+// --- Main Execution Logic ---
+async function main() {
+    logger.info(`🚀 Starting Intelligent Source Configuration Agent (v10.0)...`);
+    
+    let allPapersData;
+    try {
+        const fileContent = await fs.readFile(PAPERS_CONFIG_PATH, 'utf-8');
+        allPapersData = JSON.parse(fileContent);
+    } catch (e) {
+        logger.fatal(`${colors.red}Could not read papers.json: ${e.message}${colors.reset}`);
+        return;
+    }
+
+    const learnedSelectors = generateLearnedSelectors(allPapersData);
+    const outletsToProcess = getOutletsToProcess(allPapersData);
+    
+    if (!outletsToProcess || outletsToProcess.length === 0) {
+        logger.info('✅ All outlets analyzed. No new outlets to process.');
+        rl.close();
+        return;
+    }
+
+    for (const outlet of outletsToProcess) {
+        const analysisResult = await analyzeOutlet(outlet, learnedSelectors);
+        
+        if (analysisResult) {
+            const countryIndex = allPapersData.findIndex(c => `${c.flag_emoji} ${c.country}` === outlet.country);
+            const outletIndex = allPapersData[countryIndex].outlets.findIndex(o => o.name === outlet.name);
+            
+            allPapersData[countryIndex].outlets[outletIndex] = {
+                ...allPapersData[countryIndex].outlets[outletIndex],
+                labCheckPerformed: true,
+                url: analysisResult.finalUrl,
+                analysis: analysisResult
+            };
+
+            try {
+                await fs.writeFile(PAPERS_CONFIG_PATH, JSON.stringify(allPapersData, null, 2));
+                logger.info(`${colors.green}✅ Saved configuration for ${outlet.name}${colors.reset}`);
+            } catch (error) {
+                logger.fatal(`${colors.red}CRITICAL: Failed to save papers.json! ${error.message}${colors.reset}`);
+            }
+        } else {
+            logger.warn(`${colors.yellow}⚠️  Analysis unsuccessful for ${outlet.name} - will retry next run${colors.reset}`);
+        }
+
+        await pause();
+    }
+
+    logger.info('🎉 Analysis complete for all targeted outlets.');
+    rl.close();
+}
+
+function generateLearnedSelectors(allPapersData) {
+    const headlines = new Set();
+    const articles = new Set();
+    
+    allPapersData.forEach(country => {
+        country.outlets.forEach(outlet => {
+            if (outlet.labCheckPerformed && outlet.analysis) {
+                if (outlet.analysis.headlineSelector && !outlet.analysis.headlineSelector.includes('script')) {
+                    headlines.add(outlet.analysis.headlineSelector);
+                }
+                if (outlet.analysis.articleContentSelector) {
+                    articles.add(outlet.analysis.articleContentSelector);
+                }
+            }
+        });
+    });
+
+    const learned = { headlines: Array.from(headlines), articles: Array.from(articles) };
+    logger.info(`> Learning Phase: ${learned.headlines.length} headline + ${learned.articles.length} article selectors loaded`);
+    return learned;
+}
+
+function getOutletsToProcess(allPapersData) {
+    const args = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
+    let allOutlets = allPapersData.flatMap(c => 
+        c.outlets.map(o => ({...o, country: `${c.flag_emoji} ${c.country}`}))
+    );
+
+    if (args[0]) allOutlets = allOutlets.filter(o => o.country.toLowerCase().includes(args[0].toLowerCase()));
+    if (args[1]) allOutlets = allOutlets.filter(o => o.name.toLowerCase().includes(args[1].toLowerCase()));
+
+    const unprocessedOutlets = allOutlets.filter(o => 
+        !o.labCheckPerformed || 
+        !o.analysis?.articleContentSelector || 
+        o.analysis?.sampleArticleLength < MIN_ARTICLE_LENGTH_THRESHOLD
+    );
+
+    if (unprocessedOutlets.length === 0 && allOutlets.length > 0) {
+        logger.info(`Found ${allOutlets.length} matching outlet(s), but all analyzed. To re-run, set "labCheckPerformed" to false.`);
+        return [];
+    }
+
+    logger.info(`Found ${unprocessedOutlets.length} unprocessed outlet(s) to analyze.`);
+    return unprocessedOutlets;
+}
+
+main().catch(e => { 
+    logger.fatal('Critical error occurred:', e); 
+    rl.close(); 
+    process.exit(1); 
 });
 
 # File: scripts/list.js
@@ -1621,7 +2672,7 @@ else
 fi
 
 # File: src/config/index.js
-// src/config/index.js
+// src/config/index.js (version 2.2)
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -1655,10 +2706,12 @@ export const IS_REFRESH_MODE = process.env.REFRESH_MODE === 'true';
 export const MONGO_URI = getCleanStringEnv('MONGO_URI');
 
 // --- LLM Configuration ---
-export const KIMI_API_KEY = getCleanStringEnv('KIMI_API_KEY');
-export const LLM_MODEL_TRIAGE = getCleanStringEnv('LLM_MODEL_TRIAGE', 'moonshot-v1-8k');
-export const LLM_MODEL_HEADLINES = getCleanStringEnv('LLM_MODEL_HEADLINES', 'moonshot-v1-8k');
-export const LLM_MODEL_ARTICLES = getCleanStringEnv('LLM_MODEL_ARTICLES', 'moonshot-v1-32k');
+export const OPENAI_API_KEY = getCleanStringEnv('OPENAI_API_KEY');
+// All AI tasks are unified to use a single, powerful model as per the new strategy.
+export const LLM_MODEL = getCleanStringEnv('LLM_MODEL', 'gpt-5-mini');
+export const LLM_MODEL_TRIAGE = LLM_MODEL;
+export const LLM_MODEL_HEADLINES = LLM_MODEL;
+export const LLM_MODEL_ARTICLES = LLM_MODEL;
 
 // --- Scraper Configuration ---
 export const SCRAPER_PROXY_URL = getCleanStringEnv('SCRAPER_PROXY_URL') || null;
@@ -1711,6 +2764,1423 @@ export const SUPERVISOR_EMAIL_CONFIG = {
   language: 'en',
   brandName: 'Headlines Processing Bot',
 };
+
+# File: src/config/papers.json
+[
+  {
+    "country": "Netherlands",
+    "flag_emoji": "🇳🇱",
+    "outlets": [
+      {
+        "name": "Het Financieele Dagblad (FD.nl)",
+        "url": "https://fd.nl/",
+        "commentary": "Most respected financial daily; think of it as Dutch FT. Focus on markets, economics, business, and finance. Paywall, but key for headlines and summaries.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://fd.nl/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 39,
+          "firstArticleUrl": "https://fd.nl/politiek/1564910/nieuwe-heffing-vs-op-chips-maar-voor-wie-precies-en-hoeveel-blijft-gissen",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 716,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "De Telegraaf – DFT",
+        "url": "https://www.telegraaf.nl/financieel",
+        "commentary": "Mass-market, but strong finance section (De Financiële Telegraaf). Accessible articles on stocks, housing, and personal finance.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.telegraaf.nl/financieel",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 58,
+          "firstArticleUrl": "https://www.telegraaf.nl/financieel/live-matige-dag-voor-wall-street-mooie-winst-voor-aex/82258019.html",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1169,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "Business Insider Nederland",
+        "url": "https://www.businessinsider.nl/category/finance/",
+        "commentary": "Covers global and Dutch finance news in a more digestible tone. Hits trending wealth topics.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.businessinsider.nl/category/finance/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 14,
+          "firstArticleUrl": "https://www.businessinsider.nl/goud-stijgt-in-status-tweede-plek-als-wereldwijde-reserveactiva/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2148,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "Quote.nl",
+        "url": "https://www.quotenet.nl/financien/",
+        "commentary": "Covers the ultra-wealthy, family business dynasties, private equity, etc. Highly relevant for Dutch HNW individuals and family offices.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.quotenet.nl/financien/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "JSON-LD",
+          "headlineSelector": "script[type=\"application/ld+json\"]",
+          "headlinesFound": 56,
+          "firstArticleUrl": "https://www.quotenet.nl/financien/a65611245/succesvolle-nederlandse-doorbraak-voor-fintech-airwallex/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3214,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "IEX.nl",
+        "url": "https://www.iex.nl/nieuws/default.aspx",
+        "commentary": "Focused on investing, markets, and equity analysis. Useful for scraping market sentiment.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.iex.nl/nieuws/default.aspx",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "h3 a",
+          "headlinesFound": 83,
+          "firstArticleUrl": "https://www.iex.nl/Nieuws/829030/Consumentenkrediet-VS-gestegen.aspx",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1715,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "NRC Handelsblad",
+        "url": "https://www.nrc.nl/nieuws/",
+        "commentary": "Serious journalism with economic depth. Paywall, but often covers themes like pensions, tax reform, ESG.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.nrc.nl/nieuws/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "div[class*=\"teaser\"] a",
+          "headlinesFound": 40,
+          "firstArticleUrl": "https://www.nrc.nl/nieuws/2025/08/08/salsa-pionier-palmieri-was-eerste-latino-die-grammy-won-a4902452",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 2387,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "De Volkskrant",
+        "url": "https://www.volkskrant.nl/economie/",
+        "commentary": "Center-left, good on inequality, societal shifts, and consumer finance.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.volkskrant.nl/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "JSON-LD",
+          "headlineSelector": "script[type=\"application/ld+json\"]",
+          "headlinesFound": 99,
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 3905,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Trouw.nl",
+        "url": "https://www.trouw.nl/economie/",
+        "commentary": "Christian-democratic paper, occasionally touches on ethical investing, sustainability, and legacy wealth.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.trouw.nl/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "JSON-LD",
+          "headlineSelector": "script[type=\"application/ld+json\"]",
+          "headlinesFound": 99,
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 5954,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Algemeen Dagblad (ad.nl)",
+        "url": "https://www.ad.nl/economie/",
+        "commentary": "Mass market but includes accessible finance news and regional real estate trends."
+      },
+      {
+        "name": "Sprout.nl",
+        "url": "https://www.sprout.nl",
+        "commentary": "Startups and entrepreneurship. Useful for tracking new wealth formation."
+      },
+      {
+        "name": "MT/Sprout",
+        "url": "https://mtsprout.nl",
+        "commentary": "Management and leadership insights; includes family office content."
+      },
+      {
+        "name": "Follow the Money (ftm.nl)",
+        "url": "https://www.ftm.nl",
+        "commentary": "Investigative journalism around corporate power, fraud, and wealth influence. Slow output but sharp.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ftm.nl",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 15,
+          "firstArticleUrl": "https://www.ftm.nl/dossier/de-nieuwe-woningnood",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 1101,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "Pensioen Pro",
+        "url": "https://pensioenpro.nl",
+        "commentary": "Niche but critical if your crawler includes pension funds or institutional wealth flows.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://pensioenpro.nl",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "div[class*=\"teaser\"] a",
+          "headlinesFound": 42,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Vastgoedmarkt.nl",
+        "url": "https://www.vastgoedmarkt.nl/nieuws",
+        "commentary": "Real estate trends and big money flows in Dutch property. Great for wealth tracking.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.vastgoedmarkt.nl/nieuws",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "a h2",
+          "headlinesFound": 15,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      }
+    ]
+  },
+  {
+    "country": "Spain",
+    "flag_emoji": "🇪🇸",
+    "outlets": [
+      {
+        "name": "Cinco Días",
+        "url": "https://cincodias.elpais.com",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://cincodias.elpais.com",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 138,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Expansión",
+        "url": "https://www.expansion.com/economia.html",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.expansion.com/economia.html",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 70,
+          "firstArticleUrl": "https://www.expansion.com/economia/2025/08/07/68939d55468aeb19278b4598.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 5465,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "El Economista",
+        "url": "https://www.eleconomista.es/economia/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.eleconomista.es/economia/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "h2 a",
+          "headlinesFound": 10,
+          "firstArticleUrl": "https://www.eleconomista.es/economia/noticias/13496446/08/25/la-industria-alemana-borra-toda-esperanza-de-un-posible-repunte-ciclico-de-la-economia-para-este-ano.html",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 7042,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "La Información",
+        "url": "https://www.lainformacion.com/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "El Confidencial",
+        "url": "https://www.elconfidencial.com/economia/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.elconfidencial.com/economia/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "div[class*=\"title\"] a",
+          "headlinesFound": 39,
+          "firstArticleUrl": "https://www.elconfidencial.com/economia/2025-08-07/trump-asesor-economico-puesto-clave-banco-central-eeuu_4187975/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1522,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "ABC",
+        "url": "https://www.abc.es/economia/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.abc.es/economia/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 49,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "El País",
+        "url": "https://elpais.com/economia/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://elpais.com/economia/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 81,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "La Vanguardia",
+        "url": "https://www.lavanguardia.com/economia",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.lavanguardia.com/economia",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 55,
+          "firstArticleUrl": "https://www.lavanguardia.com/economia/20250807/10957172/belicosos-aranceles-trump-entran-vigor-forma-masiva-cerca-100-paises.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 6668,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "Vozpópuli",
+        "url": "https://www.vozpopuli.com/economia-y-finanzas/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.vozpopuli.com/economia-y-finanzas/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 93,
+          "firstArticleUrl": "https://www.vozpopuli.com/espana/politica/el-pp-disocia-el-veto-en-jumilla-a-las-fiestas-musulmanas-de-cualquier-tipo-de-persecucion-al-credo-religioso.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3010,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "Invertia",
+        "url": "https://www.invertia.com",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.invertia.com",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Heuristic)",
+          "headlineSelector": "h2 a",
+          "headlinesFound": 68,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Capital.es",
+        "url": "https://www.capital.es",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "France",
+    "flag_emoji": "🇫🇷",
+    "outlets": [
+      {
+        "name": "Les Echos",
+        "url": "https://www.lesechos.fr/economie",
+        "commentary": ""
+      },
+      {
+        "name": "Le Figaro",
+        "url": "https://www.lefigaro.fr/economie",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.lefigaro.fr/economie",
+          "technology": "playwright",
+          "headlineSelectorMethod": "JSON-LD",
+          "headlineSelector": "script[type=\"application/ld+json\"]",
+          "headlinesFound": 106,
+          "firstArticleUrl": "https://www.lefigaro.fr/secteur/high-tech/moteur-de-recherche-correcteur-traducteur-trois-ans-apres-l-arrivee-de-chatgpt-quatre-francais-sur-dix-utilisent-l-ia-chaque-jour-20250807",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 3264,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "La Tribune",
+        "url": "https://www.latribune.fr/actualites/economie/economie.html",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.latribune.fr/actualites/economie/economie.html",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "div[class*=\"title\"] a",
+          "headlinesFound": 64,
+          "firstArticleUrl": "https://www.latribune.fr/actualites/economie/economie.html",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 8317,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Capital",
+        "url": "https://www.capital.fr/economie-politique",
+        "commentary": ""
+      },
+      {
+        "name": "BFM Business",
+        "url": "https://www.bfmtv.com/economie/",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.bfmtv.com/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 147,
+          "firstArticleUrl": "https://www.bfmtv.com/economie/international/entreprises-consommateurs-qui-va-vraiment-payer-la-facture-des-droits-de-douane-de-trump_AD-202508070280.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 4304,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Challenges",
+        "url": "https://www.challenges.fr/economie/",
+        "commentary": ""
+      },
+      {
+        "name": "Le Monde",
+        "url": "https://www.lemonde.fr/economie/",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.lemonde.fr/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 120,
+          "firstArticleUrl": "https://www.lemonde.fr/economie/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 32223,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "France Info",
+        "url": "https://www.francetvinfo.fr/economie/",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.francetvinfo.fr/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 37,
+          "firstArticleUrl": "https://www.francetvinfo.fr/economie/tourisme/le-lac-leman-rebaptise-lac-de-geneve-sur-l-application-plans-des-appareils-de-marque-apple_7423513.html",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2055,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "L'Opinion",
+        "url": "https://www.lopinion.fr/economie",
+        "commentary": ""
+      },
+      {
+        "name": "L'Indépendant",
+        "url": "https://www.lindependant.fr/economie/",
+        "commentary": ""
+      },
+      {
+        "name": "L'Usine Nouvelle",
+        "url": "https://www.usinenouvelle.com/economie/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Finland",
+    "flag_emoji": "🇫🇮",
+    "outlets": [
+      {
+        "name": "Talouselämä",
+        "url": "https://www.talouselama.fi",
+        "commentary": "Main Finnish business weekly."
+      },
+      {
+        "name": "Kauppalehti",
+        "url": "https://www.kauppalehti.fi/uutiset/talous",
+        "commentary": "Major financial daily."
+      },
+      {
+        "name": "Helsingin Sanomat",
+        "url": "https://www.hs.fi/talous/",
+        "commentary": "Business section of the main national newspaper."
+      },
+      {
+        "name": "Iltalehti",
+        "url": "https://www.iltalehti.fi/talous/",
+        "commentary": "Mass-market but includes finance news."
+      },
+      {
+        "name": "Taloussanomat (Ilta-Sanomat)",
+        "url": "https://www.is.fi/taloussanomat/",
+        "commentary": "Ilta-Sanomat’s business outlet."
+      },
+      {
+        "name": "Yle",
+        "url": "https://yle.fi/uutiset/18-190125",
+        "commentary": "National broadcaster’s economy news."
+      },
+      {
+        "name": "MTV Uutiset",
+        "url": "https://www.mtvuutiset.fi/aihe/talous",
+        "commentary": "Private broadcaster's economy news."
+      }
+    ]
+  },
+  {
+    "country": "Norway",
+    "flag_emoji": "🇳🇴",
+    "outlets": [
+      {
+        "name": "E24",
+        "url": "https://e24.no",
+        "commentary": "Norway’s leading business news outlet."
+      },
+      {
+        "name": "Dagens Næringsliv",
+        "url": "https://www.dn.no",
+        "commentary": "Premier financial daily."
+      },
+      {
+        "name": "NRK",
+        "url": "https://www.nrk.no/nyheter/okonomi/",
+        "commentary": "National broadcaster's economy section."
+      },
+      {
+        "name": "Aftenposten",
+        "url": "https://www.aftenposten.no/okonomi/",
+        "commentary": "Mainstream paper with solid economic reporting."
+      },
+      {
+        "name": "Finansavisen",
+        "url": "https://www.finansavisen.no",
+        "commentary": "Finance-focused daily, markets and business."
+      },
+      {
+        "name": "Nettavisen",
+        "url": "https://www.nettavisen.no/okonomi/",
+        "commentary": ""
+      },
+      {
+        "name": "TV 2",
+        "url": "https://www.tv2.no/nyheter/okonomi/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Iceland",
+    "flag_emoji": "🇮🇸",
+    "outlets": [
+      {
+        "name": "Viðskiptablaðið",
+        "url": "https://www.vb.is",
+        "commentary": "Iceland’s main business newspaper."
+      },
+      {
+        "name": "Morgunblaðið",
+        "url": "https://www.mbl.is/vidskipti/",
+        "commentary": "Business section of a major newspaper."
+      },
+      {
+        "name": "RÚV",
+        "url": "https://www.ruv.is/frettir/efnahagur",
+        "commentary": "National broadcaster’s economy section."
+      },
+      {
+        "name": "Vísir",
+        "url": "https://www.visir.is/g/section/viðskipti",
+        "commentary": "General news with strong business coverage."
+      },
+      {
+        "name": "Kjarninn",
+        "url": "https://www.kjarninn.is/frettir/efnahagur/",
+        "commentary": "Independent outlet with an economics focus."
+      },
+      {
+        "name": "Heimildin",
+        "url": "https://heimildin.is/efnahagur/",
+        "commentary": "Investigative journalism, sometimes on wealth/policy."
+      }
+    ]
+  },
+  {
+    "country": "Belgium",
+    "flag_emoji": "🇧🇪",
+    "outlets": [
+      {
+        "name": "De Tijd",
+        "url": "https://www.tijd.be/markten-live",
+        "commentary": "Top Flemish-language financial daily."
+      },
+      {
+        "name": "L’Echo",
+        "url": "https://www.lecho.be/actualite/economie-politique",
+        "commentary": "Top French-language financial daily, counterpart to De Tijd."
+      },
+      {
+        "name": "De Standaard",
+        "url": "https://www.standaard.be/tag/economie",
+        "commentary": "General newspaper with solid economics coverage."
+      },
+      {
+        "name": "RTBF",
+        "url": "https://www.rtbf.be/article/economie",
+        "commentary": "Public broadcaster’s (French-language) economy news."
+      },
+      {
+        "name": "Business AM",
+        "url": "https://businessam.be",
+        "commentary": "Covers business, tech, and macroeconomics."
+      },
+      {
+        "name": "Trends",
+        "url": "https://trends.knack.be/economie/",
+        "commentary": "Weekly magazine focused on finance, business, and markets."
+      }
+    ]
+  },
+  {
+    "country": "Poland",
+    "flag_emoji": "🇵🇱",
+    "outlets": [
+      {
+        "name": "Parkiet",
+        "url": "https://www.parkiet.com",
+        "commentary": "Dedicated to markets, investments, and finance."
+      },
+      {
+        "name": "Puls Biznesu",
+        "url": "https://www.pb.pl",
+        "commentary": "Poland’s main business newspaper."
+      },
+      {
+        "name": "Dziennik Gazeta Prawna",
+        "url": "https://biznes.gazetaprawna.pl",
+        "commentary": "Focus on business law and the economy."
+      },
+      {
+        "name": "Interia Biznes",
+        "url": "https://biznes.interia.pl",
+        "commentary": "Broad coverage, includes markets, economy, and companies."
+      },
+      {
+        "name": "Money.pl",
+        "url": "https://www.money.pl/gospodarka/",
+        "commentary": ""
+      },
+      {
+        "name": "Business Insider Polska",
+        "url": "https://businessinsider.com.pl/finanse",
+        "commentary": ""
+      },
+      {
+        "name": "TVN24 Biznes",
+        "url": "https://tvn24.pl/biznes",
+        "commentary": "Business and economy from a major broadcaster."
+      },
+      {
+        "name": "Rzeczpospolita",
+        "url": "https://www.rp.pl/gospodarka",
+        "commentary": "Mainstream newspaper with a solid economic and financial section."
+      }
+    ]
+  },
+  {
+    "country": "Austria",
+    "flag_emoji": "🇦🇹",
+    "outlets": [
+      {
+        "name": "Die Presse",
+        "url": "https://www.diepresse.com/wirtschaft",
+        "commentary": ""
+      },
+      {
+        "name": "Der Standard",
+        "url": "https://www.derstandard.at/wirtschaft",
+        "commentary": ""
+      },
+      {
+        "name": "Kurier",
+        "url": "https://kurier.at/wirtschaft",
+        "commentary": ""
+      },
+      {
+        "name": "Wiener Zeitung",
+        "url": "https://www.wienerzeitung.at/nachrichten/wirtschaft/",
+        "commentary": ""
+      },
+      {
+        "name": "ORF",
+        "url": "https://orf.at/wirtschaft/",
+        "commentary": "National broadcaster’s economy section."
+      },
+      {
+        "name": "Trend",
+        "url": "https://www.trend.at",
+        "commentary": "Business and finance magazine."
+      }
+    ]
+  },
+  {
+    "country": "Italy",
+    "flag_emoji": "🇮🇹",
+    "outlets": [
+      {
+        "name": "Il Sole 24 Ore",
+        "url": "https://www.ilsole24ore.com",
+        "commentary": "Italy’s top financial daily."
+      },
+      {
+        "name": "Milano Finanza",
+        "url": "https://www.milanofinanza.it",
+        "commentary": "Focused on markets and finance."
+      },
+      {
+        "name": "la Repubblica",
+        "url": "https://www.repubblica.it/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "Corriere della Sera",
+        "url": "https://www.corriere.it/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "Il Fatto Quotidiano",
+        "url": "https://www.ilfattoquotidiano.it/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "ANSA",
+        "url": "https://www.ansa.it/sito/notizie/economia/",
+        "commentary": "National news agency's economy section."
+      },
+      {
+        "name": "Rai News",
+        "url": "https://www.rainews.it/economia/",
+        "commentary": "Public broadcaster’s economic news."
+      }
+    ]
+  },
+  {
+    "country": "Ireland",
+    "flag_emoji": "🇮🇪",
+    "outlets": [
+      {
+        "name": "The Business Post",
+        "url": "https://www.businesspost.ie",
+        "commentary": "Dedicated business weekly."
+      },
+      {
+        "name": "The Irish Times",
+        "url": "https://www.irishtimes.com/business/",
+        "commentary": ""
+      },
+      {
+        "name": "Irish Independent",
+        "url": "https://www.independent.ie/business/",
+        "commentary": ""
+      },
+      {
+        "name": "RTÉ",
+        "url": "https://www.rte.ie/news/business/",
+        "commentary": "National broadcaster’s business section."
+      },
+      {
+        "name": "Irish Examiner",
+        "url": "https://www.irishexaminer.com/business/arid-40096061.html",
+        "commentary": ""
+      },
+      {
+        "name": "The Sunday Times (Ireland)",
+        "url": "https://www.thesundaytimes.co.uk/section/business/ireland",
+        "commentary": "Limited but relevant, UK-Ireland crossover."
+      }
+    ]
+  },
+  {
+    "country": "Germany",
+    "flag_emoji": "🇩🇪",
+    "outlets": [
+      {
+        "name": "Handelsblatt",
+        "url": "https://www.handelsblatt.com",
+        "commentary": "Germany’s top financial daily."
+      },
+      {
+        "name": "Frankfurter Allgemeine Zeitung (FAZ)",
+        "url": "https://www.faz.net/aktuell/wirtschaft/",
+        "commentary": "Business section of a major quality newspaper."
+      },
+      {
+        "name": "Süddeutsche Zeitung",
+        "url": "https://www.sueddeutsche.de/wirtschaft",
+        "commentary": ""
+      },
+      {
+        "name": "Der Spiegel",
+        "url": "https://www.spiegel.de/wirtschaft/",
+        "commentary": ""
+      },
+      {
+        "name": "Tagesschau",
+        "url": "https://www.tagesschau.de/wirtschaft/",
+        "commentary": "ARD public broadcaster's economy news."
+      },
+      {
+        "name": "Die Zeit",
+        "url": "https://www.zeit.de/wirtschaft/index",
+        "commentary": ""
+      },
+      {
+        "name": "Manager Magazin",
+        "url": "https://www.manager-magazin.de/",
+        "commentary": ""
+      },
+      {
+        "name": "Börse Online",
+        "url": "https://www.boerse-online.de/",
+        "commentary": "Markets-focused, valuable for finance crawling."
+      }
+    ]
+  },
+  {
+    "country": "United Kingdom",
+    "flag_emoji": "🇬🇧",
+    "outlets": [
+      {
+        "name": "Financial Times",
+        "url": "https://www.ft.com",
+        "commentary": "Premier UK and global financial news."
+      },
+      {
+        "name": "Bloomberg",
+        "url": "https://www.bloomberg.com/europe",
+        "commentary": "UK-relevant finance via Bloomberg Europe."
+      },
+      {
+        "name": "The Economist",
+        "url": "https://www.economist.com/finance-and-economics",
+        "commentary": ""
+      },
+      {
+        "name": "BBC News",
+        "url": "https://www.bbc.com/news/business",
+        "commentary": ""
+      },
+      {
+        "name": "The Guardian",
+        "url": "https://www.theguardian.com/uk/business",
+        "commentary": ""
+      },
+      {
+        "name": "The Telegraph",
+        "url": "https://www.telegraph.co.uk/business/",
+        "commentary": ""
+      },
+      {
+        "name": "The Times",
+        "url": "https://www.thetimes.co.uk/business",
+        "commentary": ""
+      },
+      {
+        "name": "City A.M.",
+        "url": "https://www.cityam.com",
+        "commentary": "City-focused business news."
+      },
+      {
+        "name": "Investors' Chronicle",
+        "url": "https://www.investorschronicle.co.uk",
+        "commentary": ""
+      },
+      {
+        "name": "This is Money",
+        "url": "https://www.thisismoney.co.uk",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Switzerland",
+    "flag_emoji": "🇨🇭",
+    "outlets": [
+      {
+        "name": "Handelszeitung",
+        "url": "https://www.handelszeitung.ch",
+        "commentary": "Switzerland’s leading business paper."
+      },
+      {
+        "name": "Finanz und Wirtschaft",
+        "url": "https://www.fuw.ch",
+        "commentary": "Focus on markets, economy, and investing."
+      },
+      {
+        "name": "Neue Zürcher Zeitung (NZZ)",
+        "url": "https://www.nzz.ch/wirtschaft/",
+        "commentary": "High-quality economic reporting."
+      },
+      {
+        "name": "Blick",
+        "url": "https://www.blick.ch/wirtschaft/",
+        "commentary": ""
+      },
+      {
+        "name": "SRF",
+        "url": "https://www.srf.ch/news/wirtschaft",
+        "commentary": "Public broadcaster’s economy section."
+      },
+      {
+        "name": "swissinfo.ch",
+        "url": "https://www.swissinfo.ch/eng/business",
+        "commentary": ""
+      },
+      {
+        "name": "20 Minuten",
+        "url": "https://www.20min.ch/wirtschaft/",
+        "commentary": ""
+      },
+      {
+        "name": "cash.ch",
+        "url": "https://www.cash.ch",
+        "commentary": "Swiss personal finance and investing portal."
+      }
+    ]
+  },
+  {
+    "country": "Serbia",
+    "flag_emoji": "🇷🇸",
+    "outlets": [
+      {
+        "name": "Blic",
+        "url": "https://www.blic.rs/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "Novosti",
+        "url": "https://www.novosti.rs/vesti/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "N1 Info Serbia",
+        "url": "https://rs.n1info.com/biznis/",
+        "commentary": ""
+      },
+      {
+        "name": "eKapija",
+        "url": "https://www.ekapija.com/en/news",
+        "commentary": "Business news portal with an English version."
+      },
+      {
+        "name": "Danas",
+        "url": "https://www.danas.rs/ekonomija/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Croatia",
+    "flag_emoji": "🇭🇷",
+    "outlets": [
+      {
+        "name": "Poslovni dnevnik",
+        "url": "https://www.poslovni.hr",
+        "commentary": ""
+      },
+      {
+        "name": "Lider",
+        "url": "https://lider.media",
+        "commentary": ""
+      },
+      {
+        "name": "Večernji list",
+        "url": "https://www.vecernji.hr/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "Jutarnji list",
+        "url": "https://www.jutarnji.hr/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "N1 Info Croatia",
+        "url": "https://www.n1info.hr/biznis/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Slovenia",
+    "flag_emoji": "🇸🇮",
+    "outlets": [
+      {
+        "name": "Finance",
+        "url": "https://www.finance.si",
+        "commentary": ""
+      },
+      {
+        "name": "RTV Slovenija",
+        "url": "https://www.rtvslo.si/gospodarstvo",
+        "commentary": ""
+      },
+      {
+        "name": "Dnevnik",
+        "url": "https://www.dnevnik.si/posel",
+        "commentary": ""
+      },
+      {
+        "name": "Delo",
+        "url": "https://www.delo.si/gospodarstvo/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Bosnia and Herzegovina",
+    "flag_emoji": "🇧🇦",
+    "outlets": [
+      {
+        "name": "Klix",
+        "url": "https://www.klix.ba/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "N1 Info Bosnia",
+        "url": "https://ba.n1info.com/biznis/",
+        "commentary": ""
+      },
+      {
+        "name": "BiznisInfo.ba",
+        "url": "https://www.biznisinfo.ba",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Montenegro",
+    "flag_emoji": "🇲🇪",
+    "outlets": [
+      {
+        "name": "Vijesti",
+        "url": "https://www.vijesti.me/vijesti/ekonomija",
+        "commentary": ""
+      },
+      {
+        "name": "CdM",
+        "url": "https://www.cdm.me/ekonomija/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "North Macedonia",
+    "flag_emoji": "🇲🇰",
+    "outlets": [
+      {
+        "name": "Sloboden Pečat",
+        "url": "https://www.slobodenpecat.mk/category/ekonomija/",
+        "commentary": ""
+      },
+      {
+        "name": "Faktor",
+        "url": "https://www.faktor.mk/ekonomija",
+        "commentary": ""
+      },
+      {
+        "name": "MKD",
+        "url": "https://mkd.mk/ekonomija",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Kosovo",
+    "flag_emoji": "🇽🇰",
+    "outlets": [
+      {
+        "name": "Koha Ditore",
+        "url": "https://www.koha.net/ekonomi/",
+        "commentary": ""
+      },
+      {
+        "name": "Telegrafi",
+        "url": "https://telegrafi.com/lajme/ekonomi/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Czech Republic",
+    "flag_emoji": "🇨🇿",
+    "outlets": [
+      {
+        "name": "Ekonom",
+        "url": "https://www.ekonom.cz",
+        "commentary": ""
+      },
+      {
+        "name": "iDNES.cz",
+        "url": "https://www.idnes.cz/ekonomika",
+        "commentary": ""
+      },
+      {
+        "name": "Hospodářské noviny (iHNed.cz)",
+        "url": "https://www.ihned.cz/ekonom",
+        "commentary": ""
+      },
+      {
+        "name": "Novinky.cz",
+        "url": "https://www.novinky.cz/ekonomika",
+        "commentary": ""
+      },
+      {
+        "name": "Seznam Zprávy",
+        "url": "https://www.seznamzpravy.cz/ekonomika",
+        "commentary": ""
+      },
+      {
+        "name": "České noviny",
+        "url": "https://www.ceskenoviny.cz/ekonomika",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Hungary",
+    "flag_emoji": "🇭🇺",
+    "outlets": [
+      {
+        "name": "Portfolio.hu",
+        "url": "https://www.portfolio.hu/en",
+        "commentary": "Includes an English section."
+      },
+      {
+        "name": "Világgazdaság (vg.hu)",
+        "url": "https://www.vg.hu/english",
+        "commentary": "Includes an English section."
+      },
+      {
+        "name": "Index",
+        "url": "https://index.hu/gazdasag/",
+        "commentary": ""
+      },
+      {
+        "name": "Napi.hu",
+        "url": "https://www.napi.hu",
+        "commentary": ""
+      },
+      {
+        "name": "G7",
+        "url": "https://g7.hu",
+        "commentary": ""
+      },
+      {
+        "name": "444.hu",
+        "url": "https://444.hu/gazdasag",
+        "commentary": ""
+      },
+      {
+        "name": "HVG",
+        "url": "https://hvg.hu/gazdasag",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Portugal",
+    "flag_emoji": "🇵🇹",
+    "outlets": [
+      {
+        "name": "Jornal de Negócios",
+        "url": "https://www.jornaldenegocios.pt",
+        "commentary": ""
+      },
+      {
+        "name": "Económico Sapo",
+        "url": "https://economico.sapo.pt",
+        "commentary": ""
+      },
+      {
+        "name": "Expresso",
+        "url": "https://expresso.pt/economia",
+        "commentary": ""
+      },
+      {
+        "name": "Público",
+        "url": "https://www.publico.pt/economia",
+        "commentary": ""
+      },
+      {
+        "name": "Observador",
+        "url": "https://observador.pt/seccao/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "ECO Sapo",
+        "url": "https://eco.sapo.pt",
+        "commentary": ""
+      },
+      {
+        "name": "Dinheiro Vivo",
+        "url": "https://www.dinheirovivo.pt",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Sweden",
+    "flag_emoji": "🇸🇪",
+    "outlets": [
+      {
+        "name": "Dagens Industri",
+        "url": "https://www.di.se",
+        "commentary": "Top financial daily."
+      },
+      {
+        "name": "Svenska Dagbladet",
+        "url": "https://www.svd.se/avdelning/naringsliv",
+        "commentary": "Business section of a major newspaper."
+      },
+      {
+        "name": "Dagens Nyheter",
+        "url": "https://www.dn.se/ekonomi/",
+        "commentary": "Economy section of a major newspaper."
+      },
+      {
+        "name": "Breakit",
+        "url": "https://www.breakit.se",
+        "commentary": "Focus on startup/tech and business."
+      },
+      {
+        "name": "EFN Ekonomikanalen",
+        "url": "https://www.efn.se",
+        "commentary": "Finance-focused outlet by Handelsbanken."
+      },
+      {
+        "name": "SVT Nyheter",
+        "url": "https://www.svt.se/nyheter/ekonomi",
+        "commentary": "Public broadcaster’s economy section."
+      },
+      {
+        "name": "Affärsvärlden",
+        "url": "https://www.affarsvarlden.se",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Luxembourg",
+    "flag_emoji": "🇱🇺",
+    "outlets": [
+      {
+        "name": "Paperjam",
+        "url": "https://paperjam.lu/economie",
+        "commentary": ""
+      },
+      {
+        "name": "L'essentiel",
+        "url": "https://www.lessentiel.lu/fr/news/economie",
+        "commentary": ""
+      },
+      {
+        "name": "Delano",
+        "url": "https://delano.lu/business",
+        "commentary": ""
+      },
+      {
+        "name": "Luxembourg Times",
+        "url": "https://luxtimes.lu/luxembourg-business",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Estonia",
+    "flag_emoji": "🇪🇪",
+    "outlets": [
+      {
+        "name": "Äripäev",
+        "url": "https://www.aripaev.ee",
+        "commentary": "Main business daily."
+      },
+      {
+        "name": "ERR News",
+        "url": "https://news.err.ee/business",
+        "commentary": "Public broadcaster’s business news in English."
+      },
+      {
+        "name": "Estonian World",
+        "url": "https://estonianworld.com/business/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Turkey",
+    "flag_emoji": "🇹🇷",
+    "outlets": [
+      {
+        "name": "Dünya",
+        "url": "https://www.dunya.com",
+        "commentary": "Turkey’s top business daily."
+      },
+      {
+        "name": "Bloomberg HT",
+        "url": "https://www.bloomberght.com",
+        "commentary": "Turkish finance and markets."
+      },
+      {
+        "name": "Hürriyet",
+        "url": "https://www.hurriyet.com.tr/ekonomi/",
+        "commentary": ""
+      },
+      {
+        "name": "Anadolu Agency",
+        "url": "https://www.aa.com.tr/en/economy",
+        "commentary": "English economics section from the state news agency."
+      },
+      {
+        "name": "Sabah",
+        "url": "https://www.sabah.com.tr/ekonomi",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Lithuania",
+    "flag_emoji": "🇱🇹",
+    "outlets": [
+      {
+        "name": "Verslo Žinios",
+        "url": "https://www.vz.lt",
+        "commentary": "Lithuania’s main business outlet."
+      },
+      {
+        "name": "LRT",
+        "url": "https://www.lrt.lt/en/news-in-english/business",
+        "commentary": "Public broadcaster's business news in English."
+      },
+      {
+        "name": "The Lithuania Tribune",
+        "url": "https://lithuaniatribune.com/category/business/",
+        "commentary": ""
+      }
+    ]
+  }
+]
 
 # File: src/config/sources.js
 // src/config/sources.js
@@ -1973,22 +4443,36 @@ export async function disconnectDatabase() {
     }
 }
 
-# File: src/modules/ai/eventProcessing.js
-// src/modules/ai/eventProcessing.js
+# File: src/modules/ai/client.js
+// src/modules/ai/client.js (version 2.0)
 import OpenAI from 'openai';
-import { KIMI_API_KEY, LLM_MODEL_ARTICLES, CONCURRENCY_LIMIT } from '../../config/index.js';
+import { OPENAI_API_KEY } from '../../config/index.js';
+import { logger } from '../../utils/logger.js';
+
+if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not defined in the environment variables.');
+}
+
+logger.info('🤖 Initializing OpenAI AI client...');
+
+// The timeout and maxRetries are configured for robustness, suitable for production use.
+const client = new OpenAI({
+    apiKey: OPENAI_API_KEY,
+    // BaseURL is omitted to use the official OpenAI endpoint by default.
+    timeout: 90 * 1000, // 90 seconds
+    maxRetries: 3,
+});
+
+export default client;
+
+# File: src/modules/ai/eventProcessing.js
+// src/modules/ai/eventProcessing.js (version 2.1)
+import client from './client.js'; // Use the new centralized client
+import { LLM_MODEL_ARTICLES, CONCURRENCY_LIMIT } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { instructionCluster } from '../assessments/instructionCluster.js';
 import { instructionSynthesize } from '../assessments/instructionSynthesize.js';
 import { safeExecute } from '../../utils/helpers.js';
-
-const kimi = new OpenAI({
-    apiKey: 'dummy-key',
-    baseURL: 'https://api.moonshot.ai/v1',
-    defaultHeaders: { 'Authorization': `Bearer ${KIMI_API_KEY}` },
-    timeout: 120 * 1000,
-    maxRetries: 3, // Changed from 1 to 3 for more robustness
-});
 
 async function generateJsonResponse(model, instructions, userContent, temperature = 0.1) {
     const messages = [
@@ -1996,14 +4480,13 @@ async function generateJsonResponse(model, instructions, userContent, temperatur
         { role: 'user', content: userContent },
     ];
 
-    const result = await safeExecute(() => kimi.chat.completions.create({
+    const result = await safeExecute(() => client.chat.completions.create({
         model,
         messages,
         response_format: { type: "json_object" },
         temperature,
-        // --- FIX: Explicitly allow a much larger output ---
         // This prevents the API from truncating the JSON response when clustering many articles.
-        max_tokens: 8192, 
+        // max_tokens: 8192, 
     }));
 
     if (!result) return { error: 'API call failed' };
@@ -2070,10 +4553,10 @@ export async function synthesizeEvent(articlesInCluster, historicalContext) {
 }
 
 # File: src/modules/ai/index.js
-// src/modules/ai/index.js
-import OpenAI from 'openai';
+// src/modules/ai/index.js (version 2.1)
 import pLimit from 'p-limit';
-import { KIMI_API_KEY, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, AI_BATCH_SIZE, CONCURRENCY_LIMIT, HEADLINES_RELEVANCE_THRESHOLD } from '../../config/index.js';
+import client from './client.js'; // Use the new centralized client
+import { LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES, AI_BATCH_SIZE, CONCURRENCY_LIMIT, HEADLINES_RELEVANCE_THRESHOLD } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { instructionHeadlines } from '../assessments/instructionHeadlines.js';
 import { shotsInput as shotsInputHeadlines, shotsOutput as shotsOutputHeadlines } from '../assessments/shotsHeadlines.js';
@@ -2081,65 +4564,61 @@ import { instructionArticle } from '../assessments/instructionArticle.js';
 import { shotsInput as shotsInputArticle, shotsOutput as shotsOutputArticle } from '../assessments/shotsArticle.js';
 import { safeExecute, truncateString } from '../../utils/helpers.js';
 
-if (!KIMI_API_KEY) {
-    throw new Error('KIMI_API_KEY is not defined in the environment variables.');
-}
-
-const kimi = new OpenAI({
-    apiKey: 'dummy-key',
-    baseURL: 'https://api.moonshot.ai/v1',
-    defaultHeaders: { 'Authorization': `Bearer ${KIMI_API_KEY}` },
-    timeout: 90 * 1000,
-    maxRetries: 3,
-});
-
 const limit = pLimit(CONCURRENCY_LIMIT);
 let isApiKeyInvalid = false;
 
-// --- UNCHANGED FUNCTIONS ---
-export async function performKimiSanityCheck() {
+/**
+ * Performs a sanity check against the configured AI service (OpenAI).
+ * @returns {Promise<boolean>}
+ */
+export async function performAiSanityCheck() {
     try {
-        logger.info('🔬 Performing Kimi AI service sanity check...');
-        const response = await kimi.chat.completions.create({
-            model: "moonshot-v1-8k", messages: [{ role: 'user', content: 'What is in one word the name of the capital of France' }], temperature: 0,
+        logger.info('🔬 Performing AI service sanity check (OpenAI)...');
+        const response = await client.chat.completions.create({
+            model: "gpt-3.5-turbo", // Use a known, stable model for the check
+            messages: [{ role: 'user', content: 'What is in one word the name of the capital of France' }],
+            temperature: 0,
         }, { timeout: 20 * 1000 });
         const answer = response.choices[0].message.content.trim().toLowerCase();
-        if (answer.includes('paris')) { return true; }
-        else {
-            logger.fatal(`Kimi sanity check failed. Expected a response containing "Paris", but got: "${answer}".`);
+        if (answer.includes('paris')) {
+            logger.info('✅ AI service sanity check passed.');
+            return true;
+        } else {
+            logger.fatal(`OpenAI sanity check failed. Expected a response containing "Paris", but got: "${answer}".`);
             return false;
         }
     } catch (error) {
         if (error.status === 401) {
-            let keyHint = 'The key is either missing, empty, or too short to be valid.';
-            if (KIMI_API_KEY && KIMI_API_KEY.length > 8) {
-                const maskedKey = `${KIMI_API_KEY.substring(0, 5)}...${KIMI_API_KEY.slice(-4)}`;
-                keyHint = `Key being used: ${maskedKey}`;
-            }
-            logger.fatal(`Kimi sanity check failed due to INVALID API KEY (401). ${keyHint}. Please verify your .env file and the baseURL.`);
+            logger.fatal(`OpenAI sanity check failed due to INVALID API KEY (401). Please verify your OPENAI_API_KEY in the .env file.`);
         } else {
-            logger.fatal({ err: error }, 'Kimi sanity check failed with an unexpected API error.');
+            logger.fatal({ err: error }, 'OpenAI sanity check failed with an unexpected API error.');
         }
         isApiKeyInvalid = true;
         return false;
     }
 }
 
+/**
+ * Verifies that the configured LLM models are available via the AI provider.
+ * @param {string[]} requiredModels - An array of model ID strings to check.
+ * @returns {Promise<boolean>}
+ */
 export async function checkModelPermissions(requiredModels) {
-    logger.info('🔬 Verifying permissions for configured Kimi models...');
+    logger.info('🔬 Verifying permissions for configured OpenAI models...');
     try {
-        const response = await kimi.models.list();
+        const response = await client.models.list();
         const availableModels = new Set(response.data.map(model => model.id));
         for (const model of requiredModels) {
             if (!availableModels.has(model)) {
-                logger.fatal(`Model validation failed. The configured model "${model}" is not available or you don't have permission. Please check your .env file.`);
+                logger.fatal(`Model validation failed. The configured model "${model}" is not available on OpenAI or you don't have permission. Please check your .env file.`);
                 logger.info({ availableModels: [...availableModels] }, 'Available models for your API key:');
                 return false;
             }
         }
+        logger.info('✅ All configured models are available.');
         return true;
     } catch (error) {
-        logger.fatal({ err: error }, 'Failed to retrieve model list from Kimi API.');
+        logger.fatal({ err: error }, 'Failed to retrieve model list from OpenAI API.');
         isApiKeyInvalid = true;
         return false;
     }
@@ -2156,17 +4635,17 @@ async function generateAssessment(model, instructions, userContent, fewShotInput
         }
     });
     messages.push({ role: 'user', content: userContent });
-    const apiCallPromise = safeExecute(() => kimi.chat.completions.create({
-        model, messages, response_format: { type: "json_object" }, temperature: 0.1,
+    const apiCallPromise = safeExecute(() => client.chat.completions.create({
+        model, messages, response_format: { type: "json_object" }, temperature: 1,
     }), {
         errorHandler: (err) => {
             if (err.status === 401) {
                 isApiKeyInvalid = true;
-                logger.fatal('KIMI API KEY IS INVALID. Halting all AI requests.');
-                return { error: 'Invalid Kimi API Key' };
+                logger.fatal('OPENAI API KEY IS INVALID. Halting all AI requests.');
+                return { error: 'Invalid OpenAI API Key' };
             }
-            logger.error(`Kimi API Error: ${err.name} - ${err.message}`);
-            return { error: `Kimi API Error: ${err.message}` };
+            logger.error(`OpenAI API Error: ${err.name} - ${err.message}`);
+            return { error: `OpenAI API Error: ${err.message}` };
         }
     });
     let timeoutHandle;
