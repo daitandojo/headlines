@@ -6,8 +6,8 @@ on:
     # IMPORTANT: GitHub schedules run on UTC time.
     # 10:00 Copenhagen (CEST, UTC+2) is 08:00 UTC
     # 16:30 Copenhagen (CEST, UTC+2) is 14:30 UTC
-    - cron: '20 20 * * *'
-    - cron: '20 21 * * *'
+    - cron: '20 23 * * *'
+    - cron: '20 22 * * *'
     - cron: '15 08 * * *'
     - cron: '15 12 * * *'
 
@@ -32,6 +32,6 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           # 'flyctl' can now be called directly.
-          flyctl machine run . --region lhr --memory 2048
+          flyctl machine run . --region lhr --memory 2048 --autodestroy
           
           echo "The machine has completed its run and has been destroyed."
