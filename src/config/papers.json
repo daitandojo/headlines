@@ -1,0 +1,1415 @@
+[
+  {
+    "country": "Netherlands",
+    "flag_emoji": "🇳🇱",
+    "outlets": [
+      {
+        "name": "Het Financieele Dagblad (FD.nl)",
+        "url": "https://fd.nl/",
+        "commentary": "Most respected financial daily; think of it as Dutch FT. Focus on markets, economics, business, and finance. Paywall, but key for headlines and summaries.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://fd.nl/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 39,
+          "firstArticleUrl": "https://fd.nl/politiek/1564910/nieuwe-heffing-vs-op-chips-maar-voor-wie-precies-en-hoeveel-blijft-gissen",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 716,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "De Telegraaf – DFT",
+        "url": "https://www.telegraaf.nl/financieel",
+        "commentary": "Mass-market, but strong finance section (De Financiële Telegraaf). Accessible articles on stocks, housing, and personal finance.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.telegraaf.nl/financieel",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 58,
+          "firstArticleUrl": "https://www.telegraaf.nl/financieel/live-matige-dag-voor-wall-street-mooie-winst-voor-aex/82258019.html",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1169,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "Business Insider Nederland",
+        "url": "https://www.businessinsider.nl/category/finance/",
+        "commentary": "Covers global and Dutch finance news in a more digestible tone. Hits trending wealth topics.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.businessinsider.nl/category/finance/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 14,
+          "firstArticleUrl": "https://www.businessinsider.nl/goud-stijgt-in-status-tweede-plek-als-wereldwijde-reserveactiva/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2148,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "Quote.nl",
+        "url": "https://www.quotenet.nl/financien/",
+        "commentary": "Covers the ultra-wealthy, family business dynasties, private equity, etc. Highly relevant for Dutch HNW individuals and family offices.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.quotenet.nl/financien/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "JSON-LD",
+          "headlineSelector": "script[type=\"application/ld+json\"]",
+          "headlinesFound": 56,
+          "firstArticleUrl": "https://www.quotenet.nl/financien/a65611245/succesvolle-nederlandse-doorbraak-voor-fintech-airwallex/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3214,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "IEX.nl",
+        "url": "https://www.iex.nl/nieuws/default.aspx",
+        "commentary": "Focused on investing, markets, and equity analysis. Useful for scraping market sentiment.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.iex.nl/nieuws/default.aspx",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "h3 a",
+          "headlinesFound": 83,
+          "firstArticleUrl": "https://www.iex.nl/Nieuws/829030/Consumentenkrediet-VS-gestegen.aspx",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1715,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "NRC Handelsblad",
+        "url": "https://www.nrc.nl/nieuws/",
+        "commentary": "Serious journalism with economic depth. Paywall, but often covers themes like pensions, tax reform, ESG.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.nrc.nl/nieuws/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "div[class*=\"teaser\"] a",
+          "headlinesFound": 40,
+          "firstArticleUrl": "https://www.nrc.nl/nieuws/2025/08/08/salsa-pionier-palmieri-was-eerste-latino-die-grammy-won-a4902452",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 2387,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "De Volkskrant",
+        "url": "https://www.volkskrant.nl/economie/",
+        "commentary": "Center-left, good on inequality, societal shifts, and consumer finance.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.volkskrant.nl/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "JSON-LD",
+          "headlineSelector": "script[type=\"application/ld+json\"]",
+          "headlinesFound": 99,
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 3905,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Trouw.nl",
+        "url": "https://www.trouw.nl/economie/",
+        "commentary": "Christian-democratic paper, occasionally touches on ethical investing, sustainability, and legacy wealth.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.trouw.nl/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "JSON-LD",
+          "headlineSelector": "script[type=\"application/ld+json\"]",
+          "headlinesFound": 99,
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 5954,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Algemeen Dagblad (ad.nl)",
+        "url": "https://www.ad.nl/economie/",
+        "commentary": "Mass market but includes accessible finance news and regional real estate trends."
+      },
+      {
+        "name": "Sprout.nl",
+        "url": "https://www.sprout.nl",
+        "commentary": "Startups and entrepreneurship. Useful for tracking new wealth formation."
+      },
+      {
+        "name": "MT/Sprout",
+        "url": "https://mtsprout.nl",
+        "commentary": "Management and leadership insights; includes family office content."
+      },
+      {
+        "name": "Follow the Money (ftm.nl)",
+        "url": "https://www.ftm.nl",
+        "commentary": "Investigative journalism around corporate power, fraud, and wealth influence. Slow output but sharp.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ftm.nl",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 15,
+          "firstArticleUrl": "https://www.ftm.nl/dossier/de-nieuwe-woningnood",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 1101,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇳🇱 Netherlands"
+      },
+      {
+        "name": "Pensioen Pro",
+        "url": "https://pensioenpro.nl",
+        "commentary": "Niche but critical if your crawler includes pension funds or institutional wealth flows.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://pensioenpro.nl",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "div[class*=\"teaser\"] a",
+          "headlinesFound": 42,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Vastgoedmarkt.nl",
+        "url": "https://www.vastgoedmarkt.nl/nieuws",
+        "commentary": "Real estate trends and big money flows in Dutch property. Great for wealth tracking.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.vastgoedmarkt.nl/nieuws",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "a h2",
+          "headlinesFound": 15,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      }
+    ]
+  },
+  {
+    "country": "Spain",
+    "flag_emoji": "🇪🇸",
+    "outlets": [
+      {
+        "name": "Cinco Días",
+        "url": "https://cincodias.elpais.com",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://cincodias.elpais.com",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 138,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Expansión",
+        "url": "https://www.expansion.com/economia.html",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.expansion.com/economia.html",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 70,
+          "firstArticleUrl": "https://www.expansion.com/economia/2025/08/07/68939d55468aeb19278b4598.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 5465,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "El Economista",
+        "url": "https://www.eleconomista.es/economia/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.eleconomista.es/economia/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "h2 a",
+          "headlinesFound": 10,
+          "firstArticleUrl": "https://www.eleconomista.es/economia/noticias/13496446/08/25/la-industria-alemana-borra-toda-esperanza-de-un-posible-repunte-ciclico-de-la-economia-para-este-ano.html",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 7042,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "La Información",
+        "url": "https://www.lainformacion.com/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "El Confidencial",
+        "url": "https://www.elconfidencial.com/economia/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.elconfidencial.com/economia/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "div[class*=\"title\"] a",
+          "headlinesFound": 39,
+          "firstArticleUrl": "https://www.elconfidencial.com/economia/2025-08-07/trump-asesor-economico-puesto-clave-banco-central-eeuu_4187975/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1522,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "ABC",
+        "url": "https://www.abc.es/economia/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.abc.es/economia/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 49,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "El País",
+        "url": "https://elpais.com/economia/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://elpais.com/economia/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 81,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "La Vanguardia",
+        "url": "https://www.lavanguardia.com/economia",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.lavanguardia.com/economia",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 55,
+          "firstArticleUrl": "https://www.lavanguardia.com/economia/20250807/10957172/belicosos-aranceles-trump-entran-vigor-forma-masiva-cerca-100-paises.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 6668,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "Vozpópuli",
+        "url": "https://www.vozpopuli.com/economia-y-finanzas/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.vozpopuli.com/economia-y-finanzas/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 93,
+          "firstArticleUrl": "https://www.vozpopuli.com/espana/politica/el-pp-disocia-el-veto-en-jumilla-a-las-fiestas-musulmanas-de-cualquier-tipo-de-persecucion-al-credo-religioso.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3010,
+          "notes": "No special interaction needed."
+        },
+        "country": "🇪🇸 Spain"
+      },
+      {
+        "name": "Invertia",
+        "url": "https://www.invertia.com",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.invertia.com",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Heuristic)",
+          "headlineSelector": "h2 a",
+          "headlinesFound": 68,
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Capital.es",
+        "url": "https://www.capital.es",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "France",
+    "flag_emoji": "🇫🇷",
+    "outlets": [
+      {
+        "name": "Les Echos",
+        "url": "https://www.lesechos.fr/economie",
+        "commentary": ""
+      },
+      {
+        "name": "Le Figaro",
+        "url": "https://www.lefigaro.fr/economie",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.lefigaro.fr/economie",
+          "technology": "playwright",
+          "headlineSelectorMethod": "JSON-LD",
+          "headlineSelector": "script[type=\"application/ld+json\"]",
+          "headlinesFound": 106,
+          "firstArticleUrl": "https://www.lefigaro.fr/secteur/high-tech/moteur-de-recherche-correcteur-traducteur-trois-ans-apres-l-arrivee-de-chatgpt-quatre-francais-sur-dix-utilisent-l-ia-chaque-jour-20250807",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 3264,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "La Tribune",
+        "url": "https://www.latribune.fr/actualites/economie/economie.html",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.latribune.fr/actualites/economie/economie.html",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "div[class*=\"title\"] a",
+          "headlinesFound": 64,
+          "firstArticleUrl": "https://www.latribune.fr/actualites/economie/economie.html",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 8317,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Capital",
+        "url": "https://www.capital.fr/economie-politique",
+        "commentary": ""
+      },
+      {
+        "name": "BFM Business",
+        "url": "https://www.bfmtv.com/economie/",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.bfmtv.com/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 147,
+          "firstArticleUrl": "https://www.bfmtv.com/economie/international/entreprises-consommateurs-qui-va-vraiment-payer-la-facture-des-droits-de-douane-de-trump_AD-202508070280.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 4304,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "Challenges",
+        "url": "https://www.challenges.fr/economie/",
+        "commentary": ""
+      },
+      {
+        "name": "Le Monde",
+        "url": "https://www.lemonde.fr/economie/",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.lemonde.fr/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 120,
+          "firstArticleUrl": "https://www.lemonde.fr/economie/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 32223,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "France Info",
+        "url": "https://www.francetvinfo.fr/economie/",
+        "commentary": "",
+        "country": "🇫🇷 France",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.francetvinfo.fr/economie/",
+          "technology": "playwright",
+          "headlineSelectorMethod": "CSS Selector (Learned)",
+          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
+          "headlinesFound": 37,
+          "firstArticleUrl": "https://www.francetvinfo.fr/economie/tourisme/le-lac-leman-rebaptise-lac-de-geneve-sur-l-application-plans-des-appareils-de-marque-apple_7423513.html",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2055,
+          "notes": "No special interaction needed."
+        }
+      },
+      {
+        "name": "L'Opinion",
+        "url": "https://www.lopinion.fr/economie",
+        "commentary": ""
+      },
+      {
+        "name": "L'Indépendant",
+        "url": "https://www.lindependant.fr/economie/",
+        "commentary": ""
+      },
+      {
+        "name": "L'Usine Nouvelle",
+        "url": "https://www.usinenouvelle.com/economie/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Finland",
+    "flag_emoji": "🇫🇮",
+    "outlets": [
+      {
+        "name": "Talouselämä",
+        "url": "https://www.talouselama.fi",
+        "commentary": "Main Finnish business weekly."
+      },
+      {
+        "name": "Kauppalehti",
+        "url": "https://www.kauppalehti.fi/uutiset/talous",
+        "commentary": "Major financial daily."
+      },
+      {
+        "name": "Helsingin Sanomat",
+        "url": "https://www.hs.fi/talous/",
+        "commentary": "Business section of the main national newspaper."
+      },
+      {
+        "name": "Iltalehti",
+        "url": "https://www.iltalehti.fi/talous/",
+        "commentary": "Mass-market but includes finance news."
+      },
+      {
+        "name": "Taloussanomat (Ilta-Sanomat)",
+        "url": "https://www.is.fi/taloussanomat/",
+        "commentary": "Ilta-Sanomat’s business outlet."
+      },
+      {
+        "name": "Yle",
+        "url": "https://yle.fi/uutiset/18-190125",
+        "commentary": "National broadcaster’s economy news."
+      },
+      {
+        "name": "MTV Uutiset",
+        "url": "https://www.mtvuutiset.fi/aihe/talous",
+        "commentary": "Private broadcaster's economy news."
+      }
+    ]
+  },
+  {
+    "country": "Norway",
+    "flag_emoji": "🇳🇴",
+    "outlets": [
+      {
+        "name": "E24",
+        "url": "https://e24.no",
+        "commentary": "Norway’s leading business news outlet."
+      },
+      {
+        "name": "Dagens Næringsliv",
+        "url": "https://www.dn.no",
+        "commentary": "Premier financial daily."
+      },
+      {
+        "name": "NRK",
+        "url": "https://www.nrk.no/nyheter/okonomi/",
+        "commentary": "National broadcaster's economy section."
+      },
+      {
+        "name": "Aftenposten",
+        "url": "https://www.aftenposten.no/okonomi/",
+        "commentary": "Mainstream paper with solid economic reporting."
+      },
+      {
+        "name": "Finansavisen",
+        "url": "https://www.finansavisen.no",
+        "commentary": "Finance-focused daily, markets and business."
+      },
+      {
+        "name": "Nettavisen",
+        "url": "https://www.nettavisen.no/okonomi/",
+        "commentary": ""
+      },
+      {
+        "name": "TV 2",
+        "url": "https://www.tv2.no/nyheter/okonomi/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Iceland",
+    "flag_emoji": "🇮🇸",
+    "outlets": [
+      {
+        "name": "Viðskiptablaðið",
+        "url": "https://www.vb.is",
+        "commentary": "Iceland’s main business newspaper."
+      },
+      {
+        "name": "Morgunblaðið",
+        "url": "https://www.mbl.is/vidskipti/",
+        "commentary": "Business section of a major newspaper."
+      },
+      {
+        "name": "RÚV",
+        "url": "https://www.ruv.is/frettir/efnahagur",
+        "commentary": "National broadcaster’s economy section."
+      },
+      {
+        "name": "Vísir",
+        "url": "https://www.visir.is/g/section/viðskipti",
+        "commentary": "General news with strong business coverage."
+      },
+      {
+        "name": "Kjarninn",
+        "url": "https://www.kjarninn.is/frettir/efnahagur/",
+        "commentary": "Independent outlet with an economics focus."
+      },
+      {
+        "name": "Heimildin",
+        "url": "https://heimildin.is/efnahagur/",
+        "commentary": "Investigative journalism, sometimes on wealth/policy."
+      }
+    ]
+  },
+  {
+    "country": "Belgium",
+    "flag_emoji": "🇧🇪",
+    "outlets": [
+      {
+        "name": "De Tijd",
+        "url": "https://www.tijd.be/markten-live",
+        "commentary": "Top Flemish-language financial daily."
+      },
+      {
+        "name": "L’Echo",
+        "url": "https://www.lecho.be/actualite/economie-politique",
+        "commentary": "Top French-language financial daily, counterpart to De Tijd."
+      },
+      {
+        "name": "De Standaard",
+        "url": "https://www.standaard.be/tag/economie",
+        "commentary": "General newspaper with solid economics coverage."
+      },
+      {
+        "name": "RTBF",
+        "url": "https://www.rtbf.be/article/economie",
+        "commentary": "Public broadcaster’s (French-language) economy news."
+      },
+      {
+        "name": "Business AM",
+        "url": "https://businessam.be",
+        "commentary": "Covers business, tech, and macroeconomics."
+      },
+      {
+        "name": "Trends",
+        "url": "https://trends.knack.be/economie/",
+        "commentary": "Weekly magazine focused on finance, business, and markets."
+      }
+    ]
+  },
+  {
+    "country": "Poland",
+    "flag_emoji": "🇵🇱",
+    "outlets": [
+      {
+        "name": "Parkiet",
+        "url": "https://www.parkiet.com",
+        "commentary": "Dedicated to markets, investments, and finance."
+      },
+      {
+        "name": "Puls Biznesu",
+        "url": "https://www.pb.pl",
+        "commentary": "Poland’s main business newspaper."
+      },
+      {
+        "name": "Dziennik Gazeta Prawna",
+        "url": "https://biznes.gazetaprawna.pl",
+        "commentary": "Focus on business law and the economy."
+      },
+      {
+        "name": "Interia Biznes",
+        "url": "https://biznes.interia.pl",
+        "commentary": "Broad coverage, includes markets, economy, and companies."
+      },
+      {
+        "name": "Money.pl",
+        "url": "https://www.money.pl/gospodarka/",
+        "commentary": ""
+      },
+      {
+        "name": "Business Insider Polska",
+        "url": "https://businessinsider.com.pl/finanse",
+        "commentary": ""
+      },
+      {
+        "name": "TVN24 Biznes",
+        "url": "https://tvn24.pl/biznes",
+        "commentary": "Business and economy from a major broadcaster."
+      },
+      {
+        "name": "Rzeczpospolita",
+        "url": "https://www.rp.pl/gospodarka",
+        "commentary": "Mainstream newspaper with a solid economic and financial section."
+      }
+    ]
+  },
+  {
+    "country": "Austria",
+    "flag_emoji": "🇦🇹",
+    "outlets": [
+      {
+        "name": "Die Presse",
+        "url": "https://www.diepresse.com/wirtschaft",
+        "commentary": ""
+      },
+      {
+        "name": "Der Standard",
+        "url": "https://www.derstandard.at/wirtschaft",
+        "commentary": ""
+      },
+      {
+        "name": "Kurier",
+        "url": "https://kurier.at/wirtschaft",
+        "commentary": ""
+      },
+      {
+        "name": "Wiener Zeitung",
+        "url": "https://www.wienerzeitung.at/nachrichten/wirtschaft/",
+        "commentary": ""
+      },
+      {
+        "name": "ORF",
+        "url": "https://orf.at/wirtschaft/",
+        "commentary": "National broadcaster’s economy section."
+      },
+      {
+        "name": "Trend",
+        "url": "https://www.trend.at",
+        "commentary": "Business and finance magazine."
+      }
+    ]
+  },
+  {
+    "country": "Italy",
+    "flag_emoji": "🇮🇹",
+    "outlets": [
+      {
+        "name": "Il Sole 24 Ore",
+        "url": "https://www.ilsole24ore.com",
+        "commentary": "Italy’s top financial daily."
+      },
+      {
+        "name": "Milano Finanza",
+        "url": "https://www.milanofinanza.it",
+        "commentary": "Focused on markets and finance."
+      },
+      {
+        "name": "la Repubblica",
+        "url": "https://www.repubblica.it/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "Corriere della Sera",
+        "url": "https://www.corriere.it/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "Il Fatto Quotidiano",
+        "url": "https://www.ilfattoquotidiano.it/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "ANSA",
+        "url": "https://www.ansa.it/sito/notizie/economia/",
+        "commentary": "National news agency's economy section."
+      },
+      {
+        "name": "Rai News",
+        "url": "https://www.rainews.it/economia/",
+        "commentary": "Public broadcaster’s economic news."
+      }
+    ]
+  },
+  {
+    "country": "Ireland",
+    "flag_emoji": "🇮🇪",
+    "outlets": [
+      {
+        "name": "The Business Post",
+        "url": "https://www.businesspost.ie",
+        "commentary": "Dedicated business weekly."
+      },
+      {
+        "name": "The Irish Times",
+        "url": "https://www.irishtimes.com/business/",
+        "commentary": ""
+      },
+      {
+        "name": "Irish Independent",
+        "url": "https://www.independent.ie/business/",
+        "commentary": ""
+      },
+      {
+        "name": "RTÉ",
+        "url": "https://www.rte.ie/news/business/",
+        "commentary": "National broadcaster’s business section."
+      },
+      {
+        "name": "Irish Examiner",
+        "url": "https://www.irishexaminer.com/business/arid-40096061.html",
+        "commentary": ""
+      },
+      {
+        "name": "The Sunday Times (Ireland)",
+        "url": "https://www.thesundaytimes.co.uk/section/business/ireland",
+        "commentary": "Limited but relevant, UK-Ireland crossover."
+      }
+    ]
+  },
+  {
+    "country": "Germany",
+    "flag_emoji": "🇩🇪",
+    "outlets": [
+      {
+        "name": "Handelsblatt",
+        "url": "https://www.handelsblatt.com",
+        "commentary": "Germany’s top financial daily."
+      },
+      {
+        "name": "Frankfurter Allgemeine Zeitung (FAZ)",
+        "url": "https://www.faz.net/aktuell/wirtschaft/",
+        "commentary": "Business section of a major quality newspaper."
+      },
+      {
+        "name": "Süddeutsche Zeitung",
+        "url": "https://www.sueddeutsche.de/wirtschaft",
+        "commentary": ""
+      },
+      {
+        "name": "Der Spiegel",
+        "url": "https://www.spiegel.de/wirtschaft/",
+        "commentary": ""
+      },
+      {
+        "name": "Tagesschau",
+        "url": "https://www.tagesschau.de/wirtschaft/",
+        "commentary": "ARD public broadcaster's economy news."
+      },
+      {
+        "name": "Die Zeit",
+        "url": "https://www.zeit.de/wirtschaft/index",
+        "commentary": ""
+      },
+      {
+        "name": "Manager Magazin",
+        "url": "https://www.manager-magazin.de/",
+        "commentary": ""
+      },
+      {
+        "name": "Börse Online",
+        "url": "https://www.boerse-online.de/",
+        "commentary": "Markets-focused, valuable for finance crawling."
+      }
+    ]
+  },
+  {
+    "country": "United Kingdom",
+    "flag_emoji": "🇬🇧",
+    "outlets": [
+      {
+        "name": "Financial Times",
+        "url": "https://www.ft.com",
+        "commentary": "Premier UK and global financial news."
+      },
+      {
+        "name": "Bloomberg",
+        "url": "https://www.bloomberg.com/europe",
+        "commentary": "UK-relevant finance via Bloomberg Europe."
+      },
+      {
+        "name": "The Economist",
+        "url": "https://www.economist.com/finance-and-economics",
+        "commentary": ""
+      },
+      {
+        "name": "BBC News",
+        "url": "https://www.bbc.com/news/business",
+        "commentary": ""
+      },
+      {
+        "name": "The Guardian",
+        "url": "https://www.theguardian.com/uk/business",
+        "commentary": ""
+      },
+      {
+        "name": "The Telegraph",
+        "url": "https://www.telegraph.co.uk/business/",
+        "commentary": ""
+      },
+      {
+        "name": "The Times",
+        "url": "https://www.thetimes.co.uk/business",
+        "commentary": ""
+      },
+      {
+        "name": "City A.M.",
+        "url": "https://www.cityam.com",
+        "commentary": "City-focused business news."
+      },
+      {
+        "name": "Investors' Chronicle",
+        "url": "https://www.investorschronicle.co.uk",
+        "commentary": ""
+      },
+      {
+        "name": "This is Money",
+        "url": "https://www.thisismoney.co.uk",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Switzerland",
+    "flag_emoji": "🇨🇭",
+    "outlets": [
+      {
+        "name": "Handelszeitung",
+        "url": "https://www.handelszeitung.ch",
+        "commentary": "Switzerland’s leading business paper."
+      },
+      {
+        "name": "Finanz und Wirtschaft",
+        "url": "https://www.fuw.ch",
+        "commentary": "Focus on markets, economy, and investing."
+      },
+      {
+        "name": "Neue Zürcher Zeitung (NZZ)",
+        "url": "https://www.nzz.ch/wirtschaft/",
+        "commentary": "High-quality economic reporting."
+      },
+      {
+        "name": "Blick",
+        "url": "https://www.blick.ch/wirtschaft/",
+        "commentary": ""
+      },
+      {
+        "name": "SRF",
+        "url": "https://www.srf.ch/news/wirtschaft",
+        "commentary": "Public broadcaster’s economy section."
+      },
+      {
+        "name": "swissinfo.ch",
+        "url": "https://www.swissinfo.ch/eng/business",
+        "commentary": ""
+      },
+      {
+        "name": "20 Minuten",
+        "url": "https://www.20min.ch/wirtschaft/",
+        "commentary": ""
+      },
+      {
+        "name": "cash.ch",
+        "url": "https://www.cash.ch",
+        "commentary": "Swiss personal finance and investing portal."
+      }
+    ]
+  },
+  {
+    "country": "Serbia",
+    "flag_emoji": "🇷🇸",
+    "outlets": [
+      {
+        "name": "Blic",
+        "url": "https://www.blic.rs/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "Novosti",
+        "url": "https://www.novosti.rs/vesti/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "N1 Info Serbia",
+        "url": "https://rs.n1info.com/biznis/",
+        "commentary": ""
+      },
+      {
+        "name": "eKapija",
+        "url": "https://www.ekapija.com/en/news",
+        "commentary": "Business news portal with an English version."
+      },
+      {
+        "name": "Danas",
+        "url": "https://www.danas.rs/ekonomija/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Croatia",
+    "flag_emoji": "🇭🇷",
+    "outlets": [
+      {
+        "name": "Poslovni dnevnik",
+        "url": "https://www.poslovni.hr",
+        "commentary": ""
+      },
+      {
+        "name": "Lider",
+        "url": "https://lider.media",
+        "commentary": ""
+      },
+      {
+        "name": "Večernji list",
+        "url": "https://www.vecernji.hr/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "Jutarnji list",
+        "url": "https://www.jutarnji.hr/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "N1 Info Croatia",
+        "url": "https://www.n1info.hr/biznis/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Slovenia",
+    "flag_emoji": "🇸🇮",
+    "outlets": [
+      {
+        "name": "Finance",
+        "url": "https://www.finance.si",
+        "commentary": ""
+      },
+      {
+        "name": "RTV Slovenija",
+        "url": "https://www.rtvslo.si/gospodarstvo",
+        "commentary": ""
+      },
+      {
+        "name": "Dnevnik",
+        "url": "https://www.dnevnik.si/posel",
+        "commentary": ""
+      },
+      {
+        "name": "Delo",
+        "url": "https://www.delo.si/gospodarstvo/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Bosnia and Herzegovina",
+    "flag_emoji": "🇧🇦",
+    "outlets": [
+      {
+        "name": "Klix",
+        "url": "https://www.klix.ba/biznis",
+        "commentary": ""
+      },
+      {
+        "name": "N1 Info Bosnia",
+        "url": "https://ba.n1info.com/biznis/",
+        "commentary": ""
+      },
+      {
+        "name": "BiznisInfo.ba",
+        "url": "https://www.biznisinfo.ba",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Montenegro",
+    "flag_emoji": "🇲🇪",
+    "outlets": [
+      {
+        "name": "Vijesti",
+        "url": "https://www.vijesti.me/vijesti/ekonomija",
+        "commentary": ""
+      },
+      {
+        "name": "CdM",
+        "url": "https://www.cdm.me/ekonomija/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "North Macedonia",
+    "flag_emoji": "🇲🇰",
+    "outlets": [
+      {
+        "name": "Sloboden Pečat",
+        "url": "https://www.slobodenpecat.mk/category/ekonomija/",
+        "commentary": ""
+      },
+      {
+        "name": "Faktor",
+        "url": "https://www.faktor.mk/ekonomija",
+        "commentary": ""
+      },
+      {
+        "name": "MKD",
+        "url": "https://mkd.mk/ekonomija",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Kosovo",
+    "flag_emoji": "🇽🇰",
+    "outlets": [
+      {
+        "name": "Koha Ditore",
+        "url": "https://www.koha.net/ekonomi/",
+        "commentary": ""
+      },
+      {
+        "name": "Telegrafi",
+        "url": "https://telegrafi.com/lajme/ekonomi/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Czech Republic",
+    "flag_emoji": "🇨🇿",
+    "outlets": [
+      {
+        "name": "Ekonom",
+        "url": "https://www.ekonom.cz",
+        "commentary": ""
+      },
+      {
+        "name": "iDNES.cz",
+        "url": "https://www.idnes.cz/ekonomika",
+        "commentary": ""
+      },
+      {
+        "name": "Hospodářské noviny (iHNed.cz)",
+        "url": "https://www.ihned.cz/ekonom",
+        "commentary": ""
+      },
+      {
+        "name": "Novinky.cz",
+        "url": "https://www.novinky.cz/ekonomika",
+        "commentary": ""
+      },
+      {
+        "name": "Seznam Zprávy",
+        "url": "https://www.seznamzpravy.cz/ekonomika",
+        "commentary": ""
+      },
+      {
+        "name": "České noviny",
+        "url": "https://www.ceskenoviny.cz/ekonomika",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Hungary",
+    "flag_emoji": "🇭🇺",
+    "outlets": [
+      {
+        "name": "Portfolio.hu",
+        "url": "https://www.portfolio.hu/en",
+        "commentary": "Includes an English section."
+      },
+      {
+        "name": "Világgazdaság (vg.hu)",
+        "url": "https://www.vg.hu/english",
+        "commentary": "Includes an English section."
+      },
+      {
+        "name": "Index",
+        "url": "https://index.hu/gazdasag/",
+        "commentary": ""
+      },
+      {
+        "name": "Napi.hu",
+        "url": "https://www.napi.hu",
+        "commentary": ""
+      },
+      {
+        "name": "G7",
+        "url": "https://g7.hu",
+        "commentary": ""
+      },
+      {
+        "name": "444.hu",
+        "url": "https://444.hu/gazdasag",
+        "commentary": ""
+      },
+      {
+        "name": "HVG",
+        "url": "https://hvg.hu/gazdasag",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Portugal",
+    "flag_emoji": "🇵🇹",
+    "outlets": [
+      {
+        "name": "Jornal de Negócios",
+        "url": "https://www.jornaldenegocios.pt",
+        "commentary": ""
+      },
+      {
+        "name": "Económico Sapo",
+        "url": "https://economico.sapo.pt",
+        "commentary": ""
+      },
+      {
+        "name": "Expresso",
+        "url": "https://expresso.pt/economia",
+        "commentary": ""
+      },
+      {
+        "name": "Público",
+        "url": "https://www.publico.pt/economia",
+        "commentary": ""
+      },
+      {
+        "name": "Observador",
+        "url": "https://observador.pt/seccao/economia/",
+        "commentary": ""
+      },
+      {
+        "name": "ECO Sapo",
+        "url": "https://eco.sapo.pt",
+        "commentary": ""
+      },
+      {
+        "name": "Dinheiro Vivo",
+        "url": "https://www.dinheirovivo.pt",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Sweden",
+    "flag_emoji": "🇸🇪",
+    "outlets": [
+      {
+        "name": "Dagens Industri",
+        "url": "https://www.di.se",
+        "commentary": "Top financial daily."
+      },
+      {
+        "name": "Svenska Dagbladet",
+        "url": "https://www.svd.se/avdelning/naringsliv",
+        "commentary": "Business section of a major newspaper."
+      },
+      {
+        "name": "Dagens Nyheter",
+        "url": "https://www.dn.se/ekonomi/",
+        "commentary": "Economy section of a major newspaper."
+      },
+      {
+        "name": "Breakit",
+        "url": "https://www.breakit.se",
+        "commentary": "Focus on startup/tech and business."
+      },
+      {
+        "name": "EFN Ekonomikanalen",
+        "url": "https://www.efn.se",
+        "commentary": "Finance-focused outlet by Handelsbanken."
+      },
+      {
+        "name": "SVT Nyheter",
+        "url": "https://www.svt.se/nyheter/ekonomi",
+        "commentary": "Public broadcaster’s economy section."
+      },
+      {
+        "name": "Affärsvärlden",
+        "url": "https://www.affarsvarlden.se",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Luxembourg",
+    "flag_emoji": "🇱🇺",
+    "outlets": [
+      {
+        "name": "Paperjam",
+        "url": "https://paperjam.lu/economie",
+        "commentary": ""
+      },
+      {
+        "name": "L'essentiel",
+        "url": "https://www.lessentiel.lu/fr/news/economie",
+        "commentary": ""
+      },
+      {
+        "name": "Delano",
+        "url": "https://delano.lu/business",
+        "commentary": ""
+      },
+      {
+        "name": "Luxembourg Times",
+        "url": "https://luxtimes.lu/luxembourg-business",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Estonia",
+    "flag_emoji": "🇪🇪",
+    "outlets": [
+      {
+        "name": "Äripäev",
+        "url": "https://www.aripaev.ee",
+        "commentary": "Main business daily."
+      },
+      {
+        "name": "ERR News",
+        "url": "https://news.err.ee/business",
+        "commentary": "Public broadcaster’s business news in English."
+      },
+      {
+        "name": "Estonian World",
+        "url": "https://estonianworld.com/business/",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Turkey",
+    "flag_emoji": "🇹🇷",
+    "outlets": [
+      {
+        "name": "Dünya",
+        "url": "https://www.dunya.com",
+        "commentary": "Turkey’s top business daily."
+      },
+      {
+        "name": "Bloomberg HT",
+        "url": "https://www.bloomberght.com",
+        "commentary": "Turkish finance and markets."
+      },
+      {
+        "name": "Hürriyet",
+        "url": "https://www.hurriyet.com.tr/ekonomi/",
+        "commentary": ""
+      },
+      {
+        "name": "Anadolu Agency",
+        "url": "https://www.aa.com.tr/en/economy",
+        "commentary": "English economics section from the state news agency."
+      },
+      {
+        "name": "Sabah",
+        "url": "https://www.sabah.com.tr/ekonomi",
+        "commentary": ""
+      }
+    ]
+  },
+  {
+    "country": "Lithuania",
+    "flag_emoji": "🇱🇹",
+    "outlets": [
+      {
+        "name": "Verslo Žinios",
+        "url": "https://www.vz.lt",
+        "commentary": "Lithuania’s main business outlet."
+      },
+      {
+        "name": "LRT",
+        "url": "https://www.lrt.lt/en/news-in-english/business",
+        "commentary": "Public broadcaster's business news in English."
+      },
+      {
+        "name": "The Lithuania Tribune",
+        "url": "https://lithuaniatribune.com/category/business/",
+        "commentary": ""
+      }
+    ]
+  }
+]

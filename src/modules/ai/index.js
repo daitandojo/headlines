@@ -81,7 +81,7 @@ async function generateAssessment(model, instructions, userContent, fewShotInput
     });
     messages.push({ role: 'user', content: userContent });
     const apiCallPromise = safeExecute(() => client.chat.completions.create({
-        model, messages, response_format: { type: "json_object" }, temperature: 0.1,
+        model, messages, response_format: { type: "json_object" }, temperature: 1,
     }), {
         errorHandler: (err) => {
             if (err.status === 401) {

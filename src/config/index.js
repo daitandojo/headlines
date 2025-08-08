@@ -34,7 +34,7 @@ export const MONGO_URI = getCleanStringEnv('MONGO_URI');
 // --- LLM Configuration ---
 export const OPENAI_API_KEY = getCleanStringEnv('OPENAI_API_KEY');
 // All AI tasks are unified to use a single, powerful model as per the new strategy.
-const LLM_MODEL = getCleanStringEnv('LLM_MODEL', 'gpt-5-mini');
+export const LLM_MODEL = getCleanStringEnv('LLM_MODEL', 'gpt-5-mini');
 export const LLM_MODEL_TRIAGE = LLM_MODEL;
 export const LLM_MODEL_HEADLINES = LLM_MODEL;
 export const LLM_MODEL_ARTICLES = LLM_MODEL;

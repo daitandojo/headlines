@@ -18,7 +18,7 @@ async function generateJsonResponse(model, instructions, userContent, temperatur
         response_format: { type: "json_object" },
         temperature,
         // This prevents the API from truncating the JSON response when clustering many articles.
-        max_tokens: 8192, 
+        // max_tokens: 8192, 
     }));
 
     if (!result) return { error: 'API call failed' };

@@ -29,6 +29,7 @@
     "openai": "^4.47.3",
     "p-limit": "^5.0.0",
     "pino": "^9.1.0",
-    "pino-pretty": "^11.1.0"
+    "pino-pretty": "^11.1.0",
+    "playwright": "^1.45.1"
   }
 }
