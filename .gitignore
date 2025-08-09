@@ -1,6 +1,5 @@
 /node_modules
 /.pnpm
-/debug
 .pnp.*
 .yarn/*
 !.yarn/patches
