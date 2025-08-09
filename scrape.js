@@ -9,13 +9,13 @@
 
 import 'dotenv/config';
 import pLimit from 'p-limit';
-import { SITES_CONFIG } from './src/config/sources.js';
-import { scrapeSite, scrapeArticleContent } from './src/modules/scraper/index.js'; // NOTE: scrapeSite must be exported
+// MODIFIED: Import the new country-based config
+import { COUNTRIES_CONFIG } from './src/config/sources.js';
+import { scrapeSite, scrapeArticleContent } from './src/modules/scraper/index.js';
 import { CONCURRENCY_LIMIT } from './src/config/index.js';
 import { logger } from './src/utils/logger.js';
 
 // --- Configuration ---
-// Temporarily set logger to 'info' to suppress verbose debug messages during the test run.
 logger.level = 'info';
 
 // --- Console Colors for Readability ---
@@ -32,14 +32,13 @@ const log = (msg) => console.log(msg);
 
 /**
  * Runs a diagnostic test on a single site configuration.
- * @param {object} site The site configuration from SITES_CONFIG.
+ * @param {object} site The site configuration from COUNTRIES_CONFIG.
  * @returns {Promise<{success: boolean, message: string}>} The result of the test.
  */
 async function testSite(site) {
     const statusLine = [`${colors.cyan}${site.name.padEnd(25)}${colors.reset}`];
 
     try {
-        // Step 1: Scrape headlines for this site only.
         const { articles, success: headlineSuccess } = await scrapeSite(site);
         const headlineCount = articles.length;
         
@@ -51,19 +50,17 @@ async function testSite(site) {
         
         statusLine.push(`${colors.green}${String(headlineCount).padStart(3)} headlines scraped${colors.reset}`);
 
-        // Step 2: Test content scraping on the very first article.
         const firstArticle = articles[0];
         const articleWithContent = await scrapeArticleContent(firstArticle);
 
         const content = articleWithContent.articleContent?.contents?.join('') || '';
         const contentLength = content.length;
 
-        if (contentLength > 150) { // Using 150 as a "good enough" threshold
+        if (contentLength > 150) {
             statusLine.push(`${colors.green}First article OK (${contentLength} chars)${colors.reset}`);
             return { success: true, message: statusLine.join(' > ') };
         } else {
             const reason = articleWithContent.enrichment_error || `Content too short (< 150 chars)`;
-            // MODIFIED: Add the failed URL to the error message for easy debugging.
             const failedLink = `(Link: ${firstArticle.link})`;
             statusLine.push(`${colors.red}Content FAILED: ${reason}${colors.reset} ${colors.grey}${failedLink}${colors.reset}`);
             return { success: false, message: statusLine.join(' > ') };
@@ -79,15 +76,21 @@ async function testSite(site) {
  */
 async function main() {
     const siteKey = process.argv[2];
-    let sitesToTest = Object.values(SITES_CONFIG);
+    
+    // MODIFIED: Flatten the new structure to get a list of all sites.
+    const allSites = COUNTRIES_CONFIG.flatMap(country => country.sites);
+    let sitesToTest = allSites;
+
     const limit = pLimit(CONCURRENCY_LIMIT);
 
     if (siteKey) {
-        if (SITES_CONFIG[siteKey]) {
-            sitesToTest = [SITES_CONFIG[siteKey]];
+        // MODIFIED: Find the specific site by its key in the flattened list.
+        const targetSite = allSites.find(site => site.key === siteKey);
+        if (targetSite) {
+            sitesToTest = [targetSite];
             log(`${colors.yellow}🚀 Starting targeted diagnostic scrape for: ${siteKey}${colors.reset}`);
         } else {
-            log(`${colors.red}Error: Site key "${siteKey}" not found in SITES_CONFIG.${colors.reset}`);
+            log(`${colors.red}Error: Site key "${siteKey}" not found in COUNTRIES_CONFIG.${colors.reset}`);
             return;
         }
     } else {

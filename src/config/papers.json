@@ -125,14 +125,17 @@
         "analysis": {
           "urlDiscoveryMethod": "initial",
           "finalUrl": "https://www.volkskrant.nl/economie/",
-          "technology": "playwright",
+          "technology": "playwright + AI",
           "headlineSelectorMethod": "JSON-LD",
           "headlineSelector": "script[type=\"application/ld+json\"]",
           "headlinesFound": 99,
-          "articleContentSelector": "body.cleaned",
-          "sampleArticleLength": 3905,
-          "notes": "No special interaction needed."
-        }
+          "firstArticleUrl": "https://www.volkskrant.nl/economie/hbo-max-gaat-strijd-aan-met-wachtwoorddelers~bc514228/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 2427,
+          "aiInsights": null,
+          "notes": "Handled consent using persistent browser state."
+        },
+        "country": "🇳🇱 Netherlands"
       },
       {
         "name": "Trouw.nl",
@@ -142,19 +145,36 @@
         "analysis": {
           "urlDiscoveryMethod": "initial",
           "finalUrl": "https://www.trouw.nl/economie/",
-          "technology": "playwright",
+          "technology": "playwright + AI",
           "headlineSelectorMethod": "JSON-LD",
           "headlineSelector": "script[type=\"application/ld+json\"]",
           "headlinesFound": 99,
-          "articleContentSelector": "body.cleaned",
-          "sampleArticleLength": 5954,
-          "notes": "No special interaction needed."
-        }
+          "firstArticleUrl": "https://www.trouw.nl/economie/opinie-laat-politici-geen-zachte-economische-heelmeesters-zijn~b0036228/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 5105,
+          "aiInsights": null,
+          "notes": "Handled consent using persistent browser state."
+        },
+        "country": "🇳🇱 Netherlands"
       },
       {
         "name": "Algemeen Dagblad (ad.nl)",
         "url": "https://www.ad.nl/economie/",
-        "commentary": "Mass market but includes accessible finance news and regional real estate trends."
+        "commentary": "Mass market but includes accessible finance news and regional real estate trends.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ad.nl/economie/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "JSON-LD",
+          "headlineSelector": "script[type=\"application/ld+json\"]",
+          "headlinesFound": 10,
+          "firstArticleUrl": "https://www.ad.nl/economie/moederconcern-albert-heijn-maakt-voor-het-eerst-winst-met-online-boodschappen~a75f6649/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 9137,
+          "aiInsights": null,
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Sprout.nl",
@@ -193,13 +213,18 @@
         "analysis": {
           "urlDiscoveryMethod": "initial",
           "finalUrl": "https://pensioenpro.nl",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "div[class*=\"teaser\"] a",
-          "headlinesFound": 42,
-          "articleContentSelector": null,
-          "sampleArticleLength": 0,
-          "notes": "No special interaction needed."
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.absolute-link[href*='pensioenpro.nl']",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://pensioenpro.nl/hogere-inflatie-dwingt-pensioenfonds-tot-ander-beleggingsbeleid/",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 1097,
+          "aiInsights": {
+            "pattern": "Headline links share these patterns: all anchors use the class .absolute-link and point to hyphenated, human-readable slugs on the pensioenpro.nl domain. Texts are mostly medium-length Dutch sentences that name organisations, funds, numeric values (e.g., € amounts, years), policy terms (Wtp, indexatie), or pose a dilemma/question — all typical signals of article headlines rather than navigation labels. Several use the 'ORG:' format or quotes for attributed statements. The input also contains many duplicate entries (same text+href repeated), indicating the same headline may appear in multiple layout components (teaser, list, featured).",
+            "confidence": 0.940952380952381
+          },
+          "notes": "Handled consent using persistent browser state."
         }
       },
       {
@@ -208,15 +233,20 @@
         "commentary": "Real estate trends and big money flows in Dutch property. Great for wealth tracking.",
         "labCheckPerformed": true,
         "analysis": {
-          "urlDiscoveryMethod": "AI-discovered",
+          "urlDiscoveryMethod": "initial",
           "finalUrl": "https://www.vastgoedmarkt.nl/nieuws",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "a h2",
-          "headlinesFound": 15,
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article a.summary",
+          "headlinesFound": 14,
+          "firstArticleUrl": "https://www.vastgoedmarkt.nl/202223/trumps-kandidaat-miran-heeft-radicale-ideeen-om-fed-te-hervormen",
           "articleContentSelector": null,
           "sampleArticleLength": 0,
-          "notes": "No special interaction needed."
+          "aiInsights": {
+            "pattern": "Headline links share the CSS selector value a.summary and their URLs follow a consistent pattern: a leading slash, a numeric article id (commonly 6 digits starting with '202' or other year-like numbers), then a hyphen-separated slug describing the headline. The link text is typically a concise, sentence-like headline (sometimes containing quotes or a series label like 'Vastgoed in 5 minuten' or 'BAR Talk'). Non-headline items differ by selector (e.g., a.button) or contain explicit markers like 'Gesponsord' which indicate sponsored/advertising content.",
+            "confidence": 0.9492857142857142
+          },
+          "notes": "Handled consent using persistent browser state."
         }
       }
     ]
@@ -384,13 +414,18 @@
         "analysis": {
           "urlDiscoveryMethod": "initial",
           "finalUrl": "https://www.invertia.com",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Heuristic)",
-          "headlineSelector": "h2 a",
-          "headlinesFound": 68,
-          "articleContentSelector": null,
-          "sampleArticleLength": 0,
-          "notes": "No special interaction needed."
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "main a[href^='/invertia/'], main a[href^='/espana/'], main a[href^='/mundo/']",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.invertia.com/invertia/empresas/turismo/20250808/turkish-airlines-presenta-oferta-vinculante-entrar-capital-air-europa/1003743879609_0.html",
+          "articleContentSelector": "div[class*=\"text\"] p",
+          "sampleArticleLength": 1547,
+          "aiInsights": {
+            "pattern": "Headlines on this feed share a consistent article URL pattern: they are usually relative paths that include a section (commonly /invertia/, /espana/, /mundo/, or subfolders like /mercados/, /empresas/, /economia/), often include a date segment (YYYYMMDD) and a descriptive slug, and end with an identifier and .html. The link text is typically multi-word, descriptive, time-sensitive (numbers, names, actions) and longer than simple nav labels. The selector field is frequently a generic 'a' (sometimes 'a.related'), indicating these are simple anchor elements inside list/article blocks rather than navigation menus or third-party widgets.",
+            "confidence": 0.901818181818182
+          },
+          "notes": "Handled consent using persistent browser state."
         }
       },
       {
@@ -450,7 +485,24 @@
       {
         "name": "Capital",
         "url": "https://www.capital.fr/economie-politique",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.capital.fr/economie-politique",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.articleCard, a.orderedContentList-link, .articleCard > a",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.capital.fr/economie-politique/sans-pilote-et-dope-a-l-ia-qu-est-ce-que-le-zmiy-droid-nouveau-vehicule-utilise-par-kiev-au-combat-1517059",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2347,
+          "aiInsights": {
+            "pattern": "Headlines share these common traits: (1) selector: most use '.articleCard' for article teasers (some use '.orderedContentList-link' for list items); (2) URL structure: relative article slugs under '/economie-politique/...' followed by a hyphenated slug and a numeric id (e.g. '-1517059'); (3) text: medium-to-long descriptive strings often prefixed by a topical tag/section (e.g. 'Guerre en Ukraine', 'avion', 'SNCF') followed by the headline; (4) content: named people, institutions, incidents, or policy topics are common — typical news headline language. Navigation or event links (e.g. tabs) have short labels and different selectors ('.tabsLink-listItemLink'), while headlines are longer and tied to the article slug+id pattern.",
+            "confidence": 0.9418181818181819
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "BFM Business",
@@ -474,7 +526,24 @@
       {
         "name": "Challenges",
         "url": "https://www.challenges.fr/economie/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.challenges.fr/economie/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.ui-clickable[href^='/'][href*='_'], .domain-ui-category-latest__article a, .domain-ui-category-latest__primary-article",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.challenges.fr/economie/le-defi-cest-dendiguer-le-declin-technologique-de-la-france-philippe-aghion_621396",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 553,
+          "aiInsights": {
+            "pattern": "Headline links on this site typically use relative internal URLs with a human-readable slug followed by an underscore and a numeric article id (e.g. _621396). They are found under sections like /economie, /monde, /politique, /entreprise and are linked with classes such as a.ui-clickable and domain-ui-category-latest__article / __primary-article. Headline text is medium-length (often contains a colon, question mark, quotes, names or figures) and reads like a news title or explainer rather than a navigation label or partner link.",
+            "confidence": 0.8744999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Le Monde",
@@ -517,12 +586,46 @@
       {
         "name": "L'Opinion",
         "url": "https://www.lopinion.fr/economie",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.lopinion.fr/economie",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "main a.Link, main a[id^='cXLink'], main article a:not(.Tag):not(.ButtonLink)",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.lopinion.fr/economie/les-droits-de-douane-rapportent-mais-ne-changent-pas-la-donne-pour-leconomie-americaine",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 16238,
+          "aiInsights": {
+            "pattern": "Headline links on this site share these patterns: (1) They are long, human-readable strings (often full sentences, questions, or quoted phrases). (2) Their URLs contain a category segment (/economie/, /international/, /politique/, etc.) followed by an SEO-friendly slug. (3) The page uses a small set of selectors for article teasers — chiefly .Link for list/teaser items and id-based anchors like #cXLinkId for prominent front-page items; some article links are plain anchors (<a>) inside content blocks. Tag links use a.Tag and utilities use .ButtonLink or generic a with short texts.",
+            "confidence": 0.9216000000000002
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "L'Indépendant",
         "url": "https://www.lindependant.fr/economie/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.lindependant.fr/economie/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.stretched-link, .article-childs__title",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.lindependant.fr/2025/08/08/un-corps-en-decomposition-avancee-decouvert-dans-les-pyrenees-dans-le-secteur-ou-un-touriste-normand-de-69-ans-avait-disparu-en-juin-12867571.php",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1204,
+          "aiInsights": {
+            "pattern": "Headline links share a consistent pattern: they use date-stamped article slugs under a /2025/... path ending in a numeric article id and .php (e.g. /2025/MM/DD/article-slug-<id>.php). Two CSS classes recur for headline teasers: .stretched-link (common for card/teaser links) and .article-childs__title (used for items in headline lists). Headlines are typically long, descriptive French sentences often starting with topical prefixes (e.g. \"Violent incendie dans l’Aude :\", \"Guerre en Ukraine :\") and contain named places, people or time-bound details.",
+            "confidence": 0.9448000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "L'Usine Nouvelle",
@@ -538,27 +641,112 @@
       {
         "name": "Talouselämä",
         "url": "https://www.talouselama.fi",
-        "commentary": "Main Finnish business weekly."
+        "commentary": "Main Finnish business weekly.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.talouselama.fi",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^='/uutiset/a/']",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.talouselama.fi/uutiset/a/7515bcb2-d0e1-49dc-a930-fce198220305",
+          "articleContentSelector": "article p",
+          "sampleArticleLength": 1154,
+          "aiInsights": {
+            "pattern": "Headline links share a consistent URL pattern: most are under /uutiset/a/ followed by a UUID-like identifier, which strongly indicates article pages. Two CSS classes recur for these links: a.sc-388ef52f-0 (majority) and a.tmcl-__sc-1666wpr-2 (likely featured/hero pieces). The link text is headline-length (short to medium, often with names, numbers, quotes or a clear news angle), not small utility labels or navigation phrases. Navigation/utility links use different paths (e.g., /viikko/) or explicit navigation text like \"Siirry viikon sivulle\".",
+            "confidence": 0.9441666666666667
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Kauppalehti",
         "url": "https://www.kauppalehti.fi/uutiset/talous",
-        "commentary": "Major financial daily."
+        "commentary": "Major financial daily.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.kauppalehti.fi/uutiset/talous",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*=\"/uutiset/a/\"]",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.kauppalehti.fi/uutiset/a/521da366-376e-4912-b710-f57d3e578551",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1669,
+          "aiInsights": {
+            "pattern": "Headline links consistently appear under the /uutiset/a/ path (relative or absolute URLs). The headline text is usually sentence-like (longer than simple nav labels), often contains names, companies, figures or punctuation (colons, dashes), and reads like a news summary. CSS selectors observed for these items include component classes such as 'a.sc-388ef52f-0' and 'a.tmcl-__sc-1666wpr-2', but the strongest structural signal is the href pattern (/uutiset/a/<uuid>). Navigation, indices, webcasts and utility links use other paths (e.g. /porssi/, /kalenteri, or include numeric index text), or are short uppercase ticker strings.",
+            "confidence": 0.9047999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Helsingin Sanomat",
         "url": "https://www.hs.fi/talous/",
-        "commentary": "Business section of the main national newspaper."
+        "commentary": "Business section of the main national newspaper.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.hs.fi/talous/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.block",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.hs.fi/talous/art-2000011416560.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 2544,
+          "aiInsights": {
+            "pattern": "Headlines are primarily anchor elements with class 'block' (selector 'a.block'), pointing to article pages under /talous/art-<numeric-id>.html. The link text frequently begins with a short category label followed by a pipe character (e.g., 'Tekoäly|', 'Asuntokauppa|') and then a descriptive title. Headlines are full-sentence or phrase-form strings (often moderately long), mention named organizations or people, and contain topical keywords (Trump, GPT-5, BP, Microsoft, etc.).",
+            "confidence": 0.9523809523809522
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Iltalehti",
         "url": "https://www.iltalehti.fi/talous/",
-        "commentary": "Mass-market but includes finance news."
+        "commentary": "Mass-market but includes finance news.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.iltalehti.fi/talous/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.latest-pala, a.news-ticker-item, .half-article-content a, .half-article-content",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.iltalehti.fi/ravit/a/d313cb40-c3ac-4b8e-a549-e7942a7a94e7?ilsi=NewsTicker-Puffi",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 5535,
+          "aiInsights": {
+            "pattern": "There are two main headline patterns: (1) short, immediate news/alerts under the /palat/ path with selector a.latest-pala — these are concise, often location- or incident-focused items intended for live/latest modules; (2) full article headlines in topical sections (here economy) under /talous/a/ often presented via .half-article-content or plain a tags — these are longer, descriptive, sometimes include timestamps and quotations. Promoted/featured headlines also appear with selector a.news-ticker-item (longer sentence form with quotes).",
+            "confidence": 0.9145
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Taloussanomat (Ilta-Sanomat)",
         "url": "https://www.is.fi/taloussanomat/",
-        "commentary": "Ilta-Sanomat’s business outlet."
+        "commentary": "Ilta-Sanomat’s business outlet.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.is.fi/taloussanomat/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.block[href^=\"/taloussanomat/\"], a[href^=\"/autot/\"]",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.is.fi/autot/art-2000011412492.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 663,
+          "aiInsights": {
+            "pattern": "Most headlines are anchor tags with the CSS class 'block' (selector shown as 'a.block') and URLs following the pattern '/taloussanomat/art-<article-id>.html'. Headline texts are full-sentence or short-phrase journalistic titles, often containing named entities (companies, politicians), numeric details, or colons/dashes. There is also a smaller set of section-specific article URLs such as '/autot/art-<id>.html'. Non-headline items (navigation, skip links, ads/subscription promos) use different selectors or clearly promotional wording ('MAINOS', subscription links, or '.skip-link__link').",
+            "confidence": 0.9725000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Yle",
@@ -567,8 +755,25 @@
       },
       {
         "name": "MTV Uutiset",
-        "url": "https://www.mtvuutiset.fi/aihe/talous",
-        "commentary": "Private broadcaster's economy news."
+        "url": "https://www.mtvuutiset.fi/aihe/uutiset/2309200",
+        "commentary": "Private broadcaster's economy news.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.mtvuutiset.fi/aihe/uutiset/2309200",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^='/artikkeli/']",
+          "headlinesFound": 23,
+          "firstArticleUrl": "https://www.mtvuutiset.fi/artikkeli/yhdysvallat-ja-venaja-voivat-sopia-uusista-rajoista-ukrainan-ohi-sanoo-mtv-n-kirjeenvaihtaja/9201628",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 1349,
+          "aiInsights": {
+            "pattern": "Headline links share a common URL pattern: they live under the /artikkeli/ path and typically end with a numeric article id. The link texts are full-sentence headlines (often containing country names, person names, wire sources like NYT/Bloomberg, numbers, or emotive descriptors). CSS classes seen in the sample include a.group and a.flex for many article links; some article links use a generic 'a' when extracted alone. Tag/topic pages use a.typography-tag and utility links point to external domains (e.g., mtvyritys.fi) with cookie/imprint classes.",
+            "confidence": 0.9395652173913045
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -579,12 +784,46 @@
       {
         "name": "E24",
         "url": "https://e24.no",
-        "commentary": "Norway’s leading business news outlet."
+        "commentary": "Norway’s leading business news outlet.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://e24.no",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a._teaser_bizto_1",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://e24.no/i/o30k7g",
+          "articleContentSelector": "article p",
+          "sampleArticleLength": 2116,
+          "aiInsights": {
+            "pattern": "Most headline candidates share these traits: anchor links with short internal article paths of the form '/i/<id>' (compact permalink), short punchy teaser text (often lacking full sentence spacing due to layout), and the CSS class '._teaser_bizto_1' which appears to be the site’s teaser/article link class. These are distinct from ticker widgets (a._stripeTicker_...) and CTA/section links (a._cta_...).",
+            "confidence": 0.9499999999999997
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Dagens Næringsliv",
         "url": "https://www.dn.no",
-        "commentary": "Premier financial daily."
+        "commentary": "Premier financial daily.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.dn.no",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.dn-link[href^='/'], a.dn-link[href*='dn.no/video'], a.dn-link[href*='/2-1-']",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.dn.no/donald-trump/fed/jerome-powell/trump-radgiver-utnevnt-til-fed-styret-bade-flink-og-veltalende/2-1-1855212",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1416,
+          "aiInsights": {
+            "pattern": "Most likely headlines use the .dn-link CSS class and site-relative URLs that include section names and a numeric story id pattern (commonly ending with /2-1-<article-id>). Headlines are typically natural-language Norwegian strings (often with em-dashes or quoted phrases), range from short to moderately long, and are grouped under sectioned paths like /politikk/, /marked/, /olje/, /magasinet/, /smak/ etc. Video/story items sometimes link to https://www.dn.no/video/ or direkte.dn.no/nyhetsstudio/ with query/hash parameters but still function as article headlines.",
+            "confidence": 0.9185000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "NRK",
@@ -594,22 +833,90 @@
       {
         "name": "Aftenposten",
         "url": "https://www.aftenposten.no/okonomi/",
-        "commentary": "Mainstream paper with solid economic reporting."
+        "commentary": "Mainstream paper with solid economic reporting.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.aftenposten.no/okonomi/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.teaser-link",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.aftenposten.no/e24/i/zAmE81",
+          "articleContentSelector": "article p",
+          "sampleArticleLength": 6237,
+          "aiInsights": {
+            "pattern": "The likely headlines share these characteristics: they are short-to-mid-length Norwegian sentences, often with named persons or institutions (e.g., Oljefondet, Stoltenberg, Trump, Tesla, Apple), specific numeric details (percentages, kroner, millions), and occasional quoted phrases. URLs are on aftenposten.no under sections like /e24/ or /okonomi/ and many include an /i/<id> path or descriptive slug, indicating article pages. All items use the CSS class/selector .teaser-link, which on this site is used for teaser/headline links rather than navigation or utility links.",
+            "confidence": 0.9567999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Finansavisen",
         "url": "https://www.finansavisen.no",
-        "commentary": "Finance-focused daily, markets and business."
+        "commentary": "Finance-focused daily, markets and business.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.finansavisen.no",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.block, .dre-item__title, .c-teaser__content__title__link, a[data-content]",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.finansavisen.no/finans/2025/08/08/8284380/nasdaq-med-ny-toppnotering-gullprisen-svingte-kraftig-etter-tollforvirring",
+          "articleContentSelector": "article p",
+          "sampleArticleLength": 3746,
+          "aiInsights": {
+            "pattern": "Headline links consistently use a small set of selectors and URL patterns: main article listings use the anchor class a.block (often with internal_source=mest_lest) and have URLs of the form /<section>/YYYY/MM/DD/<numeric-id>/<slug>. Prominent front/slider headlines use a .dre-item__title selector. Teaser/feature pieces use .c-teaser__content__title__link and sometimes absolute URLs under /agenda/. External/syndicated links on the same domain can appear as anchors with a[data-content]. Headline text is typically short-to-medium length, often contains a verb, quoted reaction, named person, or a concise claim/summary — unlike ticker items or utility links which are structured (e.g., /ticker/...) and use a.c-bors__item.",
+            "confidence": 0.917
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Nettavisen",
         "url": "https://www.nettavisen.no/okonomi/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.nettavisen.no/okonomi/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article .teaser_body a, .teaser_body a, a.teaser_body",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.nettavisen.no/okonomi/busstilbudet-blir-dyrere-og-dyrere-kommer-til-a-bli-et-alvorlig-problem/s/5-95-2550871",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 4486,
+          "aiInsights": {
+            "pattern": "Most likely headlines share the .teaser_body CSS class (the dataset's selector), appear under content paths like /okonomi/ or /nyheter/ (sometimes /samferdsel/), and use descriptive, hyphenated slugs plus a site identifier (/s/5-95-...). Headlines are typically 4–12 words, often include a named entity (person, organization, country) or a leading quote/colon to create an attention-grabbing teaser. Many begin with a subject (Oljefondet, Stoltenberg, Trump, Norges Bank) or a numeric/statistic, and several include attribution to other outlets (e.g., E24, Aftenposten).",
+            "confidence": 0.9600000000000002
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "TV 2",
         "url": "https://www.tv2.no/nyheter/okonomi/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.tv2.no/nyheter/okonomi/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.article__link",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.tv2.no/nyheter/innenriks/matte-ut-med-55000-for-a-komme-seg-hjem-helt-harreisende/17979156/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 6389,
+          "aiInsights": {
+            "pattern": "Headlines share these common signals: (1) link text is a full sentence or short multi-part phrase (often include quotes, named entities, numbers or explanatory clauses); (2) URLs use site sections like /nyheter/ (news), /sport/, /underholdning/ followed by a hyphenated slug and a numeric article id; (3) the CSS selector for these links is consistently .article__link suggesting article teasers or story links rather than navigation or utility links. Short, generic texts without section path or id are less reliable.",
+            "confidence": 0.9395238095238095
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -620,12 +927,46 @@
       {
         "name": "Viðskiptablaðið",
         "url": "https://www.vb.is",
-        "commentary": "Iceland’s main business newspaper."
+        "commentary": "Iceland’s main business newspaper.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.vb.is",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .news-list__item a, .frettir-list a",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.vb.is/frettir/thetta-haa-vaxtastig-bitnar-hvad-mest-a-yngri-kynslodum/",
+          "articleContentSelector": ".article-body p",
+          "sampleArticleLength": 2569,
+          "aiInsights": {
+            "pattern": "Headlines predominantly live under article-like paths such as /frettir/, /eftir-vinnu/ and /skodun/. They usually contain: proper nouns (company or person names), numeric information (percentages, monetary amounts), action verbs (kaupir, selur, greiða, lækkar, hækka), place names or policy keywords (ESB, tollar), or question/quote punctuation. These headlines are non-generic, descriptive strings (often 4–12 words) and contrast with short navigation labels or section names like 'Tíska og hönnun' or repeated section titles. The generic CSS selector captured ('a') picks up many link types; true headlines are links with article-like URLs (/frettir/, /eftir-vinnu/, /skodun/) and content that contains topical keywords, numbers, or proper nouns.",
+            "confidence": 0.9155
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Morgunblaðið",
         "url": "https://www.mbl.is/vidskipti/",
-        "commentary": "Business section of a major newspaper."
+        "commentary": "Business section of a major newspaper.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.mbl.is/vidskipti/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.text-black[href^=\"/frettir/\"], a.text-black[href^=\"/vidskipti/frettir/\"], a.pt-1[href^=\"/frettir/\"], a.seen-1010[href^=\"/vidskipti/frettir/\"]",
+          "headlinesFound": 28,
+          "firstArticleUrl": "https://www.mbl.is/vidskipti/frettir/2025/08/08/ukrainumenn_efla_hag_polverja/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 5912,
+          "aiInsights": {
+            "pattern": "Most headlines are under the site's news paths (/frettir/ or /vidskipti/frettir/) and include a date in the URL (YYYY/MM/DD) followed by a descriptive slug. Link elements for headlines commonly use classes like text-black, pt-1 or seen-1010 in the dataset (these are applied to article links in lists). Headline text tends to be short-to-medium length, often containing numbers, quoted phrases, organization names, or topical keywords (e.g., Seðlabanki, Íslandsbanki, Tesla, atvinnuleysi). Items under /frettir/innlent/ and /frettir/erlent/ are local and international news respectively; /vidskipti/frettir/ indicates business/markets coverage.",
+            "confidence": 0.9282142857142858
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "RÚV",
@@ -634,8 +975,25 @@
       },
       {
         "name": "Vísir",
-        "url": "https://www.visir.is/g/section/viðskipti",
-        "commentary": "General news with strong business coverage."
+        "url": "https://www.visir.is/f/frettir",
+        "commentary": "General news with strong business coverage.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.visir.is/f/frettir",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^='/g/']",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.visir.is/g/20252760222d/rekinn-eftir-tvo-manudi-hja-skattinum-og-samdaegurs-tilnefndur-sendiherra-a-islandi",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 3240,
+          "aiInsights": {
+            "pattern": "Most headlines are plain anchor (<a>) links whose hrefs begin with '/g/' followed by a numeric identifier and an article slug (e.g., /g/20252760222d/...). The link text tends to be full-sentence or short descriptive Icelandic headlines (accidents, political decisions, obituaries, investigations). Navigation/category links use different selectors (e.g., a.mobile-menu__category, a.ui-text-color-standard) or root domains and are usually short single words.",
+            "confidence": 0.9314999999999998
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Kjarninn",
@@ -670,18 +1028,69 @@
       },
       {
         "name": "RTBF",
-        "url": "https://www.rtbf.be/article/economie",
-        "commentary": "Public broadcaster’s (French-language) economy news."
+        "url": "https://www.rtbf.be/info",
+        "commentary": "Public broadcaster’s (French-language) economy news.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.rtbf.be/info",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.stretched-link[href*='/article/'], a.stretched-link[href*='/media/'], a.stretched-link[class*='stretched-link']",
+          "headlinesFound": 14,
+          "firstArticleUrl": "https://www.rtbf.be/article/voici-le-calendrier-des-vacances-pour-l-annee-scolaire-2025-2026-en-federation-wallonie-bruxelles-11470484",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "Headlines in this sample share these common traits: (1) text length: full-sentence or phrase style, often containing a location (Bruxelles, Jette, Cambodge), a topic keyword (terrorisme, autoroutes, grande distribution) and sometimes punctuation like colons or question marks; (2) URL patterns: article headlines use '/article/' in the path, broadcast/video pieces use 'auvio.rtbf.be/media/...'; (3) CSS selector: most article/media items use the class '.stretched-link' for the clickable headline area, whereas dossier/section cards often use 'a.group' or 'a.gap-x-6'. Utility or nav links use short CTA text (\"Je partage maintenant\", \"Voir tout\") and different selectors.",
+            "confidence": 0.8685714285714284
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Business AM",
         "url": "https://businessam.be",
-        "commentary": "Covers business, tech, and macroeconomics."
+        "commentary": "Covers business, tech, and macroeconomics.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://businessam.be",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.u-url, article a.u-url, .teaser a.u-url",
+          "headlinesFound": 23,
+          "firstArticleUrl": "https://businessam.be/tom-lee-voorspelt-dat-bitcoin-zal-verdubbelen-tot-250-000-dollar-tegen-eind-2025/",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "Likely headlines share these traits: they are full-sentence or long descriptive titles (often containing named entities, numbers, locations, or verbs), their hrefs are article-style slugs on businessam.be (readable Dutch phrases separated by hyphens), and the majority use the CSS class selector 'a.u-url' (suggesting site markup uses that anchor class for article links). Non-headline links in the list are short category/author labels ('Artificiële Intelligentie', 'Personal Finance') or generic nav items using plain 'a' without the .u-url class.",
+            "confidence": 0.9491304347826087
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Trends",
         "url": "https://trends.knack.be/economie/",
-        "commentary": "Weekly magazine focused on finance, business, and markets."
+        "commentary": "Weekly magazine focused on finance, business, and markets.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://trends.knack.be/economie/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": ".c-teaser-block__title, .c-teaser-item__title, a.c-live-list__item__text",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://trends.knack.be/nieuws/macro-economie-beleid/het-palmares-van-fed-voorzitter-jerome-powell-de-jurist-die-vastberaden-op-de-winkel-past/",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "Headline links on this site share these patterns: (1) They are sentence-like titles (often long, sometimes with punctuation or numbers) rather than short nav labels. (2) Their URLs are article slugs under content paths such as /nieuws/, /beleggen/, /geld/, /ondernemen/, or domain subfolders like datanews.knack.be — usually hyphenated phrases. (3) The DOM classes used are consistent: .c-teaser-block__title and .c-teaser-item__title mark teaser/headline elements; a.c-live-list__item__text is used for live/market brief headlines. (4) Category links use different classes (e.g., .c-stamp__link) and short labels, while utility/navigation links use site-specific classes (e.g., .mma-navigation__link).",
+            "confidence": 0.9324999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -692,12 +1101,46 @@
       {
         "name": "Parkiet",
         "url": "https://www.parkiet.com",
-        "commentary": "Dedicated to markets, investments, and finance."
+        "commentary": "Dedicated to markets, investments, and finance.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.parkiet.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.contentLink[href*='/art']",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.parkiet.com/energetyka/art42812641-minister-energii-milosz-motyka-kosztowne-oslony-przed-podwyzkami-dla-wybranych",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 10629,
+          "aiInsights": {
+            "pattern": "Most article headlines use the CSS class '.contentLink' and link to URLs containing '/art' followed by a numeric id and a human-readable slug (e.g. '/.../art42829191-...'). Section/navigation links use attributes like 'a[data-gtm-trigger]' or 'a[data-gtm-placement]' and shorter path segments (e.g. '/gospodarka'). Headlines tend to be full sentences or short phrases (often 4–12 words), sometimes including a person's name or a question/quote.",
+            "confidence": 0.9395238095238094
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Puls Biznesu",
         "url": "https://www.pb.pl",
-        "commentary": "Poland’s main business newspaper."
+        "commentary": "Poland’s main business newspaper.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.pb.pl",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.m-home-news-item__anchor, a.m-main-topic-item__anchor",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.pb.pl/bedzie-uszczelnienie-przepisow-o-fundacji-rodzinnej-1246550",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 3521,
+          "aiInsights": {
+            "pattern": "Headline links on this site consistently use specific content-oriented anchor classes (not navigation or utility). Two dominant selectors appear: a.m-home-news-item__anchor and a.m-main-topic-item__anchor. The URL pattern for articles is a hyphen-separated slug ending with a numeric id (e.g., /some-title-1246550) or a full https://www.pb.pl/... domain for some syndicated/report pages. Headline text lengths vary from short (3–6 words) to longer analytical titles (8–15 words); they often include proper nouns (company names, people), numbers (percentages, dates, counts), or verbs indicating events („rozwiązuje”, „zainstalowano”, „nie jest już prezesem”). Non-headline/utility links use different selectors (e.g., a.a-anchor-button for buttons, a.m-quote-list__anchor for market tickers).",
+            "confidence": 0.9190476190476191
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Dziennik Gazeta Prawna",
@@ -707,17 +1150,68 @@
       {
         "name": "Interia Biznes",
         "url": "https://biznes.interia.pl",
-        "commentary": "Broad coverage, includes markets, economy, and companies."
+        "commentary": "Broad coverage, includes markets, economy, and companies.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://biznes.interia.pl",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.tile-carousel-title-url, a.tile-magazine-title-url",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://biznes.interia.pl/gospodarka/news-budzet-na-2026-pod-presja-ciec-andrzej-domanski-to-nie-sa-na,nId,8008030",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 11196,
+          "aiInsights": {
+            "pattern": "Headline links predominantly use the site tile classes .tile-carousel-title-url and .tile-magazine-title-url. Their URLs usually contain a /news- segment and an nId numeric identifier. Headline text is typically a full sentence or phrase (often 6–14 words) that includes named entities (people, countries, companies), numeric details, or quoted remarks — all signs of article headlines rather than navigation or utility links.",
+            "confidence": 0.9643999999999998
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Money.pl",
         "url": "https://www.money.pl/gospodarka/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.money.pl/gospodarka/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.bld, a[href$='.html']",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.money.pl/gospodarka/pogorszenie-nastrojow-konsumenckich-w-polsce-polacy-obawiaja-sie-o-gospodarke-7181344695610080a.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3947,
+          "aiInsights": {
+            "pattern": "Headline links on this feed generally have: (1) descriptive sentence-length text, often with punctuation (question marks, quotes) or numbers; (2) URLs on money.pl (or subdomains like praca.money.pl) that contain a hyphenated slug and a numeric id, frequently ending in '...<digits>a.html' or with an article-like path (e.g., /raporty/artykul/..., /sekcja/... , ending with numeric id); (3) selectors of plain 'a' or 'a.bld' where 'a.bld' appears to mark more prominent/bolded stories. Navigation or utility links tend to be short (single words), point to section roots (e.g., /gospodarka/), or other domains (holding.wp.pl) and often lack the numeric-id article pattern.",
+            "confidence": 0.928095238095238
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Business Insider Polska",
         "url": "https://businessinsider.com.pl/finanse",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://businessinsider.com.pl/finanse",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.list-item",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://businessinsider.com.pl/finanse/handel/szwajcaria-brak-cel-odwetowych-wobec-usa-rzad-wspiera-firmy/d07ymzd",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 4633,
+          "aiInsights": {
+            "pattern": "Headline links share a consistent pattern: they almost always use the class 'list-item' on <a> elements (selector 'a.list-item'), and URLs contain semantic category segments (e.g., /finanse/, /handel/, /wiadomosci/, /biznes/) followed by a human-readable slug and a short alphanumeric ID. The link text is typically a full sentence or descriptive phrase (often including numbers, named entities, quotes, or a question), distinguishing them from navigation or utility links which are short (e.g., site name, privacy). Therefore selecting by the 'list-item' class and restricting to category paths yields high precision. As a fallback, article headline links often appear inside article/list containers (e.g., article h3 a or .news-list a).",
+            "confidence": 0.9508
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "TVN24 Biznes",
@@ -727,7 +1221,24 @@
       {
         "name": "Rzeczpospolita",
         "url": "https://www.rp.pl/gospodarka",
-        "commentary": "Mainstream newspaper with a solid economic and financial section."
+        "commentary": "Mainstream newspaper with a solid economic and financial section.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.rp.pl/gospodarka",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.contentLink",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.rp.pl/gospodarka/art42830351-zerowy-pit-dla-rodzin-prezydent-karol-nawrocki-podpisal-projekt-ustawy",
+          "articleContentSelector": "div[class*=\"body\"] p",
+          "sampleArticleLength": 3625,
+          "aiInsights": {
+            "pattern": "Headline links consistently use the CSS class/selector '.contentLink' and their hrefs follow a clear pattern: a site section path (e.g., /gospodarka, /dane-gospodarcze) followed by '/art' + numeric article id + human-readable slug. The link text tends to be full sentences or sentence fragments (often containing verbs, names, numbers, or question forms) and is substantially longer than category/navigation labels. Category links use shorter labels and a different selector (e.g., 'a[data-gtm-trigger]'), while promotional/external links use other attributes (e.g., 'a[data-gtm-placement]').",
+            "confidence": 0.9525
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -738,7 +1249,24 @@
       {
         "name": "Die Presse",
         "url": "https://www.diepresse.com/wirtschaft",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.diepresse.com/wirtschaft",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article a.card__link, .teaser a.card__link, a.card__link",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.diepresse.com/19978484/intel-geraet-im-kampf-zwischen-den-usa-und-china-zwischen-die-fronten",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 828,
+          "aiInsights": {
+            "pattern": "Headline links on this site consistently use the .card__link class in the provided sample. URLs are full absolute links that contain a numeric article id followed by a human-readable slug (pattern: /<id>/<slug>), which is a strong indicator of article pages. Headline texts are German, vary from short to long, often include question marks, numbered-series prefixes (#N) or topical entities (company names, politicians, dates). Non-headline/utility links use different selectors (e.g. .author__link, a.newsletter-card or generic privacy/legal links) or lack the numeric-id slug pattern.",
+            "confidence": 0.934090909090909
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Der Standard",
@@ -748,7 +1276,24 @@
       {
         "name": "Kurier",
         "url": "https://kurier.at/wirtschaft",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://kurier.at/wirtschaft",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.teaser-content-details, .teaser-content-details a, article .teaser-content-details",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://kurier.at/wirtschaft/sydney-sweeney-american-eagle-jeans-aktie-boerse/403069688",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 2773,
+          "aiInsights": {
+            "pattern": "Headline links predominantly use the .teaser-content-details selector (or plain <a> tags for some items) and have descriptive, multi-word titles often including quotes or topical phrases. Their URLs follow a consistent structure: site root / category (e.g., /wirtschaft/, /wirtschaft/immo/, /wirtschaft/karriere/) / slugified-title / numeric article ID (e.g., /40306XXXXX). Navigation, utility or promotional links use classes like .button-link, a.container, a.tagline, or lead to section index pages without a numeric article ID. Sponsored content appears under a /cm/ path (e.g., /cm/ubm/) and uses the same teaser class but should be treated with slightly lower confidence as editorial headlines.",
+            "confidence": 0.9109523809523811
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Wiener Zeitung",
@@ -757,13 +1302,47 @@
       },
       {
         "name": "ORF",
-        "url": "https://orf.at/wirtschaft/",
-        "commentary": "National broadcaster’s economy section."
+        "url": "https://orf.at/",
+        "commentary": "National broadcaster’s economy section.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://orf.at/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*=\"/stories/\"], a[href*=\"/av/video/\"], a[id^=\"story\"], .headline, .ticker-ressort-special-headline",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://orf.at/stories/3402030/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 5931,
+          "aiInsights": {
+            "pattern": "Most headlines point to URLs that contain '/stories/' (sometimes on regional subdomains like wien.orf.at, steiermark.orf.at, ooe.orf.at) or to AV/video endpoints (onDemandVideo... / av/video/...). Many items also have element IDs or selectors of the form '#story<id>' or class '.headline' indicating they are story blocks. Headline text typically is a concise phrase (often 'Location: event' or 'Actor: action' forms), may include quotes for statements or short labels like 'Video:'. Navigation/utility links instead point to root pages (e.g. sport.orf.at/) or to settings/push endpoints and have different link text (promotional or UI labels).",
+            "confidence": 0.9290909090909089
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Trend",
         "url": "https://www.trend.at",
-        "commentary": "Business and finance magazine."
+        "commentary": "Business and finance magazine.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.trend.at",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.group[href*='/news/'], a.group[href*='/politik/'], a.group[href*='/unternehmen/'], a.group[href*='/kultur/'], a.group[href*='/teaser/']",
+          "headlinesFound": 17,
+          "firstArticleUrl": "https://www.trend.at/unternehmen/baywa-krise-schlaegt-in-oesterreich-auf",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3327,
+          "aiInsights": {
+            "pattern": "Headlines follow a consistent pattern: they are anchor (<a>) elements using the class 'group' (selector \"a.group\") and point to content under category paths such as /news/, /politik/, /unternehmen/, /kultur/ and /teaser/. Headline text is short-to-medium length (typically 3–8 words), often contains names, companies, policy topics or punchy phrases/quotes. '/teaser/' URLs denote promoted/featured pieces but still use the same anchor class and headline style. Utility links (e.g., cookie/privacy) use different classes (e.g., .ot-cookie-policy-link) or different selectors like a.relative for section landing pages.",
+            "confidence": 0.9235294117647057
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -774,32 +1353,134 @@
       {
         "name": "Il Sole 24 Ore",
         "url": "https://www.ilsole24ore.com",
-        "commentary": "Italy’s top financial daily."
+        "commentary": "Italy’s top financial daily.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ilsole24ore.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.aprev-title-clr, a.spcl-card, a[href^='/art/'], a[href*='ilsole24ore.com/art/']",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.ilsole24ore.com/dossier/20250403-trump-dazi-AGt2MYwD",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 4014,
+          "aiInsights": {
+            "pattern": "Headline links consistently have: (1) descriptive Italian titles, often long and specific (multiple clauses, figures, locations or named persons); (2) URLs under /art/ on the main domain (or special dossier/guide subdomains like lab24, 24plus) or clearly article-oriented paths; (3) selectors used for these items include generic 'a' links in article lists, '.aprev-title-clr' for preview titles and 'a.spcl-card' for featured/special cards. Non-headline links tend to be short navigation labels, author/topic pages (argomenti), market tickers, or links to the premium section.",
+            "confidence": 0.9308000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Milano Finanza",
         "url": "https://www.milanofinanza.it",
-        "commentary": "Focused on markets and finance."
+        "commentary": "Focused on markets and finance.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.milanofinanza.it",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[class*=\"boxtrack-hp\"], .title-correlated, a.boxtrack-hp-trading, a.boxtrack-hp-analisi",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.milanofinanza.it/news/eredita-agnelli-sempre-piu-ricco-il-tesoro-estero-ora-in-mano-a-john-elkann-grazie-anche-a-misteriosi-202508082105083208",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 7305,
+          "aiInsights": {
+            "pattern": "Headlines on this site share these patterns: they are primarily under the /news/ path (sometimes /investimenti-trading or section subpaths), use long descriptive slugs with date-like numeric suffixes (YYYYMMDD... IDs), and appear with specific homepage/article classes such as a.boxtrack-hp-primopiano-*, a.boxtrack-hp-*-*, and .title-correlated. Non-headline links (navigation, sections, promos, ads) tend to use generic selectors like a.badge, a.cardbox, .link-section, a (bare), or external ad domains (servedby.flashtalking). Video content is on a video subdomain and uses #ClickVideoTitle or video-specific classes.",
+            "confidence": 0.9283333333333332
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "la Repubblica",
         "url": "https://www.repubblica.it/economia/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.repubblica.it/economia/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*=\"/economia/2025/\"], a[href*=\"/economia/\"][href*=\"/news/\"], a[href*=\"/economia/diritti-e-consumi/\"], a[href*=\"/dossier/economia/\"]",
+          "headlinesFound": 19,
+          "firstArticleUrl": "https://www.repubblica.it/economia/2025/08/08/news/trump_nomina_stephen_miran_fed_ideologo_dazi_scelto_assedio_powell-424778731/",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "The likely headlines share these signals: (1) anchor tags with selector 'a' carrying medium-to-long human-readable text (often 6–20 words) and clear news phrasing; (2) URLs that include the /economia/ section and a date-based path (e.g. /2025/08/08/) followed by '/news/' and a hyphenated slug plus numeric id — classic article permalinks; (3) headlines refer to concrete events, companies, policies or numbers (markets, appointments, laws, earnings), unlike tickers or UI labels which use short strings with symbols and percentages. Non-headlines (tickers/navigation) often use id-based selectors like #ticker_* or very short texts with numeric values and %/$ signs.",
+            "confidence": 0.9505263157894734
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Corriere della Sera",
         "url": "https://www.corriere.it/economia/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.corriere.it/economia/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article a, .card__title a, .news-list-item a, a[href*=\"/25_\"][href$=\".shtml\"]",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.corriere.it/cronache/25_agosto_08/federico-faggin-intervista-bab0e738-df64-4171-a317-fd49be70cxlk.shtml",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 18228,
+          "aiInsights": {
+            "pattern": "Headline links share these common characteristics: 1) long, descriptive Italian text (often a full sentence or clause) rather than short navigation labels; 2) URLs placed in editorial sections (e.g., /cronache/, /economia/, /finanza/, /consumi/, /trasporti/, /aziende/) with a dated component in the path (e.g., 25_agosto_06/08) and ending in .shtml or a clearly article-like slug; 3) many have module-specific selectors/IDs (patterns like #mNNNN-NNNN-NNN) rather than generic utility links or short class names; 4) they include topical nouns, numbers, locations, or named people/organizations — signals of news content rather than navigation, guides, or account/utility pages.",
+            "confidence": 0.9470833333333335
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Il Fatto Quotidiano",
         "url": "https://www.ilfattoquotidiano.it/economia/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ilfattoquotidiano.it/economia/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^=\"https://www.ilfattoquotidiano.it/2025/\"]:not(.ifq-news-meta__author-name):not(.ovl-noconsent__btn):not(.cl-consent-node-a)",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.ilfattoquotidiano.it/2025/08/07/dazi-usa-ue-confusione-entrata-vigore-notizie/8088025/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 10252,
+          "aiInsights": {
+            "pattern": "Headline links on this page follow a clear date-based URL pattern: domain + /YYYY/MM/DD/ + descriptive-slug (+ sometimes '/news/' or '-notizie') + numeric id. Headline anchor text tends to be full, descriptive Italian sentences (often containing quotes, numbers, countries, company names). CSS selectors in the provided data vary: main article links are often plain anchors ('a') or context-specific readmore ('a.ifq-news-spotlight__readmore'), while author links use a distinct class ('a.ifq-news-meta__author-name') and utility/consent links use other classes (e.g., 'a.ovl-noconsent__btn', 'a.cl-consent-node-a'). Therefore a robust extraction should rely primarily on the href pattern and exclude known utility/author classes.",
+            "confidence": 0.938181818181818
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "ANSA",
-        "url": "https://www.ansa.it/sito/notizie/economia/",
-        "commentary": "National news agency's economy section."
+        "url": "https://www.ansa.it/",
+        "commentary": "National news agency's economy section.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.ansa.it/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.uora, a.in-evidenza, a.button, a[href^='/sito/notizie/'], a[href^='/sito/videogallery/'], a[href*='/canale_']",
+          "headlinesFound": 23,
+          "firstArticleUrl": "https://www.ansa.it/sito/videogallery/spettacolo/2025/08/08/il-pianista-fuori-posto-suona-sospeso-sul-lago-di-lesina_42fe2021-56ec-491f-a85e-e45e080e0cb8.html",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 3484,
+          "aiInsights": {
+            "pattern": "Headlines are predominantly links under /sito/notizie/ or /sito/videogallery/ (sometimes channel-specific like /canale_scienza/). URLs include a date segment (YYYY/MM/DD) and a UUID-like slug, which is a strong indicator of article pages. Editorial prominence is signaled by CSS classes such as a.uora (breaking/topnews), a.in-evidenza (featured), and a.button for section ‘ultima ora’/section links. Headline text tends to be full Italian sentences or short descriptive phrases (often containing names, places, numbers, or quotes). Utility links (privacy, subscription, channel landing pages) use shorter static paths (/sito/static/, /responsabilmente/, /canale_*/ ) and different classes (e.g., a.bt-abbonati), and should be excluded.",
+            "confidence": 0.9404347826086955
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Rai News",
@@ -820,7 +1501,24 @@
       {
         "name": "The Irish Times",
         "url": "https://www.irishtimes.com/business/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.irishtimes.com/business/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.c-link[href*=' /2025/'], a.c-link[href*='/2024/'] /* or generally: a.c-link[href*='/%YYYY%/'] */",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.irishtimes.com/business/2025/08/08/an-post-continuing-work-to-rectify-customer-direct-debits-error/",
+          "articleContentSelector": "article p",
+          "sampleArticleLength": 1890,
+          "aiInsights": {
+            "pattern": "Headlines strongly correlate with (a) anchor text that is longer and descriptive (typically >6 words, often including quotes, named entities, numbers), (b) URLs containing a date path (/YYYY/MM/DD/) and a content category (e.g., /business/, /technology/, /ireland/, /your-money/), and (c) the .c-link class on anchors. Navigation and utility links tend to be short single-word labels (e.g., 'Financial Services', 'Commercial Property') or external/utility domains and either lack dated URL structure or use different href patterns.",
+            "confidence": 0.9316666666666668
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Irish Independent",
@@ -830,7 +1528,24 @@
       {
         "name": "RTÉ",
         "url": "https://www.rte.ie/news/business/",
-        "commentary": "National broadcaster’s business section."
+        "commentary": "National broadcaster’s business section.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.rte.ie/news/business/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.article-link",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.rte.ie/news/business/2025/0808/1527517-production-resumes-at-ballymaguire-foods-after-outbreak/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 3652,
+          "aiInsights": {
+            "pattern": "Headline links consistently use the .article-link CSS class and appear under /news/ (often with a subpath like /news/business/ or /news/world/). URLs frequently include a YYYY/MM/DD date segment and a numeric story id plus a slug. Headline text is concise (typically 4–12 words), often includes topical signals such as organisation or person names, numeric figures, verbs indicating events or decisions, or question/quote forms. Navigation, section headings and ‘more’ links use different selectors (e.g. .panel-heading-link, a.more-trigger or plain a) and often point to top-level section pages rather than dated, id-based article URLs.",
+            "confidence": 0.9545454545454546
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Irish Examiner",
@@ -839,8 +1554,25 @@
       },
       {
         "name": "The Sunday Times (Ireland)",
-        "url": "https://www.thesundaytimes.co.uk/section/business/ireland",
-        "commentary": "Limited but relevant, UK-Ireland crossover."
+        "url": "https://www.thesundaytimes.co.uk/business-money",
+        "commentary": "Limited but relevant, UK-Ireland crossover.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.thesundaytimes.co.uk/business-money",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*=\"/article/\"], .article-headline",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.thesundaytimes.co.uk/business-money/companies/article/profits-halved-at-tariff-hit-jaguar-land-rover-l6chtb7g0",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 2544,
+          "aiInsights": {
+            "pattern": "Headline links consistently use the /article/ path in their URLs (e.g., /section/.../article/... ). Many headline anchors carry a site-specific CSS class (e.g., a.css-xxxx) or use an explicit .article-headline class. Headline text tends to be descriptive (5–15 words), often includes entities (company names, people, policy terms) and sometimes question or quote punctuation. Navigation/category links use fragment ids like #vertical-sub- or top-level section paths (e.g., /business-money) and shorter label text; those are excluded.",
+            "confidence": 0.9471428571428572
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -851,22 +1583,90 @@
       {
         "name": "Handelsblatt",
         "url": "https://www.handelsblatt.com",
-        "commentary": "Germany’s top financial daily."
+        "commentary": "Germany’s top financial daily.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.handelsblatt.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.is-image-visible, a.medium-layout, a.small-layout",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.handelsblatt.com/politik/international/usa-wie-trump-sich-zunehmend-bei-unternehmen-und-behoerden-einmischt/100147112.html",
+          "articleContentSelector": "article p",
+          "sampleArticleLength": 1249,
+          "aiInsights": {
+            "pattern": "Headlines follow consistent patterns: (1) they are sentence-like, often contain verbs and named entities (persons, countries, companies) and are longer than simple nav labels; (2) URLs are article paths (mostly relative) that include a section (e.g., /politik/, /finanzen/, /technik/) and a numeric id ending in .html (or a story subdomain), which distinguishes them from navigation or utility links; (3) the DOM selectors for these items are typically a.is-image-visible, a.medium-layout or a.small-layout (sometimes a.extra-small-layout) — i.e., link classes used for article cards rather than top-level nav anchors or footer/utility links.",
+            "confidence": 0.9428
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Frankfurter Allgemeine Zeitung (FAZ)",
         "url": "https://www.faz.net/aktuell/wirtschaft/",
-        "commentary": "Business section of a major quality newspaper."
+        "commentary": "Business section of a major quality newspaper.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.faz.net/aktuell/wirtschaft/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.block, main article a, .teaser a, a[href*=\"/aktuell/\"]:not(.clickable)",
+          "headlinesFound": 30,
+          "firstArticleUrl": "https://www.faz.net/aktuell/wirtschaft/der-starke-anstieg-der-staatsverschuldung-muss-unter-kontrolle-gebracht-werden-110628610.html",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2866,
+          "aiInsights": {
+            "pattern": "Likely headline links share these characteristics: their link text is sentence-like or descriptive (often includes topic prefix like 'FAZ+' or a series name), they point to article pages under /aktuell/ (and related subpaths such as /pro/ or /finanzen/) with a numeric id and .html suffix, and they use generic content selectors (selector values 'a' or 'a.block') rather than navigation/category classes like 'a.clickable' or explicit promo/ad domains. Navigation and category links are short, label-like (e.g., 'Immobilien & Wohnen') and typically use selector 'a.clickable'; sponsored/ad links often point to different domains or contain utm parameters.",
+            "confidence": 0.9443333333333335
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Süddeutsche Zeitung",
         "url": "https://www.sueddeutsche.de/wirtschaft",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.sueddeutsche.de/wirtschaft",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .teaser__link, .teaser a, a[href*=\"/gutscheine/\"], a[href^=\"/supplements\"], a[href^=\"/erfahrungen\"], a[href^=\"/deutschland-favorit\"]",
+          "headlinesFound": 15,
+          "firstArticleUrl": "https://www.sueddeutsche.de/gutscheine?mtm_campaign=sueddeutsche_leiste&mtm_kwd=gutscheine_start",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3217,
+          "aiInsights": {
+            "pattern": "The links most likely to be headlines tend to: (1) live on the main site domain (sueddeutsche.de) rather than external subdomains, (2) use content-style paths (e.g., /gutscheine/, /supplements, /erfahrungen/, /deutschland-favorit/), (3) contain a descriptive title often paired with a short subtitle (the provided 'text' fields frequently combine title+tagline), and (4) use a generic anchor selector ('a') or content-specific classes (the dataset shows several classed anchors like a.css-5h9jgq). In this sample the /gutscheine/* pages are branded content/guide pages (they look like editorial landing pages), while short, clean paths (no tracking params) usually point to topical hubs or series. Pure navigation, accounts, or service utility links tend to point to external microsites or admin pages (e.g., stellenmarkt, immobilienmarkt, shop subdomains) or have explicit utility wording (Leserservice, Anzeige inserieren).",
+            "confidence": 0.7880000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Der Spiegel",
         "url": "https://www.spiegel.de/wirtschaft/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.spiegel.de/wirtschaft/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.text-black",
+          "headlinesFound": 9,
+          "firstArticleUrl": "https://www.spiegel.de/wirtschaft/usa-zollstreit-schweiz-goldbarren-zoelle-koennten-milliarden-kosten-a-64b65329-0f08-4000-b526-40893b692133",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 2372,
+          "aiInsights": {
+            "pattern": "The likely headlines share these characteristics: they are relatively long, full‑sentence teasers (often 1–3 sentences) summarizing the story; their URLs live under /wirtschaft/ (and subpaths like /wirtschaft/unternehmen or /wirtschaft/usa) and follow the site pattern of a human-readable slug plus an article id (a-<hex/uuid>); and their CSS selector is consistently a.text-black, which appears to be used for content/teaser links on this section page. Utility links (authors, login, subscription) use different selectors such as a.group, a.inline-flex or a.border-b and have different URL patterns (impressum, auth, abo, gruppenkonto).",
+            "confidence": 0.9577777777777777
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Tagesschau",
@@ -876,17 +1676,68 @@
       {
         "name": "Die Zeit",
         "url": "https://www.zeit.de/wirtschaft/index",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.zeit.de/wirtschaft/index",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.zon-teaser__link, a.zon-teaser__faux-link",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.zeit.de/wirtschaft/2025-08/sicherheitspolitik-kriminalitaet-unsicherheit-zuwanderung",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 10456,
+          "aiInsights": {
+            "pattern": "Headline links are presented primarily as teaser anchors using the classes .zon-teaser__link and .zon-teaser__faux-link (often both present for the same article). They point to descriptive, human-readable slugs under topical sections (/wirtschaft/, /politik/, /unternehmen/, /geld/, /arbeit/, or dated article paths like /2025/32/), and the link text is a full sentence or a short phrase with a subject + colon pattern (e.g., \"Sicherheitspolitik: ...\"). Utility/advertising links use different labels (\"Anzeige\") or different selectors (e.g., a.z-text-button) and should be excluded.",
+            "confidence": 0.9495000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Manager Magazin",
         "url": "https://www.manager-magazin.de/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.manager-magazin.de/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.text-black, a[href*='-a-']",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.manager-magazin.de/unternehmen/pharma/biontech-einigung-im-patentstreit-mit-curevac-vor-uebernahme-a-684d2628-2a0a-45da-b9fc-e8380bea7216",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 2364,
+          "aiInsights": {
+            "pattern": "Headline links on this manager-magazin snapshot share these characteristics: (1) link text is a full sentence or descriptive phrase (often contains a colon or question, and sometimes an author credit), (2) hrefs contain the site domain plus a path under categories like /unternehmen/, /finanzen/, /politik/, /hbm/ and include an article id segment with '-a-' followed by a UUID, and (3) the CSS selector for main headlines is frequently 'a.text-black' (site-wide content links) or generic 'a' within HBM lists. Navigation, author, and utility links lack the '-a-' article id or use different classes (e.g., a.group, a.flex, inline-flex) and are shorter or generic.",
+            "confidence": 0.9387500000000002
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Börse Online",
         "url": "https://www.boerse-online.de/",
-        "commentary": "Markets-focused, valuable for finance crawling."
+        "commentary": "Markets-focused, valuable for finance crawling.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.boerse-online.de/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^=\"/nachrichten/\"], a[href^=\"/dpa-afx/\"]",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.boerse-online.de/nachrichten/rohstoffe/gigantischer-kapitalpool-galaxy-digital-ceo-novogratz-sieht-bitcoin-bullenmarkt-erst-am-anfang-20384639.html",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3364,
+          "aiInsights": {
+            "pattern": "Headline links are overwhelmingly under the site paths /nachrichten/ and /dpa-afx/. They use human-readable slugs (German words, numbers, entity names) and are relatively long or attention-grabbing (questions, percentages, named experts/companies). The associated selector in the provided data is mostly the generic 'a' (anchor) for editorial links; stock tickers and utility links use more specific selectors like 'a.stock-info' or '.to-text-link'. Syndicated wire items use the /dpa-afx/ prefix and often have concise, formal headlines.",
+            "confidence": 0.9372000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -897,7 +1748,24 @@
       {
         "name": "Financial Times",
         "url": "https://www.ft.com",
-        "commentary": "Premier UK and global financial news."
+        "commentary": "Premier UK and global financial news.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ft.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article a.link",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.ft.com/content/a237d285-7033-4d46-9718-63e17b481e54",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 763,
+          "aiInsights": {
+            "pattern": "Most likely headlines share these characteristics: (1) hrefs are article endpoints using the pattern /content/<uuid> rather than section or landing-page URLs; (2) the anchor text is full-sentence or short-sentence style (typically 5–15 words), often containing proper nouns, verbs and topical nouns (e.g., country names, companies, policy terms); (3) the CSS selector for these items is \".link\" (site teaser links), not navigation or utility selectors like .markets-data__item-link or .n-layout__skip-link; (4) headlines often include quoted fragments, question forms, or labels like \"Explainer\"/\"The Big Read\", indicating editorial/article content rather than nav labels.",
+            "confidence": 0.9365000000000002
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Bloomberg",
@@ -912,12 +1780,46 @@
       {
         "name": "BBC News",
         "url": "https://www.bbc.com/news/business",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.bbc.com/news/business",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.sc-8a623a54-0[href^='/news/articles/'], a.sc-8a623a54-0[href^='/news/live/'], a.sc-8a623a54-0[href^='/reel/video/'], a.sc-8a623a54-0[href^='/audio/play/']",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.bbc.com/news/articles/cr5rm7v5166o",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 7343,
+          "aiInsights": {
+            "pattern": "Headline links share these patterns: most use the same link class (a.sc-8a623a54-0) and point to site content under /news/articles/, /reel/video/ or /news/live/ (and occasionally /audio/play/). Headline text is typically 4–12 words, descriptive or question/analysis-style, often mentioning people/places/numbers. Utility or promotional links (newsletters, section navigation) either use external domains (cloud.email...) or different selectors (e.g., .banner-button) and often have short label-like text (\"World of Business\", \"NYSE Opening Bell\", \"Sign up...\").",
+            "confidence": 0.9408
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "The Guardian",
         "url": "https://www.theguardian.com/uk/business",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.theguardian.com/uk/business",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h3 a, article h2 a, a.dcr-1ij2qgb, a.dcr-dqajlz, a[href^='/'][class^='dcr-']",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.theguardian.com/us-news/2025/aug/07/more-than-60-countries-scramble-respond-donald-trump-latest-tariffs",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 4908,
+          "aiInsights": {
+            "pattern": "Headlines in this set share these common characteristics: (1) anchor tags with short, generated class names beginning with 'dcr-' (e.g., a.dcr-1ij2qgb, a.dcr-dqajlz) — classes group section/article link styles; (2) URLs use article-like paths under topical sections such as /world/, /business/, /us-news/ or /<section>/live/ and include readable slugs with multiple words separated by hyphens; (3) headline text is full-sentence or long-phrase style (often including location, organisation, numbers or quoted phrases) rather than short navigation labels; (4) live blogs use a /live/ path and often include “– as it happened” or “live” in the slug or text. Non-headline items (email signups, promotional pages, tab ids) have short utility labels or non-article hrefs (e.g., tabs-popular-0, /info/ or marketing pages).",
+            "confidence": 0.9564999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "The Telegraph",
@@ -927,7 +1829,24 @@
       {
         "name": "The Times",
         "url": "https://www.thetimes.co.uk/business",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.thetimes.co.uk/business",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*=\"/article/\"], .article-headline",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.thetimes.co.uk/business-money/companies/article/profits-halved-at-tariff-hit-jaguar-land-rover-l6chtb7g0",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 2544,
+          "aiInsights": {
+            "pattern": "Headline links share these characteristics: they point to URLs containing '/article/' (long slug-like paths), use sentence-case or short question/statement headline text (moderate length), and are often associated with a dedicated headline CSS class (.article-headline) or short site-specific anchor classes (a.css-xxxxx). They appear in content sections (business-money, money, economics, companies) rather than navigation or utility links.",
+            "confidence": 0.9409523809523809
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "City A.M.",
@@ -937,7 +1856,24 @@
       {
         "name": "Investors' Chronicle",
         "url": "https://www.investorschronicle.co.uk",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.investorschronicle.co.uk",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.specialist__card__article--link, a.sc-laNGHT, a[href*='/content/']",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.investorschronicle.co.uk/content/46277eeb-f8d8-451c-a7fd-af594c1bb515",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 934,
+          "aiInsights": {
+            "pattern": "Headline links mostly use the site's article URL pattern (https://www.investorschronicle.co.uk/content/<uuid>) and are attached to card/article link CSS classes (not generic nav anchors). Typical headline text is sentence-like, often includes company names, sector terms, dates, list indicators (numbers, 'Top', 'Five'), or question/imperative phrasing. Selectors observed for headlines: .specialist__card__article--link and variant article anchors like a.sc-laNGHT — both point to editorial content rather than navigation or author/profile links. Navigation/utility links use short paths (/podcasts/, /opinion/, /hermione-taylor/) or generic anchors without the /content/ UUID pattern.",
+            "confidence": 0.9424999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "This is Money",
@@ -963,7 +1899,24 @@
       {
         "name": "Neue Zürcher Zeitung (NZZ)",
         "url": "https://www.nzz.ch/wirtschaft/",
-        "commentary": "High-quality economic reporting."
+        "commentary": "High-quality economic reporting.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.nzz.ch/wirtschaft/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.teaser__link",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.nzz.ch/wirtschaft/japan-hat-die-usa-erfolgreich-zur-einhaltung-des-zoll-deals-gedraengt-ld.1897077",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 1774,
+          "aiInsights": {
+            "pattern": "Headline links predominantly use the CSS class .teaser__link and appear as relative URLs under content sections (e.g. /wirtschaft, /international, /meinung, /schweiz, /visuals, /pro). The URLs follow a consistent pattern: a readable slug describing the article, ending with '-ld.<numeric id>'. Headline text tends to be declarative or quote-led, often long (descriptive sentences) rather than short navigation labels. Non-headline links (navigation, widgets, games, footer) use other selectors like .header-button, .container__header-link, .games-widget__link or point to external services (utm tags) or special paths (/agb, /sponsored-content).",
+            "confidence": 0.9388
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Blick",
@@ -973,17 +1926,68 @@
       {
         "name": "SRF",
         "url": "https://www.srf.ch/news/wirtschaft",
-        "commentary": "Public broadcaster’s economy section."
+        "commentary": "Public broadcaster’s economy section.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.srf.ch/news/wirtschaft",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.teaser-ng",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.srf.ch/news/wirtschaft/schmuckhersteller-bankrott-claire-s-meldet-insolvenz-an",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 847,
+          "aiInsights": {
+            "pattern": "The likely headlines share these features: (1) they use the .teaser-ng CSS class in the supplied data, which appears to be used for article teasers; (2) their hrefs are internal and begin with /news/ (sections like /news/wirtschaft, /news/schweiz, /news/international), indicating article pages rather than navigation or utility links; (3) the link text is relatively long and descriptive, often formatted as a headline followed by a short summary and media labels (e.g., 'Mit Video', 'Mit Audio', 'Aktualisiert'); (4) many include topical prefixes (section or theme) and sometimes numeric data, which is typical for news headlines and teasers.",
+            "confidence": 0.9472727272727274
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "swissinfo.ch",
         "url": "https://www.swissinfo.ch/eng/business",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.swissinfo.ch/eng/business",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[class$='__link'][href*='/eng/']",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.swissinfo.ch/eng/swiss-diplomacy/how-trump-is-manoeuvring-switzerland-closer-to-the-eu/89802007",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 8910,
+          "aiInsights": {
+            "pattern": "Headline links in this dataset share several consistent patterns: they are anchor elements that point to /eng/ pages with a hyphenated, human-readable slug followed by a numeric article ID (e.g., /<section>/<slug>/<id>). Their anchor classes commonly end with the suffix '__link' (examples: .mega-menu-teaser-card__link, .teaser-wide-card__link, .deeply-read-teaser-card__link, .teaser-debate-card__link). The visible link text is descriptive and article-like (often prefixed with 'Read more:' in menu widgets), rather than short navigation labels like 'See all' or utility text like 'Join the discussion'. Feature stories use .deeply-read-* classes, while main news teasers use .teaser-wide-card__link and menu teasers use .mega-menu-teaser-card__link.",
+            "confidence": 0.9337499999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "20 Minuten",
         "url": "https://www.20min.ch/wirtschaft/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.20min.ch/wirtschaft/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.sc-4c3a0c12-1[href^=\"/story/\"] (fallback: a[href^=\"/story/\"] )",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.20min.ch/story/us-zoelle-trump-regierung-will-doch-keine-zoelle-auf-goldbarren-erheben-103316953",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 20731,
+          "aiInsights": {
+            "pattern": "Most headlines share the same anchor class (a.sc-4c3a0c12-1) and use relative URLs starting with '/story/' followed by a human-readable slug and a numeric article id. Headline text tends to be short-to-medium length, often includes named entities (people, companies, institutions), numbers or quotes, and topical keywords (Zölle, Bundesrat, Rückruf, Urteil). Non-news links (navigation/utility) use different selectors (e.g., a.sc-5b2e2c2-2) or external domains (spiele.20min.ch) and/or have repetitive, generic labels.",
+            "confidence": 0.9613636363636364
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "cash.ch",
@@ -999,27 +2003,112 @@
       {
         "name": "Blic",
         "url": "https://www.blic.rs/biznis",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.blic.rs/biznis",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h1 a, article h2 a, article h3 a, .article-title a, .card__title a, .news-item__title a",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.blic.rs/biznis/vesti/blic-biznis-saznaje-ovo-su-nove-cene-goriva/0bgfmdc",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1326,
+          "aiInsights": {
+            "pattern": "Headlines share these common patterns: they are long, descriptive strings often including numbers, proper nouns (politicians, companies, events), or quoted text; URLs follow the structure https://www.blic.rs/<section>/<subsection>/<slug>/<id> with sections like /biznis/, /biznis/tech/, /biznis/privreda/, /biznis/nekretnine/ and /biznis/after-hour/; the provided selector is a generic 'a', indicating headlines are anchor text inside article/card title elements. Headlines often include attention-grabbing elements (caps, punctuation, parenthetical hints like VIDEO/FOTO), and many slugs end with a short alphanumeric id — strong sign these are article pages.",
+            "confidence": 0.9303999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Novosti",
         "url": "https://www.novosti.rs/vesti/biznis",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.novosti.rs/vesti/biznis",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.d-block[href^='/vesti'], a.d-block[href^='/sport']",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.novosti.rs/vesti/politika/1516488/n1-slavili-oluju-bljesak-dani-ponosa-slave-video",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 12639,
+          "aiInsights": {
+            "pattern": "Headlines appear primarily as anchor tags with the class 'd-block' and live under site paths starting with /vesti/ (news) or /sport/ (sports), followed by a category and a numeric article id (e.g. /vesti/politika/1516488/...). Text is often all-caps or uses emphatic punctuation/quotations and contains topical keywords (names, locations, VIDEO, court/incident language). Non-headline/navigation/utility links use generic anchors (just 'a' for section nav) or different classes (e.g. 'a.akla_...' for external/sponsored/clickbait widgets or consentmanager links).",
+            "confidence": 0.9427999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "N1 Info Serbia",
         "url": "https://rs.n1info.com/biznis/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://rs.n1info.com/biznis/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.word-break",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://rs.n1info.com/biznis/ses-pregovori-o-minimalcu-za-2026-pocinju-18-avgusta/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1079,
+          "aiInsights": {
+            "pattern": "Headlines predominantly appear under the /biznis/ (business) section and occasionally /magazin/showbiz/. The visible headline links use descriptive, often long slugified URLs (multiple words separated by hyphens) and contain topical keywords (e.g., NBS, MMF, ministarstvo, hakerski napad). The majority of link elements in the sample are marked with the CSS class selector a.word-break, indicating a design pattern where headline anchors are given that class to allow line-breaking. Headlines tend to be full sentences or question/quote forms and include dates, numeric values, institution names, or investigative phrasing — all strong signals of news article headlines.",
+            "confidence": 0.9590000000000002
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "eKapija",
-        "url": "https://www.ekapija.com/en/news",
-        "commentary": "Business news portal with an English version."
+        "url": "https://www.ekapija.com/",
+        "commentary": "Business news portal with an English version.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.ekapija.com/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h3 a, .news-list a[href*='/news/'][href*='-'], a[href*='://www.ekapija.com/news/'][href*='-']",
+          "headlinesFound": 25,
+          "firstArticleUrl": "http://www.ekapija.com/news/5259384/pocela-izgradnja-medjunarodnog-putnickog-pristanista-u-sremskim-karlovcima-sledi-tender-za-operatera",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 22983,
+          "aiInsights": {
+            "pattern": "Headlines on this site mostly use URLs under /news/ with a numeric id followed by a hyphenated slug (e.g. /news/5259384/slug-text). Headline text is typically a concise Serbian phrase possibly followed by a clarifying subtitle (hyphen or colon). Category or navigation links tend to use shorter paths (e.g. /news/it-telekomunikacije or /special/...) while true article headlines show the numeric id + descriptive slug. Many headline anchors appear as plain <a> elements in lists or article blocks.",
+            "confidence": 0.8280000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Danas",
         "url": "https://www.danas.rs/ekonomija/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.danas.rs/ekonomija/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*='/vesti/'], a[href*='/svet/'], a[href*='/zivot/'], a[href*='/kolumna/']",
+          "headlinesFound": 19,
+          "firstArticleUrl": "https://www.danas.rs/vesti/ekonomija/pojavio-se-snimak-ostecenja-kod-cortanovaca-da-li-je-bezbednost-brze-pruge-ugrozena/",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "Headline links share a common URL structure: they are under content paths such as /vesti/, /svet/, /zivot/, and /kolumna/ and typically end with a human-readable slug describing the story. The anchor tag selector provided is often the generic 'a' (likely inside article/list item nodes). Headlines are usually mid-to-long length, contain named entities (places, organizations, persons), dates or brackets like (VIDEO) or quoted names, and appear in descriptive slugs. Utility links (privacy/cookie) have distinct classes like .ot-cookie-policy-link or .privacy-notice-link and short generic text (e.g., 'Више о политици приватности' or author profile links), which differentiates them from news headlines.",
+            "confidence": 0.9473684210526314
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1035,7 +2124,24 @@
       {
         "name": "Lider",
         "url": "https://lider.media",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://lider.media",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.se-card--link",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://lider.media/financije/ideolog-carinskog-rata-ulazi-u-fed-kao-trumpov-trojanski-konj/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 51263,
+          "aiInsights": {
+            "pattern": "Likely headlines share these patterns: (1) relatively long, sentence-like text often with a subtitle or explanatory clause; (2) URLs are sectioned (e.g., /financije/, /biznis-i-politika/, /tvrtke-i-trzista/, /zeleno-i-digitalno/, /podcast/, /kripto/) followed by an article slug; (3) the CSS selector for these items is predominantly .se-card--link (article card links). Short, generic labels (category names, nav items) use shorter text and different selectors like .nav-item--link or appear as single words — these were excluded.",
+            "confidence": 0.929090909090909
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Večernji list",
@@ -1044,13 +2150,47 @@
       },
       {
         "name": "Jutarnji list",
-        "url": "https://www.jutarnji.hr/biznis",
-        "commentary": ""
+        "url": "https://www.jutarnji.hr/vijesti?cx_linkref=jl_menu_vijesti",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.jutarnji.hr/vijesti?cx_linkref=jl_menu_vijesti",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": ".card__article-link[href^='/vijesti/']",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.jutarnji.hr/vijesti/svijet/kinezi-grade-mega-ambasadu-usred-londona-britanska-vlada-pisala-pekingu-imate-dva-tjedna-da-objasnite-ovaj-nacrt-podruma-15611390",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "Headline links share a consistent structure: anchor elements with class .card__article-link, internal hrefs under /vijesti/{section}/{hyphenated-slug}-{numeric-id}. Headlines often begin with a short ALL-CAPS label (e.g., 'TUŽNA VIJEST', 'DRAMA', 'STIŽE VRUĆINA') followed by a longer descriptive sentence and a timestamp appended in the link text. Promo/partner content differs by using full absolute URLs containing '/promo/' and UTM parameters.",
+            "confidence": 0.9454545454545454
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "N1 Info Croatia",
         "url": "https://www.n1info.hr/biznis/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.n1info.hr/biznis/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.word-break",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.n1info.hr/biznis/minimalna-placa-u-europi-od-160-do-2700-eura-evo-tko-dobro-zivi-a-tko-jedva-prezivljava/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2766,
+          "aiInsights": {
+            "pattern": "Headlines consistently use the selector a.word-break and are full sentence-like strings (often long, descriptive, sometimes containing quotes or numbers). Their URLs are human-readable slugs under category folders such as /biznis, /svijet, and /vijesti. Short uppercase strings in .card-subtitle appear to be eyebrow/label text, not primary headlines. Non-article links (pagination, cookie/privacy) use different selectors (e.g., a.flex-1, .ot-cookie-policy-link).",
+            "confidence": 0.9324999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1061,22 +2201,90 @@
       {
         "name": "Finance",
         "url": "https://www.finance.si",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.finance.si",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.title[href*='/a/'], article h1 a, article h2 a, .teaser .title a",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.finance.si/trump-odpira-dostop-do-pokojninskih-prihankov-za-blackrock-kkr-apollo/a/9037624",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2005,
+          "aiInsights": {
+            "pattern": "Headline links mostly use the .title CSS class on the anchor (selector \".title\") and their URLs follow an article pattern that ends with \"/a/<numeric-id>\" (e.g., /.../a/9037624). Domains are primarily finance.si and live.finance.si (and sub-sections like manager/, topjob/, vlagatelj-maks/). Headline text is typically a complete, descriptive sentence or short phrase (news-style), often mentioning companies, markets, policy, or events. Short market-ticker headlines include timestamps or percent changes; more feature-like headlines are longer and descriptive.",
+            "confidence": 0.9525
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "RTV Slovenija",
         "url": "https://www.rtvslo.si/gospodarstvo",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.rtvslo.si/gospodarstvo",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .teaser__title a, .news-list__item a, a.player",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.rtvslo.si/gospodarstvo/brodnjaku-nov-mandat-na-celu-nlb-ja/754215",
+          "articleContentSelector": "div[class*=\"body\"] p",
+          "sampleArticleLength": 5030,
+          "aiInsights": {
+            "pattern": "Headline links share these common signals: they appear under sectioned paths (e.g., /gospodarstvo/, /svet/, /slovenija/, /okolje/), use long hyphenated slugs made of natural-language words (often including numerals or quoted phrases), and frequently end with a numeric article ID. The associated selectors are typically the generic 'a' for list items or 'a.player' for video segments. Headlines are medium-to-long in text length, often time- or data-sensitive, and contain named entities (companies, people, countries) or question/quote forms typical of news titles.",
+            "confidence": 0.9200000000000002
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Dnevnik",
         "url": "https://www.dnevnik.si/posel",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.dnevnik.si/posel",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.se-card--link[href^='/novice/'], a.se-card--link[href^='/sport/'], a.se-card--link[href^='/nedeljski/']",
+          "headlinesFound": 23,
+          "firstArticleUrl": "https://www.dnevnik.si/novice/slovenija/po-enem-letu-od-fiaska-v-dz-na-mizi-se-ni-sprememb-2748664/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 4027,
+          "aiInsights": {
+            "pattern": "Most headlines are anchored by category labels (e.g., 'državni zbor', 'promet', 'sport', 'Vojna v ...') followed by a concise, action-oriented phrase. URLs follow a consistent structure with a section prefix (/novice/, /sport/, /nedeljski/, /promo/, /mnenja/ etc.) and a hyphenated slug that mirrors the headline text, ending with a numeric ID. The CSS selector provided for all items is .se-card--link, which likely targets teaser links in article cards. Headlines tend to be moderate length (roughly 6–15 words), include place names, institutions, people, or concrete actions/events, and often live under /novice/ or /sport/ paths — these are strong signals of actual news headlines rather than navigation or utility links.",
+            "confidence": 0.9069565217391306
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Delo",
         "url": "https://www.delo.si/gospodarstvo/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.delo.si/gospodarstvo/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.teaser_link[href*='/novice/']",
+          "headlinesFound": 23,
+          "firstArticleUrl": "https://www.delo.si/gospodarstvo/novice/blaz-brodnjak-ostaja-na-celu-nlb-do-junija-2031",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 9866,
+          "aiInsights": {
+            "pattern": "Headline links on this page consistently use an anchor with the CSS class 'teaser_link'. Their hrefs are mostly under the '/gospodarstvo/novice/' path (sometimes full domain + that path), which strongly indicates news articles. Headline text is typically short to medium length (few words up to a short sentence), often title-case or sentence-case, and frequently contains punctuation such as colons or question marks for features and opinion pieces. By contrast, navigation/category links use different classes (e.g. '.menu_link__*', '.verticalCategories_cLink__*') and are shorter single-word labels. Longer sentence-like strings that follow a headline in the dataset are usually summaries/excerpts but share the same '.teaser_link' class — the actual headline tends to be the shorter, more compact text above or paired with that excerpt.",
+            "confidence": 0.9452173913043479
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1097,7 +2305,24 @@
       {
         "name": "BiznisInfo.ba",
         "url": "https://www.biznisinfo.ba",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.biznisinfo.ba",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.item-heading, .title, article h2 a, article h3 a",
+          "headlinesFound": 27,
+          "firstArticleUrl": "https://www.biznisinfo.ba/gradi-se-najveca-mljekara-na-svijetu/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2163,
+          "aiInsights": {
+            "pattern": "Headline links on this site follow a few consistent patterns: (1) they use article-style hyphenated slugs under the main domain (https://www.biznisinfo.ba/<human-readable-slug>/); (2) headline anchors are often rendered with classes like \"a.item-heading\" or inside elements with class \".title\"; (3) text tends to be concise, often containing proper nouns, numeric values (KM, currency, percentages), or question/colon constructions (e.g., 'X: Y'); (4) promotional/advert-like items are longer, marketing-oriented strings or explicitly brand/promotional copy. Links that appear multiple times with the \"a.item-heading\" or \".title\" selector are very likely editorial headlines.",
+            "confidence": 0.9418518518518518
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1108,7 +2333,24 @@
       {
         "name": "Vijesti",
         "url": "https://www.vijesti.me/vijesti/ekonomija",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.vijesti.me/vijesti/ekonomija",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, a[href^=\"/vijesti/\"]",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.vijesti.me/vijesti/ekonomija/769964/nocenja-272-hiljade-manje-los-trend-nastavljen-i-u-spicu",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "Headlines share the following patterns: they use relative URLs under the /vijesti/ (news) path, often with a numeric article id and a descriptive slug. Titles are sentence-like, frequently include place names, person names, numeric figures or quoted speech, and are longer than simple navigation labels. The provided selector for all items is the generic 'a', indicating the scraped links came from anchor tags inside a news list or article block rather than from navigation/utility areas.",
+            "confidence": 0.9554999999999998
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "CdM",
@@ -1129,12 +2371,46 @@
       {
         "name": "Faktor",
         "url": "https://www.faktor.mk/ekonomija",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.faktor.mk/ekonomija",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .news-list a, .top-news a",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.faktor.mk/rekorderi-vo-eu-koi-narodi-najmnogu-troshat-vo-prodavnici",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 976,
+          "aiInsights": {
+            "pattern": "Headline links follow a clear article slug pattern: mostly lowercase, hyphen-separated Macedonian transliteration slugs (often starting with \"/\" but some without). Titles frequently contain attention markers (all-caps lead words, colons, numbers, or named public figures) and cover standard news categories (politics, economy, local incidents, human interest). The provided selector for every item is the generic 'a', which suggests these were scraped from a link list (e.g., a news listing or feed). Headlines are typically medium-to-long in length, sometimes with subtitle-style phrasing, and many include specific numeric data or named entities — both strong signals of article headlines rather than navigation or utility links.",
+            "confidence": 0.9387500000000002
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "MKD",
         "url": "https://mkd.mk/ekonomija",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://mkd.mk/ekonomija",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .td-module-title a, .entry-title a",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://mkd.mk/makedonija/tri-aktivni-pozhari-gori-niska-vegetacija/",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 4816,
+          "aiInsights": {
+            "pattern": "Headline links share a consistent URL pattern: domain + section folder (e.g., /makedonija/, /svet/, /kultura/, /sport/, /avtomobilizam/, /czrna-hronika/, /razno-2/) followed by a hyphen-separated slug and trailing slash. The visible text tends to be a short-to-medium length descriptive phrase (often containing verbs, proper nouns, numbers, or media tags like (ФОТО)/(ВИДЕО)). The selector field for these items is 'a' (plain anchor), distinguishing them from category or nav elements that use specific IDs (e.g., #tdi_61) or link to /category/ pages. Repeated appearance of section directories and article-like slugs is the strongest signal for headlines.",
+            "confidence": 0.9436363636363637
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1145,7 +2421,24 @@
       {
         "name": "Koha Ditore",
         "url": "https://www.koha.net/ekonomi/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.koha.net/ekonomi/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*='/ekonomi/']",
+          "headlinesFound": 23,
+          "firstArticleUrl": "https://www.koha.net/ekonomi/bizneset-alarmojne-per-falimentim-nese-sshtyhet-afati-per-dalje-ne-treg-te-hapur-te-energjise",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "All candidate headlines share the same /ekonomi/ path on koha.net and use long, dash-separated slugs that mirror the headline text. Common signals of headlines: presence of institutions/acronyms (ASK, KEK, OEK, FMN/IMF, ATK), numeric data (percentages, euro amounts, years), event markers (dates, protests), and policy/market keywords (energji, treg, import/eksport, tarifa, inflacion). The headlines are mostly full-sentence or phrase-style Albanian titles (some short/impactful, others descriptive), which correspond to article pages rather than navigation or utility links.",
+            "confidence": 0.9465217391304346
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Telegrafi",
@@ -1161,17 +2454,68 @@
       {
         "name": "Ekonom",
         "url": "https://www.ekonom.cz",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ekonom.cz",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article a[href*='/c1-'], a[href*='ekonom.cz/c1-'], a[href*='podcasty.ekonom.cz/c1-']",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://ekonom.cz/c1-67770380-vime-proc-cesti-miliardari-tolik-chteji-vlastnit-fotbalovy-klub-a-jak-na-tom-planuji-vydelat",
+          "articleContentSelector": ".article-body p",
+          "sampleArticleLength": 2780,
+          "aiInsights": {
+            "pattern": "Headline links share a consistent URL pattern: most are full article pages hosted on ekonom.cz with paths containing '/c1-<numeric id>-<slug>' (e.g., /c1-67770380-...). Titles tend to be full sentences or descriptive phrases (often long), sometimes including quotes or question forms. The associated selector in the input is generally a generic 'a' (anchor) rather than a navigation- or utility-specific class, suggesting these are inline article links from lists or teasers. Podcast items use the podcasty.ekonom.cz subdomain but still follow the /c1- numeric id pattern.",
+            "confidence": 0.9176190476190476
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "iDNES.cz",
         "url": "https://www.idnes.cz/ekonomika",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.idnes.cz/ekonomika",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.cell, .art-link, article h3 a",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.idnes.cz/ekonomika/domaci/grilovani-sezona-2025.A250731_143837_ekonomika_alis?zdroj=ekonomikah_hp",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 3827,
+          "aiInsights": {
+            "pattern": "Headline links on this site typically use specific article-related selectors (most frequently '.art-link' or 'a.cell') and live under sectioned paths in the URL (examples: /ekonomika/, /zpravy/, /ekonomika/podniky/, /jihlava/zpravy/). The URLs contain a date-coded slug (A2507xx or A2508xx) and short descriptive keywords. Headline text tends to be medium-length Czech phrases with named entities (companies, places, politicians), numbers or data for economy stories, and concise topical language. Navigation/utility links are shorter, generic and often lack the date-coded slugs or the article-style selectors (examples: plain 'a' to internal tools, calculators, or links with domain-root or wiki paths).",
+            "confidence": 0.9544999999999998
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Hospodářské noviny (iHNed.cz)",
-        "url": "https://www.ihned.cz/ekonom",
-        "commentary": ""
+        "url": "https://zpravy.hn.cz/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://zpravy.hn.cz/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*='/c1-']",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://domaci.hn.cz/c1-67771770-zemrel-byvaly-sef-ikem-michal-stiborek-na-podzim-mel-stanout-pred-soudem-kvuli-obzalobe-z-vydirani-lekaru",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 4414,
+          "aiInsights": {
+            "pattern": "Headlines share a consistent pattern: long, descriptive Czech text (often with a main clause followed by a subtitle), and URLs that include a section subdomain (domaci, zahranicni, archiv, vikend) plus a '/c1-<numeric-id>-... ' slug. The provided selectors are generic anchors ('a'), but the reliable distinguishing feature is the '/c1-' article identifier in the href. Utility links (subscriptions, privacy, newsletter) either point to different domains (predplatne.hn.cz, economia.cz) or lack the '/c1-' pattern and are short, non‑descriptive labels.",
+            "confidence": 0.962
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Novinky.cz",
@@ -1186,7 +2530,24 @@
       {
         "name": "České noviny",
         "url": "https://www.ceskenoviny.cz/ekonomika",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ceskenoviny.cz/ekonomika",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.inner",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.ceskenoviny.cz/zpravy/v-dukovanech-zacal-geologicky-pruzkum-pro-nove-bloky-vrtu-bude-okolo-300/2706964",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 59790,
+          "aiInsights": {
+            "pattern": "Headlines on this site share a consistent pattern: they are anchors with the CSS class .inner (selector 'a.inner'), their hrefs live under the '/zpravy/' path followed by a human-readable slug and a numeric article ID, and the link text is full-sentence, descriptive, often including locations, institutions (ČNB, ČSÚ, FAO, ČEZ), figures or percentages. Utility links (mailing, app store) use other selectors like a.btn, a.appstore, a.googleplay or different top-level paths (e.g., '/special/').",
+            "confidence": 0.9514285714285714
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1197,37 +2558,156 @@
       {
         "name": "Portfolio.hu",
         "url": "https://www.portfolio.hu/en",
-        "commentary": "Includes an English section."
+        "commentary": "Includes an English section.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.portfolio.hu/en",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*=\"/en/\"][href*=\"/20\"][class=\"\"] , a[href*=\"/en/\"][href*=\"/20\"]",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.portfolio.hu/en/economy/20250808/hungarian-inflation-delivers-a-nasty-surprise-in-july-778953",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 2742,
+          "aiInsights": {
+            "pattern": "Likely headlines on this site share these traits: (1) they are sentence-style titles, often longer than simple nav labels; (2) their URLs follow a clear pattern: contain '/en/' (site language), then a topical section (/economy, /business, /property, /equity, /energy, etc.), then a date-like segment (YYYYMMDD) and a slug ending with a numeric id (e.g. -778953); (3) the CSS selector for these links is generic 'a' (no nav-specific class), whereas navigation/ticker links use classes like 'a.nav-item' or event links have dedicated classes; (4) event and utility links typically point to /en/events or external sites and have different anchor classes. Using these signals (text length/content, URL path with date and id, and lack of nav-specific classes) reliably separates news headlines from nav/ads/events.",
+            "confidence": 0.944
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Világgazdaság (vg.hu)",
-        "url": "https://www.vg.hu/english",
-        "commentary": "Includes an English section."
+        "url": "https://www.vg.hu/",
+        "commentary": "Includes an English section.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.vg.hu/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .article-card .title a, .article-list-item a:not(.article-card-tag):not(.exchange-item):not(.newsletter-btn):not(.label)",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.vg.hu/kozelet/2025/08/senki-nem-talalta-ki-hol-talalkozik-trump-es-putyin-de-megvan-a-meglepo-helyszin",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1081,
+          "aiInsights": {
+            "pattern": "Headline links share these patterns: they are plain anchor elements (selector 'a') with sentence-like or descriptive Hungarian text (often long, sometimes with punctuation or quotation marks). Their hrefs commonly include a category slug (e.g., /kozelet/, /penz-es-tokepiac/, /vilaggazdasag-magyar-gazdasag/, /nemzetkozi-gazdasag/) followed by a date-like path segment (/2025/08/) and a human-readable slug. Non-headline links (navigation, tags, exchange rates, newsletter, dossier links) use different selectors or classes such as .article-card-tag, a.exchange-item, a.latest-news-all, .label, .newsletter-btn, or short/technical link texts. Duplicates appear for the same article in different UI components (thumbnail, excerpt link), but the primary headline is the full-text anchor.",
+            "confidence": 0.9354545454545455
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Index",
         "url": "https://index.hu/gazdasag/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://index.hu/gazdasag/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.cim, article h2 a",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://index.hu/gazdasag/2025/08/08/otthon-start-program-hitel-hitelpiac-hiteligenyles-hitelfelvetel-lakashitel-bankok-ingatlan-ingatlanpiac-ingatlanarak/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 10654,
+          "aiInsights": {
+            "pattern": "Headline links predominantly point to index.hu articles under the /gazdasag/ path with date-based slugs (YYYY/MM/DD) and descriptive, sentence-like text. Many headline anchors carry the class selector 'a.cim'. Headlines are typically medium-length Hungarian sentences or fragments mentioning institutions (kormány, bank, GVH), programs (Otthon Start), or topical issues (infláció, árstop, üzemanyag). Non-headline links (login, utility, aggregated external links) have generic selectors ('a') or point to indapass/dex aggregator URLs or short utility strings.",
+            "confidence": 0.963333333333333
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Napi.hu",
         "url": "https://www.napi.hu",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.napi.hu",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a#top-news-link, .article a, .article-single a, .article-highlighted a, .article-top-read a, a.connected",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://www.economx.hu/magyar-gazdasag/meglepo-inflacios-adat-ksh-elemzok-makrogazdasag-alapkamat-forint.814100.html",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 5970,
+          "aiInsights": {
+            "pattern": "Headlines on this site share these characteristics: human-readable, full-sentence or attention-grabbing phrases (often including proper nouns or numbers); URLs follow the pattern https://www.economx.hu/<category>/<slug>.<numeric_id>.html; and anchors are frequently placed inside classes like .article, .article-single, .article-highlighted, .article-drop-cap-flex, .article-top-read or special anchors like #top-news-link and a.connected. Generic 'a' links require extra caution, but when paired with the article-like URL they still represent headlines. Navigation/utility links (tickers, tag pages, external blogs) are short, single-word, or not following the category/slug.<id>.html pattern.",
+            "confidence": 0.9231999999999997
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "G7",
         "url": "https://g7.hu",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://g7.hu",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.extra__block__item, .extra__block--mega__title, .list__item__title, .extra__block--mega__lead",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://g7.hu/g7/2025/08/08/magas-inflacio-europa-rekord-eurozona",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1154,
+          "aiInsights": {
+            "pattern": "Headline links predominantly use the /g7/YYYY/MM/DD/slug URL pattern (site section 'g7' + date + descriptive hyphenated slug). Headline anchor elements commonly carry classes like a.extra__block__item, .extra__block--mega__title, .extra__block--mega__lead and .list__item__title. These selectors correspond to front-page or list items (main story blocks and list entries). Headlines are typically short-to-medium length (5–12 words), often contain topical keywords (policy names, company/person names, monetary amounts, or clear news phrases), and sometimes the preview text includes timestamps for recency.",
+            "confidence": 0.9205
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "444.hu",
-        "url": "https://444.hu/gazdasag",
-        "commentary": ""
+        "url": "https://444.hu/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://444.hu/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.c3zuug4[href*=\"/2025/\"]",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://444.hu/2025/08/08/ideje-igazan-komolyan-aggodni-az-augusztusban-erkezo-rezsiszamlak-miatt",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 15112,
+          "aiInsights": {
+            "pattern": "Headline links share a consistent structure: the anchor uses the CSS class c3zuug4 (a.c3zuug4) and most URLs are permalinks that include a date path (/YYYY/MM/DD/) followed by a descriptive slug. Texts are full Hungarian headline sentences — often long and descriptive, mentioning actors, places, or institutions (e.g., Orbán, Trump, ENSZ, KSH). A minority are full external URLs (syndicated partners) but still follow a date-in-path slug pattern on their domains. These characteristics (anchor class, date-containing slug, full-sentence headlines) reliably distinguish article headlines from navigation or utility links.",
+            "confidence": 0.9265000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "HVG",
         "url": "https://hvg.hu/gazdasag",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://hvg.hu/gazdasag",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h3 a, .article-list__item a, .teaser a",
+          "headlinesFound": 19,
+          "firstArticleUrl": "https://hvg.hu/gazdasag/20250808_A-tombaranyra-is-vamot-vetett-ki-az-amerikai-kormanyzat",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 2627,
+          "aiInsights": {
+            "pattern": "Likely headlines share these signals: (1) hrefs in topical sections such as /gazdasag, /360, /elet with a date-like segment (e.g., 20250808) and a descriptive slug; (2) link text is full-sentence or long fragment (not single-word navigation labels) and reads like a report, analysis, or news alert; (3) selector reported as the generic 'a' (these are inline article links in lists/teasers). Exclude links flagged as ads (.hvg-content-ad-link), author/profile links (.author-link), topic tags (.article-tag), branded/sponsored content (brandcontent/brandchannel) and external video links when isolating editorial news headlines.",
+            "confidence": 0.9563157894736841
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1243,32 +2723,134 @@
       {
         "name": "Económico Sapo",
         "url": "https://economico.sapo.pt",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://economico.sapo.pt",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^=\"https://jornaleconomico.sapo.pt/noticias/\"] , a.uk-link-reset[href*=\"/noticias/\"], a.uk-link-toggle[href*=\"/noticias/\"], a.el-link[href*=\"/noticias/\"]",
+          "headlinesFound": 23,
+          "firstArticleUrl": "https://jornaleconomico.sapo.pt/noticias/inflacao-acelera-para-26-em-julho/",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "Headline links predominantly use the /noticias/ path on the jornaleconomico.sapo.pt domain and have descriptive slugs (often including numbers, locations, organizations or quoted reactions). The link elements commonly carry classes like .uk-link-reset, .uk-link-toggle and .el-link — these appear repeatedly on actual article links. Navigation, author, category or tool links use other selectors (e.g., generic a, a.simulador, or menu-specific classes) and often point to /categoria/, /author/ or external utility domains.",
+            "confidence": 0.9395652173913043
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Expresso",
         "url": "https://expresso.pt/economia",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://expresso.pt/economia",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .teaser__title a, .card__title a, a[href*=\"/2025-\"]",
+          "headlinesFound": 28,
+          "firstArticleUrl": "https://expresso.pt/economia/empresas/2025-08-07-peso-do-investimento-americano-em-empresas-nacionais-e-o-maior-da-decada-1c8e25ad?utm_source=expresso&utm_medium=category&utm_campaign=WEB&utm_content=/economia/empresas/2025-08-07-peso-do-investimento-americano-em-empresas-nacionais-e-o-maior-da-decada-1c8e25ad",
+          "articleContentSelector": ".content p",
+          "sampleArticleLength": 1166,
+          "aiInsights": {
+            "pattern": "Headlines share these common characteristics: (1) descriptive Portuguese text, often long (several words) and topical; (2) URL structure contains a content category path (e.g., /economia/, /politica/, /internacional/, /semanario/), a date segment in YYYY-MM-DD format, and a hyphenated slug often ending with an alphanumeric article id/hash; (3) the provided CSS selector is generic ('a'), but in page structure these links are usually inside article/listing elements (e.g., h2/h3 headings, teaser/card components). Links that are short single words, point to author pages, category indexes, multimedia landing pages, or external ad domains are not treated as headlines.",
+            "confidence": 0.9471428571428572
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Público",
         "url": "https://www.publico.pt/economia",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.publico.pt/economia",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*='/noticia/']",
+          "headlinesFound": 10,
+          "firstArticleUrl": "https://www.publico.pt/2025/08/08/economia/noticia/tap-afectada-greve-aeroporto-lisboa-2143416?ref=economia&cx=page__content",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 81241,
+          "aiInsights": {
+            "pattern": "Headlines share several clear signals: (1) URL path includes '/noticia/' followed by a numeric article id (e.g., -21433xx), often under a date-like path (/2025/08/07 or /2025/08/08) and a section (e.g., /economia/). (2) Texts are full-sentence style headlines — longer than nav labels, often contain verbs, named entities (people, organisations, countries), numerical data or time references. (3) CSS selectors vary between card-specific classes (e.g., .card__faux-block-link) and generic links (a), but the presence of '/noticia/' in href is the most consistent indicator of article headlines.",
+            "confidence": 0.9259999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Observador",
         "url": "https://observador.pt/seccao/economia/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://observador.pt/seccao/economia/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.obs-accent-color, .liveblog-highlights-item-link",
+          "headlinesFound": 25,
+          "firstArticleUrl": "https://observador.pt/2025/08/08/fisco-mocambicano-nega-diferendo-fiscal-com-a-galp-sobre-162-milhoes-de-euros/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 6222,
+          "aiInsights": {
+            "pattern": "Most genuine news headlines in this dataset are full-sentence or short-sentence texts (often with a location or topical prefix) and use the CSS selector a.obs-accent-color. Their URLs commonly include a dated article path (/YYYY/MM/DD/slug) or reside under /liveblogs/ for live coverage. By contrast, section/topic links use selectors like a.topic and point to /seccao/... or /programas/... pages; utility/support links use different selectors or short texts (e.g., 'Apoio a Cliente'). Liveblog individual updates use .liveblog-highlights-item-link and include timestamp prefixes (e.g., \"12:39\").",
+            "confidence": 0.944
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "ECO Sapo",
         "url": "https://eco.sapo.pt",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://eco.sapo.pt",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .secondary-column--title a, .directo-link, a[href*='/' + '202']",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://eco.sapo.pt/2025/08/08/lei-dos-estrangeiros-e-declarada-inconstitucional-mas-sem-unanimidade/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 8692,
+          "aiInsights": {
+            "pattern": "Headlines on this site follow a few clear patterns: most news articles use dated paths in the URL (e.g., /YYYY/MM/DD/slug/), the link text is concise and topical (often includes names, institutions, numeric data or location), and many headline links appear as plain anchors inside article lists (selector 'a'). Live/roundup items use a specific 'o-dia-em-direto' pattern and sometimes anchors (#id) with classes like '.directo-link' or '.secondary-column--title'. Special features reside under '/especiais/' and have longer descriptive slugs. Navigation and brand links are recognizable by their shorter slugs or by being top-level topic/category pages (e.g., /topico/, /mercados/) rather than date-stamped article slugs.",
+            "confidence": 0.939090909090909
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Dinheiro Vivo",
         "url": "https://www.dinheirovivo.pt",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.dinheirovivo.pt",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .teaser__title a, .headline a, .news-item a",
+          "headlinesFound": 23,
+          "firstArticleUrl": "http://dinheirovivo.dn.pt/economia/bolsa-em-lisboa-em-m%C3%A1ximos-desde-maio-de-2011-com-semapa-a-liderar-ganhos",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 45947,
+          "aiInsights": {
+            "pattern": "Headlines consistently use descriptive, often long text with named entities, numbers, quoted speech or colon-separated clauses. Their URLs are article-style paths (contain section slugs like /economia/, /internacional/, /sociedade/, /empresas/, /negócios/ or newsroom subdomains) rather than short utility paths. The page-level selector supplied in the data is typically the generic 'a' for headline links, while author/profile links use a distinct selector (a.author-name) and category/navigation links are shorter or point to top-level section paths. Headlines frequently include punctuation (quotes, colons, percent signs, numeric ranges) and verbs indicating events (anuncia, desembolsa, inaugura, lança, expande).",
+            "confidence": 0.947391304347826
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1279,37 +2861,156 @@
       {
         "name": "Dagens Industri",
         "url": "https://www.di.se",
-        "commentary": "Top financial daily."
+        "commentary": "Top financial daily.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.di.se",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^=\"/nyheter/\"], a[href^=\"/live/\"], a[href^=\"/analys/\"], a[href^=\"/digital/\"], .js_watch-teaser, a.panorama-content__item",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.di.se/ditv/borsmorgon/borsmorgon-8-augusti-2025/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 883,
+          "aiInsights": {
+            "pattern": "Likely headlines share these traits: URLs under editorial paths such as /nyheter/, /live/, /analys/, /digital/, or /ditv/; anchor elements with generic 'a' or teaser-specific classes (e.g. .js_watch-teaser, a.panorama-content__item) rather than utility links; headline text is short-to-medium length, often contains a subject (company/person/event) + verb/action, sometimes a leading prefix like 'Källor:' or 'Kommentar.' or a quoted phrase. Headlines frequently include punctuation (colons, dashes, quotes) and contain newsy keywords (får, blir, säljs, uppges, till, efter, ny ägare, kallar).",
+            "confidence": 0.947142857142857
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Svenska Dagbladet",
-        "url": "https://www.svd.se/avdelning/naringsliv",
-        "commentary": "Business section of a major newspaper."
+        "url": "https://www.svd.se/",
+        "commentary": "Business section of a major newspaper.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.svd.se/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[class*=\"TeaserLink\"], a[class*=\"CarouselEntry\"], article h2 a, article h3 a, a[href^=\"/a/\"]",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.svd.se/a/ja1n9q/konflikten-mellan-ukraina-och-ryssland-har-ar-senaste-nytt",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 12541,
+          "aiInsights": {
+            "pattern": "Headlines on this site largely use anchor elements with classes containing 'TeaserLink' for standard article teasers and 'CarouselEntry' for breaking/latest items. Their URLs commonly start with /a/ (or full https://www.svd.se/a/...) and include an alphanumeric id plus a slug. Headline text tends to be concise (typically 3–10 words), often starts with a strong noun or source prefix (e.g., 'Källor:'), may include a dash or quotation for emphasis, and carousel items often include a timestamp prefix (e.g., 'Igår 15:46' or '3 tim'). Utility/navigation links use generic anchors (a, TextButton, MixBoxItem) or StoryLabel classes and often point to tag, section or external/subscription paths rather than /a/ article slugs.",
+            "confidence": 0.914090909090909
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Dagens Nyheter",
         "url": "https://www.dn.se/ekonomi/",
-        "commentary": "Economy section of a major newspaper."
+        "commentary": "Economy section of a major newspaper.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.dn.se/ekonomi/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": ".ds-teaser a, a.ds-teaser",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.dn.se/ekonomi/efter-usas-tullbesked-guldpriserna-rusar/",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 1132,
+          "aiInsights": {
+            "pattern": "Headline links share the CSS class .ds-teaser and point mainly to /ekonomi (economy) or /direkt (live/direct) article paths. The link text is short-to-medium length, often contains topical keywords (Northvolt, tullar, inflation, bostadspriser, Volvo) or a journalist/opinion prefix (Ledare:, columnists' names). Many headlines use punctuation/quotes and action verbs, indicating article-style teasers rather than navigation or utility links. Utility links differ: they use different selectors (e.g., a.button) and point to subscription or account pages.",
+            "confidence": 0.9150000000000001
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Breakit",
         "url": "https://www.breakit.se",
-        "commentary": "Focus on startup/tech and business."
+        "commentary": "Focus on startup/tech and business.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.breakit.se",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*='/artikel/'], a.ArticleLarge_article_large__link__Hce3q, .Entries_link__eHglX, .NewsWidget_article__UVMN7",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.breakit.se/artikel/43852/babylyckan-hajpade-hamburgarna-tappar-vd-och-en-ny-svensk-enhorning",
+          "articleContentSelector": "article p",
+          "sampleArticleLength": 651,
+          "aiInsights": {
+            "pattern": "Most headlines share these traits: URLs under /artikel/ followed by a numeric id and slug (e.g., /artikel/43850/...); longer, descriptive text often containing quotes, strong verbs, numbers or proper nouns (company names, technologies like GPT-5, Northvolt, IKEA); and they commonly use a dedicated article link CSS class (.ArticleLarge_article_large__link__Hce3q) or list-entry class (.Entries_link__eHglX / .NewsWidget_article__UVMN7). Navigation, tag/category links use different patterns (e.g., /artiklar/ or tag classes), and events/press releases use separate paths (/event, /pressreleaser).",
+            "confidence": 0.9399999999999997
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "EFN Ekonomikanalen",
         "url": "https://www.efn.se",
-        "commentary": "Finance-focused outlet by Handelsbanken."
+        "commentary": "Finance-focused outlet by Handelsbanken.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.efn.se",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.group, a.block, a.flex, a.relative",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.efn.se/uppgifter-putin-erbjuder-vapenvila-i-utbyte-mot-eftergifter",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 1998,
+          "aiInsights": {
+            "pattern": "Likely headline links share these traits: human-readable, hyphenated slugs (no query strings) and not under /play or program schedules; they use content-card style CSS classes (selectors seen: a.group, a.flex, a.block, a.relative) rather than utility or nav classes (a.btn, a.text-sm, a.bg-yellow-500). Headlines are typically concise (6–12 words), often contain topical keywords (company names, markets, geopolitics) and sometimes include quotations. Duplicate entries with /play or time prefixes (schedules) are less likely to be standalone news headlines.",
+            "confidence": 0.8568181818181819
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "SVT Nyheter",
         "url": "https://www.svt.se/nyheter/ekonomi",
-        "commentary": "Public broadcaster’s economy section."
+        "commentary": "Public broadcaster’s economy section.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.svt.se/nyheter/ekonomi",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^=\"/nyheter/ekonomi/\"]",
+          "headlinesFound": 10,
+          "firstArticleUrl": "https://www.svt.se/nyheter/ekonomi/prognos-konjunkturen-vander-innan-arets-slut",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3314,
+          "aiInsights": {
+            "pattern": "Headlines share a consistent URL pattern: they are under the /nyheter/ekonomi/ path and use descriptive, hyphenated slugs that mirror the visible headline. The link selector provided is a generic anchor ('a'), indicating these headlines are normal inline article links (likely in lists or article blocks). Headline text tends to be short-to-medium length, often includes topical keywords (inflation, börsen, Trump, KI, USA/Kina) or formats like 'Chatt:' and quoted expert statements, which are common in news headlines.",
+            "confidence": 0.9389999999999998
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Affärsvärlden",
         "url": "https://www.affarsvarlden.se",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.affarsvarlden.se",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.article-text-content__heading__link, .frontpage-main-article__related-articles-links__link, .sidebar-news__list_li__link, article h2 a, article h3 a",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.affarsvarlden.se/artikel/lytens-vd-om-northvolts-prislapp-ganska-stor-rabatt",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "Headlines on this site generally appear as links under classes such as .article-text-content__heading__link, .frontpage-main-article__related-articles-links__link and .sidebar-news__list_li__link, or as plain anchor (a) tags within article lists. URLs for headlines consistently live under content paths like /artikel/, /analys/, or /kronika/ (article, analysis, column). Headline text is typically a short-to-medium length Swedish sentence (4–12 words), often containing names, colons, or quoted phrases. Tag/utility links use classes like .article-tag-header or point to /alla-artiklar and should be excluded.",
+            "confidence": 0.9345833333333334
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1319,13 +3020,47 @@
     "outlets": [
       {
         "name": "Paperjam",
-        "url": "https://paperjam.lu/economie",
-        "commentary": ""
+        "url": "https://paperjam.lu/",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://paperjam.lu/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*='/article/'], a[data-gtm-event], .featured-articles__medium-top-article, .top-read-block__article-text, .linked-articles__link",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://paperjam.lu/article/delphine-berlemont-pwc-je-ne-mennuie-jamais-mieux-je-mamuse",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 9271,
+          "aiInsights": {
+            "pattern": "Headline links share a consistent URL structure: they point to pages under /article/ (full article pages) rather than section listings or utilities. Prominent CSS selectors for these items include a[data-gtm-event], .featured-articles__medium-top-article, .top-read-block__article-text and .linked-articles__link. Headline text tends to be full titles (often with entities, numbers, quotes, or question forms) rather than short nav labels like \"plus d'événements\" or author names. Event-specific items (club-card) were excluded in favor of editorial/news items.",
+            "confidence": 0.8995000000000003
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "L'essentiel",
-        "url": "https://www.lessentiel.lu/fr/news/economie",
-        "commentary": ""
+        "url": "https://www.lessentiel.lu/fr/fil-actu",
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.lessentiel.lu/fr/fil-actu",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.sc-4c3a0c12-1[href*=\"/story/\"]",
+          "headlinesFound": 24,
+          "firstArticleUrl": "https://www.lessentiel.lu/fr/story/a-echternach-ensoleille-et-festif-l-e-lake-est-lance-103395299",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 3733,
+          "aiInsights": {
+            "pattern": "Most headlines share the anchor class sc-4c3a0c12-1 and use a readable URL path containing '/story/' followed by a human-friendly slug and a numeric id. Headlines frequently start with a topical/geographic tag (e.g., 'France', 'Au Luxembourg', 'Football') followed immediately by a short descriptive title. Video links use a different anchor class (sc-38e438c6-1) and can be filtered out. Utility or nav links are shorter, lack the '/story/' slug and numeric id, or use different classes.",
+            "confidence": 0.9354166666666668
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Delano",
@@ -1346,17 +3081,68 @@
       {
         "name": "Äripäev",
         "url": "https://www.aripaev.ee",
-        "commentary": "Main business daily."
+        "commentary": "Main business daily.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.aripaev.ee",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h1 a, article h2 a, .teaser__title a, .card__link, a[href^='/uudised/'], a[href^='/borsiuudised/'], a[href^='/saated/'], a[href^='/suur-lugu/'], a[href^='/majandustulemused/'], a[href^='/arvamused/'], a[href^='/intervjuu/']",
+          "headlinesFound": 23,
+          "firstArticleUrl": "https://www.aripaev.ee/saated/2025/08/08/kaibemaksuga-sodiv-jana-guzanova-ei-lase-teemal-vaibuda-lahen-voi-ise-poliitikasse",
+          "articleContentSelector": "div[class*=\"body\"] p",
+          "sampleArticleLength": 1140,
+          "aiInsights": {
+            "pattern": "Headlines are primarily relative internal links (hrefs starting with '/') that include a category segment (common: /uudised/, /borsiuudised/, /saated/, /suur-lugu/, /majandustulemused/, /arvamused/, /intervjuu/) followed by a dated path fragment (YYYY/MM/DD) and a descriptive slug. The visible link text tends to be full sentence-like Estonian titles — often longer than simple nav labels, may include quotes, numbers, names, or verbs. The majority use simple anchor tags (selector: \"a\"). Non-headline links are short domain names, external promo links with UTM parameters, repeated category buttons (e.g., \"Majandustulemused\" linking to /c/results), or CTAs with class names like styles_button__element__i6R1c (subscribe/purchase), which should be excluded.",
+            "confidence": 0.9252173913043478
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "ERR News",
         "url": "https://news.err.ee/business",
-        "commentary": "Public broadcaster’s business news in English."
+        "commentary": "Public broadcaster’s business news in English.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://news.err.ee/business",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .story__title a, .news-list__item a",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://news.err.ee/1609766397/canceling-2026-income-tax-would-cost-more-than-reducing-vat-on-food-says-ministry",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 2839,
+          "aiInsights": {
+            "pattern": "Headlines share these common features: they are short-to-medium length, primarily factual (actor + action + context), often include named actors (ministries, companies, officials) or numeric data, and use present-tense or quotation framing. The URLs consistently follow the pattern https://news.err.ee/<numeric-id>/<dash-separated-slug>, which is a strong indicator of article pages rather than navigation. The provided selector for all items was the generic 'a', implying the scraped set came from a list of article anchor tags (likely within list or article containers).",
+            "confidence": 0.958
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Estonian World",
         "url": "https://estonianworld.com/business/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://estonianworld.com/business/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*=\"/business/\"]:not(.ast-button), article .entry-title a, .post .entry-title a",
+          "headlinesFound": 10,
+          "firstArticleUrl": "https://estonianworld.com/business/estonian-investment-app-lightyear-raises-23m-to-fuel-ai-driven-expansion-in-europe/",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 3351,
+          "aiInsights": {
+            "pattern": "The likely headlines share these patterns: anchor text is multi-word, descriptive and “newsy” (companies, funding amounts, events or policy angles); URLs live under estonianworld.com/business/ with human-readable hyphenated slugs; the genuine headlines are plain anchor tags (selector 'a') while duplicated CTA buttons use the class 'ast-button' and have 'Read More' appended. Headlines often include numbers, proper nouns (company names, places), and editorial signals (colons, em dashes, quoted phrases).",
+            "confidence": 0.9669999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       }
     ]
   },
@@ -1367,22 +3153,90 @@
       {
         "name": "Dünya",
         "url": "https://www.dunya.com",
-        "commentary": "Turkey’s top business daily."
+        "commentary": "Turkey’s top business daily.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.dunya.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.box, a.swiper-slide, article h2 a, .news-list a",
+          "headlinesFound": 22,
+          "firstArticleUrl": "https://www.dunya.com/gundem/son-dakika-istanbul-silivri-aciklarinda-deprem-haberi-788874",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 43414,
+          "aiInsights": {
+            "pattern": "Headlines on this site are frequently represented by links with selectors 'a.box' and 'a.swiper-slide' (main list and carousel items). Article URLs commonly include a section prefix (e.g., /gundem/, /dunya/, /ekonomi/, /finans/, /sektorler/, /sirketler/) and end with an identifier segment containing 'haberi' or 'haberler' and a numeric id (e.g., '-haberi-788874'). Headline texts are often short-to-medium length, sometimes all-caps or containing urgency markers (exclamation marks, 'Son dakika'), and may include dates or parenthetical queries for market/practical updates.",
+            "confidence": 0.9009090909090909
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Bloomberg HT",
         "url": "https://www.bloomberght.com",
-        "commentary": "Turkish finance and markets."
+        "commentary": "Turkish finance and markets.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.bloomberght.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.md\\:min-h-16, a.block, article h3 a",
+          "headlinesFound": 20,
+          "firstArticleUrl": "https://www.bloomberght.com/dto-kuresel-ticaret-icin-buyume-ongorusunu-yukseltti-3754505",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 45989,
+          "aiInsights": {
+            "pattern": "On this site, main news headlines are typically anchor tags whose hrefs are human-readable slugs ending with a numeric article id (e.g., -3754xxx). Many headline links carry a Tailwind-like utility class (e.g., 'md:min-h-16', which appears in the dataset as 'a.md:min-h-16') or 'a.block' for card blocks. Headline text is sentence-like (often including dates, numbers, quoted remarks or organization names) and noticeably longer than navigation labels. Navigation/utility links (categories, tickers, TV schedule) either use very short labels (single words) or point to category pages without the article id pattern.",
+            "confidence": 0.9429999999999998
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Hürriyet",
         "url": "https://www.hurriyet.com.tr/ekonomi/",
-        "commentary": ""
+        "commentary": "",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.hurriyet.com.tr/ekonomi/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^=\"/ekonomi/\"]:not(.category__list__item--tag):not(.category__item--tag)",
+          "headlinesFound": 18,
+          "firstArticleUrl": "https://www.hurriyet.com.tr/ekonomi/vodafone-uydu-uzerinden-mobil-iletisim-calismalarina-hiz-verdi-42728153",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 163140,
+          "aiInsights": {
+            "pattern": "Headline links share these common traits: (1) URLs are under the /ekonomi/ path and include a human-readable slug followed by a numeric id (article id). (2) The links use a generic 'a' selector (not the site tag classes like category__list__item--tag or category__item--tag). (3) Headline text is short-to-medium length, often contains proper nouns, quotes (person: statement), numeric data or topical phrases (Son dakika, Bakan, TCMB, ÜFE). Tag links are recognizable by a leading '#' in the text and by tag-specific classes in the selector.",
+            "confidence": 0.9283333333333333
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Anadolu Agency",
         "url": "https://www.aa.com.tr/en/economy",
-        "commentary": "English economics section from the state news agency."
+        "commentary": "English economics section from the state news agency.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.aa.com.tr/en/economy",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h3 a, .news-item a, .card .title a",
+          "headlinesFound": 17,
+          "firstArticleUrl": "https://www.aa.com.tr/en/economy/turkiyes-gdp-to-exceed-14t-at-end-2025-trade-minister-says/3654599",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 1658,
+          "aiInsights": {
+            "pattern": "Headlines follow a consistent CMS article pattern: human-readable slugs in English under /en/<section>/<dash-separated-headline>/<numeric-article-id>. Texts are full-sentence or short-sentence news-style strings (politics, economy, world, markets). The provided selector for each item is the generic anchor ('a'), indicating these are links inside article listing containers rather than navigation/utility links. Utility/legal links (e.g., privacy/cookies) use distinct, predictable slugs (privacy-and-cookies-policy) and often shorter, non-news phrasing.",
+            "confidence": 0.9552941176470587
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "Sabah",
@@ -1402,8 +3256,25 @@
       },
       {
         "name": "LRT",
-        "url": "https://www.lrt.lt/en/news-in-english/business",
-        "commentary": "Public broadcaster's business news in English."
+        "url": "https://www.lrt.lt/",
+        "commentary": "Public broadcaster's business news in English.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "AI-discovered",
+          "finalUrl": "https://www.lrt.lt/",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .teaser__title a, .news-card__link, .article__title a",
+          "headlinesFound": 9,
+          "firstArticleUrl": "https://archyvai-parduotuve.lrt.lt/",
+          "articleContentSelector": "body.cleaned",
+          "sampleArticleLength": 947341,
+          "aiInsights": {
+            "pattern": "Most items in the provided list are external privacy/cookie/vendor links (repeated 'Sužinokite daugiau apie šį tiekėją' entries and many third‑party privacy pages). The stronger headline candidates are internal lrt.lt subdomains with human-readable, topical slugs (short, descriptive hostnames or path segments). Headline links typically: (1) reside on the same site/domain (lrt.lt), (2) have readable slugs (words, not long query strings or privacy domains), (3) have non-cookiebot selectors (generic 'a' or content/nav classes rather than .CybotCookiebotDialog… ), and (4) reasonably short anchor text (not repeated utility text). Because the dataset is dominated by privacy/ad vendor links, only the internal lrt.lt subdomains (and one external published doc) look like plausible editorial content entry points.",
+            "confidence": 0.5777777777777778
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
       },
       {
         "name": "The Lithuania Tribune",

@@ -1,0 +1,744 @@
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <title>Економија</title>
+    <link rel="stylesheet" href="/assets/style.css?1684525086" type="text/css" media="screen">
+
+        <link rel="canonical" href="https://faktor.mk/ekonomija">
+
+
+    
+
+
+    
+
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,300,300italic,400italic,600,600italic,700,800,700italic,800italic&amp;subset=latin,cyrillic" rel="stylesheet" type="text/css">
+    <!--<link href='https://fonts.googleapis.com/css?family=Roboto:400,300,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>-->
+
+    <script src="https://connect.facebook.net/signals/config/280941459100889?v=2.9.223&amp;r=stable&amp;domain=faktor.mk&amp;hme=2e9ee56babe122798b967566f46100108daa710154b06378259c746cb66ac325&amp;ex_m=83%2C143%2C124%2C18%2C117%2C58%2C40%2C118%2C64%2C57%2C131%2C72%2C13%2C82%2C26%2C112%2C103%2C62%2C65%2C111%2C128%2C91%2C133%2C7%2C3%2C4%2C6%2C5%2C2%2C73%2C81%2C134%2C208%2C155%2C52%2C213%2C210%2C211%2C45%2C170%2C25%2C61%2C217%2C216%2C158%2C28%2C51%2C8%2C54%2C77%2C78%2C79%2C84%2C107%2C27%2C24%2C110%2C106%2C105%2C125%2C63%2C127%2C126%2C41%2C108%2C50%2C100%2C12%2C130%2C37%2C199%2C201%2C165%2C21%2C22%2C23%2C15%2C16%2C36%2C33%2C34%2C68%2C74%2C76%2C89%2C116%2C119%2C38%2C90%2C19%2C17%2C94%2C59%2C31%2C121%2C120%2C122%2C113%2C20%2C30%2C49%2C88%2C129%2C29%2C180%2C151%2C86%2C109%2C67%2C98%2C44%2C39%2C96%2C97%2C102%2C48%2C14%2C104%2C95%2C55%2C43%2C46%2C0%2C80%2C132%2C1%2C101%2C11%2C99%2C257%2C197%2C141%2C183%2C176%2C9%2C47%2C75%2C53%2C123%2C56%2C93%2C71%2C70%2C42%2C114%2C69%2C66%2C60%2C92%2C85%2C35%2C115%2C32%2C87%2C10%2C135" async=""></script><script src="https://connect.facebook.net/en_US/sdk.js?hash=b3edc493a4dc1437f31fabe3fe4fcb22" async="" crossorigin="anonymous"></script><script id="facebook-jssdk" src="//connect.facebook.net/en_US/sdk.js#xfbml=1&amp;version=v2.7&amp;appId=564446497008658"></script><script async="" src="https://connect.facebook.net/en_US/fbevents.js"></script><script async="" src="//www.google-analytics.com/analytics.js"></script><script type="text/javascript" src="/assets/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/assets/js/jquery.bxslider.min.js"></script>
+    <script type="text/javascript" src="/assets/js/jquery.prettySocial.min.js"></script>
+
+<link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+
+		<script type="text/javascript">
+			$('.prettySocial').prettySocial();
+		</script>
+
+    <script>
+        $(document).ready(function(){
+            $('.slider').bxSlider({
+                pager: false
+            });
+        });
+
+        /* search */
+        $(document).ready(function(){
+
+            var searchElement = $('#menu .search');
+            var formElement = searchElement.find('.search-form');
+            var inputElement = searchElement.find('.search-form-field');
+            var searchButton = searchElement.find('> a');
+
+            var focusElement = function() {
+                inputElement.focus();
+            }
+
+            var removeText = function() {
+                inputElement.val('');
+            }
+
+            var closeSearchBar = function() {
+                searchElement.removeClass('opened');
+                inputElement.blur();
+                setTimeout(removeText, 400);
+            }
+
+            searchButton.click(function() {
+                console.log("vleze");
+                if (searchElement.hasClass('opened')) {
+                    formElement.submit();
+                } else {
+                    console.log("vleze");
+                    searchElement.addClass('opened');
+                    setTimeout(focusElement, 400);
+                }
+            });
+
+            $('body').click(function(evt) {
+                if (searchElement.hasClass('opened')) {
+                    var target = $(evt.target);
+                    var parents = target.parents();
+                    var result = parents.filter(searchElement);
+                    if (result.length == 0) {
+                        closeSearchBar();
+                    }
+                }
+
+
+            });
+
+            inputElement.keyup(function(evt) {
+                if (evt.keyCode == 27) {
+                    closeSearchBar();
+                }
+            });
+
+
+            formElement.submit(function(evt) {
+                var value = inputElement.val();
+                value = value.replace(/^\s+|\s+$/g, '');
+                if (value == '') {
+                    evt.preventDefault();
+                }
+            });
+        });
+    </script>
+
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-35620386-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+<!-- new GA4 -->
+<!-- Google tag (gtag.js) -->
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-L2YG62BHW1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-L2YG62BHW1');
+</script>
+<!-- end new GA4 -->
+
+<script type="text/javascript">
+<!--        // <![CDATA[
+    var OA_zones = {
+'zone_1_top_header' : 1, // Header do logo 728x90
+'zone_2_top_jumbo' : 21, // Header pod logo Jumbo 1100x120
+'zone_3_top_0' : 59, // Zone 3 Top 300x250 300x600 
+'zone_3_top_1' : 2, // Zone 3 Top 300x250 300x600 
+'zone_3_top_2' : 3, // Zone 3 Top 300x250 300x600 
+'zone_3_top_3' : 4, // Zone 3 Top 300x250 300x600 
+'zone_3_top_4' : 10, // Zone 3 Top 300x250 300x600 
+'zone_3_top_5' : 11, // Zone 3 Top 300x250 300x600 
+'zone_3_bottom_1' : 6, // Zone 3 Bottom 300x250 300x600 
+'zone_3_bottom_2' : 14, // Zone 3 Bottom 300x250 300x600 
+'zone_3_bottom_3' : 15, // Zone 3 Bottom 300x250 300x600 
+'zone_3_bottom_4' : 16, // Zone 3 Bottom 300x250 300x600 
+'zone_4_homepage_below_slider' : 7, // Zone 4 728x90
+//'zone_floater' : 23, // Zone Floater out_of_page
+'zone_branding_left' : 24, // Zone Branding left
+'zone_branding_right' : 25, // Zone Branding right
+'zone_branding_full' : 34, // Zone Branding Full
+'zone_inpost_top' : 28, // Zone Pod slika i sharing
+'zone_inpost_bottom' : 29, // Zone Pod text 728x90
+
+    }
+// ]]> -->
+</script>
+
+<script type="text/javascript" src="//ads.faktor.mk/www/delivery/spcjs.php?id=1&amp;block=1"></script><script type="text/javascript" src="https://ads.faktor.mk/www/delivery/spc.php?zones=zone_1_top_header%3D1%7Czone_2_top_jumbo%3D21%7Czone_3_top_0%3D59%7Czone_3_top_1%3D2%7Czone_3_top_2%3D3%7Czone_3_top_3%3D4%7Czone_3_top_4%3D10%7Czone_3_top_5%3D11%7Czone_3_bottom_1%3D6%7Czone_3_bottom_2%3D14%7Czone_3_bottom_3%3D15%7Czone_3_bottom_4%3D16%7Czone_4_homepage_below_slider%3D7%7Czone_branding_left%3D24%7Czone_branding_right%3D25%7Czone_branding_full%3D34%7Czone_inpost_top%3D28%7Czone_inpost_bottom%3D29%7C&amp;nz=1&amp;source=&amp;r=37429506&amp;block=1&amp;charset=UTF-8&amp;loc=https%3A//faktor.mk/ekonomija"></script><script type="text/javascript" src="https://ads.faktor.mk/www/delivery/fl.js"></script>
+
+
+
+
+    <!-- Facebook Pixel Code -->
+    <script>
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}(window,document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '280941459100889');
+        fbq('track', 'PageView');
+    </script>
+    <noscript>
+        <img height="1" width="1"
+             src="https://www.facebook.com/tr?id=280941459100889&ev=PageView
+&noscript=1"/>
+    </noscript>
+    <!-- End Facebook Pixel Code -->
+
+<script src="https://ced-ns.sascdn.com/diff/js/modules/topics.js"></script><style type="text/css" data-fbcssmodules="css:fb.css.base css:fb.css.dialog css:fb.css.iframewidget">.fb_hidden{position:absolute;top:-10000px;z-index:10001}.fb_reposition{overflow:hidden;position:relative}.fb_invisible{display:none}.fb_reset{background:none;border:0px;border-spacing:0;color:#000;cursor:auto;direction:ltr;font-family:lucida grande,tahoma,verdana,arial,sans-serif;font-size:11px;font-style:normal;font-variant:normal;font-weight:400;letter-spacing:normal;line-height:1;margin:0;overflow:visible;padding:0;text-align:left;text-decoration:none;text-indent:0;text-shadow:none;text-transform:none;visibility:visible;white-space:normal;word-spacing:normal}.fb_reset>div{overflow:hidden}@keyframes fb_transform{0%{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}.fb_animate{animation:fb_transform .3s forwards}
+
+.fb_hidden{position:absolute;top:-10000px;z-index:10001}.fb_reposition{overflow:hidden;position:relative}.fb_invisible{display:none}.fb_reset{background:none;border:0px;border-spacing:0;color:#000;cursor:auto;direction:ltr;font-family:lucida grande,tahoma,verdana,arial,sans-serif;font-size:11px;font-style:normal;font-variant:normal;font-weight:400;letter-spacing:normal;line-height:1;margin:0;overflow:visible;padding:0;text-align:left;text-decoration:none;text-indent:0;text-shadow:none;text-transform:none;visibility:visible;white-space:normal;word-spacing:normal}.fb_reset>div{overflow:hidden}@keyframes fb_transform{0%{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}.fb_animate{animation:fb_transform .3s forwards}
+
+.fb_dialog{background:#525252b3;position:absolute;top:-10000px;z-index:10001}.fb_dialog_advanced{border-radius:8px;padding:10px}.fb_dialog_content{background:#fff;color:#373737}.fb_dialog_close_icon{background:url(https://connect.facebook.net/rsrc.php/v4/yq/r/IE9JII6Z1Ys.png) no-repeat scroll 0 0 transparent;cursor:pointer;display:block;height:15px;position:absolute;right:18px;top:17px;width:15px}.fb_dialog_mobile .fb_dialog_close_icon{left:5px;right:auto;top:5px}.fb_dialog_padding{background-color:transparent;position:absolute;width:1px;z-index:-1}.fb_dialog_close_icon:hover{background:url(https://connect.facebook.net/rsrc.php/v4/yq/r/IE9JII6Z1Ys.png) no-repeat scroll 0 -15px transparent}.fb_dialog_close_icon:active{background:url(https://connect.facebook.net/rsrc.php/v4/yq/r/IE9JII6Z1Ys.png) no-repeat scroll 0 -30px transparent}.fb_dialog_iframe{line-height:0}.fb_dialog_content .dialog_title{background:#6d84b4;border:1px solid #365899;color:#fff;font-size:14px;font-weight:700;margin:0}.fb_dialog_content .dialog_title>span{background:url(https://connect.facebook.net/rsrc.php/v4/yd/r/Cou7n-nqK52.gif) no-repeat 5px 50%;float:left;padding:5px 0 7px 26px}body.fb_hidden{height:100%;left:0;margin:0;overflow:visible;position:absolute;top:-10000px;transform:none;width:100%}.fb_dialog.fb_dialog_mobile.loading{background:url(https://connect.facebook.net/rsrc.php/v4/ya/r/3rhSv5V8j3o.gif) #fff no-repeat 50% 50%;min-height:100%;min-width:100%;overflow:hidden;position:absolute;top:0;z-index:10001}.fb_dialog.fb_dialog_mobile.loading.centered{background:none;height:auto;min-height:initial;min-width:initial;width:auto}.fb_dialog.fb_dialog_mobile.loading.centered #fb_dialog_loader_spinner{width:100%}.fb_dialog.fb_dialog_mobile.loading.centered .fb_dialog_content{background:none}.loading.centered #fb_dialog_loader_close{clear:both;color:#fff;display:block;font-size:18px;padding-top:20px}#fb-root #fb_dialog_ipad_overlay{background:#0006;inset:0;min-height:100%;position:absolute;width:100%;z-index:10000}#fb-root #fb_dialog_ipad_overlay.hidden{display:none}.fb_dialog.fb_dialog_mobile.loading iframe{visibility:hidden}.fb_dialog_mobile .fb_dialog_iframe{position:sticky;top:0}.fb_dialog_content .dialog_header{background:linear-gradient(from(#738aba),to(#2c4987));border-bottom:1px solid;border-color:#043b87;box-shadow:#fff 0 1px 1px -1px inset;color:#fff;font:700 14px Helvetica,sans-serif;text-overflow:ellipsis;text-shadow:rgba(0,30,84,.296875) 0px -1px 0px;vertical-align:middle;white-space:nowrap}.fb_dialog_content .dialog_header table{height:43px;width:100%}.fb_dialog_content .dialog_header td.header_left{font-size:12px;padding-left:5px;vertical-align:middle;width:60px}.fb_dialog_content .dialog_header td.header_right{font-size:12px;padding-right:5px;vertical-align:middle;width:60px}.fb_dialog_content .touchable_button{background:linear-gradient(from(#4267B2),to(#2a4887));background-clip:padding-box;border:1px solid #29487d;border-radius:3px;display:inline-block;line-height:18px;margin-top:3px;max-width:85px;padding:4px 12px;position:relative}.fb_dialog_content .dialog_header .touchable_button input{background:none;border:none;color:#fff;font:700 12px Helvetica,sans-serif;margin:2px -12px;padding:2px 6px 3px;text-shadow:rgba(0,30,84,.296875) 0px -1px 0px}.fb_dialog_content .dialog_header .header_center{color:#fff;font-size:16px;font-weight:700;line-height:18px;text-align:center;vertical-align:middle}.fb_dialog_content .dialog_content{background:url(https://connect.facebook.net/rsrc.php/v4/y9/r/jKEcVPZFk-2.gif) no-repeat 50% 50%;border:1px solid #4A4A4A;border-bottom:0;border-top:0;height:150px}.fb_dialog_content .dialog_footer{background:#f5f6f7;border:1px solid #4A4A4A;border-top-color:#ccc;height:40px}#fb_dialog_loader_close{float:left}.fb_dialog.fb_dialog_mobile .fb_dialog_close_icon{visibility:hidden}#fb_dialog_loader_spinner{animation:rotateSpinner 1.2s linear infinite;background-color:transparent;background-image:url(https://connect.facebook.net/rsrc.php/v4/yD/r/t-wz8gw1xG1.png);background-position:50% 50%;background-repeat:no-repeat;height:24px;width:24px}@keyframes rotateSpinner{0%{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+.fb_iframe_widget{display:inline-block;position:relative}.fb_iframe_widget span{display:inline-block;position:relative;text-align:justify}.fb_iframe_widget iframe{position:absolute}.fb_iframe_widget_fluid_desktop,.fb_iframe_widget_fluid_desktop span,.fb_iframe_widget_fluid_desktop iframe{max-width:100%}.fb_iframe_widget_fluid_desktop iframe{min-width:220px;position:relative}.fb_iframe_widget_lift{z-index:1}.fb_iframe_widget_fluid{display:inline}.fb_iframe_widget_fluid span{width:100%}
+</style></head>
+<body style="">
+<div id="fb-root" class=" fb_reset"><div style="position: absolute; top: -10000px; width: 0px; height: 0px;"><div></div></div></div>
+<script>(function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.7&appId=564446497008658";
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));</script>
+<div id="container">
+    <div id="topbar">
+        <div class="timedate">09 Август, 2025 </div><span style="color: #34495e; margin-left: 10px;">0.3360</span>
+        <ul class="links-socialmedia">
+            
+            <li><a href="/assets/FAKTOR-CENOVNIK-2024-all.pdf" target="_blank">Маркетинг</a></li>
+            <li>|</li>
+            <li><a href="/impresum">Импресум</a></li>
+            <li>|</li>
+            <!--<li><a href="/faktormetar">Факторметар</a></li>
+            <li>|</li>-->
+            <li><a href="mailto:contact@faktor.mk">Контакт</a></li>
+            <li class="facebook"><a href="https://www.facebook.com/Faktor.mk/"><img src="/assets/images/topbar-facebook.png"></a></li>
+            <li class="twitter"><a href="https://twitter.com/faktormk"><img src="/assets/images/topbar-twitter.png"></a></li>
+            <li class="rss"><a href="/rss"><img src="/assets/images/topbar-rss.png"></a></li>
+        </ul>
+    </div>
+    <div id="logo">
+        <a href="/" class="faktor-logo"><img src="/assets/images/logo.png"></a>
+
+        <center>
+<div class="adspace adv-728x90">
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_1_top_header');
+    // ]]> -->
+</script><script type="text/javascript" src="https://www8.smartadserver.com/ac?out=js&amp;nwid=2255&amp;siteid=127984&amp;pgname=desktop&amp;fmtid=47176&amp;tgt=[sas_target]&amp;visit=m&amp;tmstp=1754694689.4618&amp;clcturl=[countgo]"></script><div id="beacon_bc57c3fabc" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=1794&amp;campaignid=449&amp;zoneid=1&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=bc57c3fabc" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+</div>
+</center>
+
+    </div>
+    <div id="jumbo-banner" class="adspace">
+        <script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_2_top_jumbo');
+    // ]]> -->
+</script><div style="margin-bottom:5px;"><script type="application/javascript" src="https://www8.smartadserver.com/ac?out=js&amp;nwid=2255&amp;siteid=127984&amp;pgname=desktop&amp;fmtid=47182&amp;tgt=[sas_target]&amp;visit=m&amp;tmstp=[timestamp]&amp;clcturl=[countgo]"></script><div id="beacon_c3f6aba456" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=1797&amp;campaignid=449&amp;zoneid=21&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=c3f6aba456" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div></div>
+
+    </div>
+    <div id="menu">
+        <ul>
+                        <li><a href="/ekonomija">Економија</a></li>
+            <li><a href="/finansii">Финансии</a></li>
+            <li><a href="/makedonija">Македонија</a></li>
+            <li><a href="/agrobiznis">Агробизнис</a></li>
+            <li><a href="/analiza">Анализа</a></li>
+            <li><a href="/moi-pari">Мои пари</a></li>
+            <li><a href="/balkan">Балкан</a></li>
+            <li><a href="/svet">Свет</a></li>
+            <li><a href="/stil">Стил</a></li>
+            <li><a href="/kolumni">Колумни</a></li>
+            <li><a href="/intevjua">Интервјуа</a></li>
+            <li><a href="https://shop.faktor.mk">Shop</a></li>
+                    </ul>
+        <div class="search">
+            <form role="search" method="get" action="/search" class="search-form">
+                <input placeholder="пр: економија" name="q" type="text" class="search-form-field">
+            </form>
+            <a href="#" class="search-btn">Search</a>
+        </div>
+    </div>
+
+    
+    <div id="main">
+        <div id="content">
+<h1>Економија</h1>
+
+<div class="clear"></div>
+<div class="category-fullwidth">
+
+    
+
+        
+            <div class="article fullwidth-left">
+                <a href="/rekorderi-vo-eu-koi-narodi-najmnogu-troshat-vo-prodavnici"><img src="/media/main/375x201/2025/08/20250808212416.png" alt="РЕКОРДЕРИ ВО ЕУ: Кои народи најмногу трошат во продавници?"></a>
+                <a href="/rekorderi-vo-eu-koi-narodi-najmnogu-troshat-vo-prodavnici"><h2>РЕКОРДЕРИ ВО ЕУ: Кои народи најмногу трошат во продавници?</h2></a>
+                <span class="date">08 Август, 2025 21:21</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article ">
+                <a href="/shlakanica-za-tramp-indija-nema-da-kupuva-amerikansko-oruzje"><img src="/media/main/375x201/2025/08/20250808210237.png" alt="Шлаканица за Трамп: Индија нема да купува американско оружје"></a>
+                <a href="/shlakanica-za-tramp-indija-nema-da-kupuva-amerikansko-oruzje"><h2>Шлаканица за Трамп: Индија нема да купува американско оружје</h2></a>
+                <span class="date">08 Август, 2025 20:56</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article fullwidth-left">
+                <a href="/koi-20-profesii-dominiraat-vo-evropa"><img src="/media/main/375x201/2025/08/20250808202835.png" alt="Кои 20 професии доминираат во Европа?"></a>
+                <a href="/koi-20-profesii-dominiraat-vo-evropa"><h2>Кои 20 професии доминираат во Европа?</h2></a>
+                <span class="date">08 Август, 2025 20:17</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article ">
+                <a href="/shto-se-sluchuva-vo-ukraina-kolkava-e-inflacijata"><img src="/media/main/375x201/2025/08/20250808195651.jpg" alt="ШТО СЕ СЛУЧУВА ВО УКРАИНА: Колкава е инфлацијата?"></a>
+                <a href="/shto-se-sluchuva-vo-ukraina-kolkava-e-inflacijata"><h2>ШТО СЕ СЛУЧУВА ВО УКРАИНА: Колкава е инфлацијата?</h2></a>
+                <span class="date">08 Август, 2025 19:34</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article fullwidth-left">
+                <a href="/bozidar-raboti-12-chasa-na-den-vo-fabrika-za-riba-vo-aljaska-no-za-dva-i-pol-meseci-zarabotuva-bogatstvo"><img src="/media/main/375x201/2025/08/20250808183314.png" alt="Божидар работи 12 часа на ден во фабрика за риба во Алјаска, но за два и пол месеци заработува богатство"></a>
+                <a href="/bozidar-raboti-12-chasa-na-den-vo-fabrika-za-riba-vo-aljaska-no-za-dva-i-pol-meseci-zarabotuva-bogatstvo"><h2>Божидар работи 12 часа на ден во фабрика за риба во Алјаска, но за два и пол месеци заработува богатство</h2></a>
+                <span class="date">08 Август, 2025 18:28</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article ">
+                <a href="/hranata-globalno-poskapuva-mesoto-e-so-najvisoka-cena-otkako-se-objavuvaat-podatocite-"><img src="/media/main/375x201/2025/08/20250808170145.jpg" alt="ХРАНАТА ГЛОБАЛНО ПОСКАПУВА: Месото e со највисока цена откако се објавуваат податоците"></a>
+                <a href="/hranata-globalno-poskapuva-mesoto-e-so-najvisoka-cena-otkako-se-objavuvaat-podatocite-"><h2>ХРАНАТА ГЛОБАЛНО ПОСКАПУВА: Месото e со највисока цена откако се објавуваат податоците</h2></a>
+                <span class="date">08 Август, 2025 16:47</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article fullwidth-left">
+                <a href="/unca-zlato-nadmina-3500-dolari-cenata-doprva-kje-se-zgolemuva"><img src="/media/main/375x201/2025/05/20250530091950.JPG" alt="УНЦА ЗЛАТО НАДМИНА 3.500 ДОЛАРИ: Цената допрва ќе се зголемува"></a>
+                <a href="/unca-zlato-nadmina-3500-dolari-cenata-doprva-kje-se-zgolemuva"><h2>УНЦА ЗЛАТО НАДМИНА 3.500 ДОЛАРИ: Цената допрва ќе се зголемува</h2></a>
+                <span class="date">08 Август, 2025 16:31</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article ">
+                <a href="/alta-banka--edna-od-najbrzo-rastechkite-i-najinovativnite-banki-vo-srbija-na-chekor-do-proshiruvanje-vo-makedonija"><img src="/media/main/375x201/2025/05/20250508175603.PNG" alt="Алта банка – една од најбрзо растечките и најиновативните банки во Србија, на чекор до проширување во Македонија"></a>
+                <a href="/alta-banka--edna-od-najbrzo-rastechkite-i-najinovativnite-banki-vo-srbija-na-chekor-do-proshiruvanje-vo-makedonija"><h2>Алта банка – една од најбрзо растечките и најиновативните банки во Србија, на чекор до проширување во Македонија</h2></a>
+                <span class="date">08 Август, 2025 12:52</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article fullwidth-left">
+                <a href="/durmishi-gi-povika-proizvoditelite-distributerite-i-trgovcite-za-usno-da-gi-opomeni-za-cenite"><img src="/media/main/375x201/2025/08/20250808111835.jpg" alt="Дурмиши ги повика производителите, дистрибутерите и трговците за усно да ги опомени за цените"></a>
+                <a href="/durmishi-gi-povika-proizvoditelite-distributerite-i-trgovcite-za-usno-da-gi-opomeni-za-cenite"><h2>Дурмиши ги повика производителите, дистрибутерите и трговците за усно да ги опомени за цените</h2></a>
+                <span class="date">08 Август, 2025 11:22</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article ">
+                <a href="/simov-zavrshuva-izgradbata-na-antenskiot-stolb-na-vodno"><img src="/media/main/375x201/2025/08/20250808111143.jpg" alt="Симов: Завршува изградбата на антенскиот столб на Водно"></a>
+                <a href="/simov-zavrshuva-izgradbata-na-antenskiot-stolb-na-vodno"><h2>Симов: Завршува изградбата на антенскиот столб на Водно</h2></a>
+                <span class="date">08 Август, 2025 11:11</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article fullwidth-left">
+                <a href="/uchilishnata-koshnichka-obezzbeduva-popusti-do-15-otsto-durmishi-veli-deka-e-vistinska-pomosh-za-semejstvata"><img src="/media/main/375x201/2024/12/20241225115349.jpg" alt="УЧИЛИШНАТА КОШНИЧКА ОБЕЗЗБЕДУВА ПОПУСТИ ДО 15 ОТСТО: Дурмиши вели дека е вистинска помош за семејствата"></a>
+                <a href="/uchilishnata-koshnichka-obezzbeduva-popusti-do-15-otsto-durmishi-veli-deka-e-vistinska-pomosh-za-semejstvata"><h2>УЧИЛИШНАТА КОШНИЧКА ОБЕЗЗБЕДУВА ПОПУСТИ ДО 15 ОТСТО: Дурмиши вели дека е вистинска помош за семејствата</h2></a>
+                <span class="date">08 Август, 2025 10:36</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article ">
+                <a href="/polesen-pristap-do-kredit-za-prv-stan-slaveski-najavuva-novi-merki"><img src="/media/main/375x201/2025/07/20250722134354.jpg" alt="ПОЛЕСЕН ПРИСТАП ДО КРЕДИТ ЗА ПРВ СТАН: Славески најавува нови мерки"></a>
+                <a href="/polesen-pristap-do-kredit-za-prv-stan-slaveski-najavuva-novi-merki"><h2>ПОЛЕСЕН ПРИСТАП ДО КРЕДИТ ЗА ПРВ СТАН: Славески најавува нови мерки</h2></a>
+                <span class="date">08 Август, 2025 10:11</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article fullwidth-left">
+                <a href="/sportskiot-centar-boris-trajkovski-pravno-neaktiven-i-bez-podnesena-zavrshna-smetka-za-2024-godina-no-si-raspishuva-tenderi"><img src="/media/main/375x201/2025/08/20250807153231.jpg" alt="Спортскиот центар Борис Трајковски правно неактивен и без поднесена завршна сметка за 2024 година, но си распишува тендери"></a>
+                <a href="/sportskiot-centar-boris-trajkovski-pravno-neaktiven-i-bez-podnesena-zavrshna-smetka-za-2024-godina-no-si-raspishuva-tenderi"><h2>Спортскиот центар Борис Трајковски правно неактивен и без поднесена завршна сметка за 2024 година, но си распишува тендери</h2></a>
+                <span class="date">08 Август, 2025 08:10</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article ">
+                <a href="/od-zaednichkiot-budzet-sme-dale-plus-180-milioni-evra-za-zgolemuvanjeto-na-penziite"><img src="/media/main/375x201/2025/08/20250807235831.jpg" alt="Од заедничкиот буџет сме дале плус 180 милиони евра за зголемувањето на пензиите"></a>
+                <a href="/od-zaednichkiot-budzet-sme-dale-plus-180-milioni-evra-za-zgolemuvanjeto-na-penziite"><h2>Од заедничкиот буџет сме дале плус 180 милиони евра за зголемувањето на пензиите</h2></a>
+                <span class="date">08 Август, 2025 07:50</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article fullwidth-left">
+                <a href="/zagrizuvachki-trend-na-pazarot-na-trudot-veshtachkata-inteligencija-menuva-se--brojot-na-ostavki-skokna-za-140-procenti"><img src="/media/main/375x201/2025/08/20250807172344.jpg" alt="ЗАГРИЖУВАЧКИ ТРЕНД НА ПАЗАРОТ НА ТРУДОТ: Вештачката интелигенција менува сè – бројот на оставки скокна за 140 проценти"></a>
+                <a href="/zagrizuvachki-trend-na-pazarot-na-trudot-veshtachkata-inteligencija-menuva-se--brojot-na-ostavki-skokna-za-140-procenti"><h2>ЗАГРИЖУВАЧКИ ТРЕНД НА ПАЗАРОТ НА ТРУДОТ: Вештачката интелигенција менува сè – бројот на оставки скокна за 140 проценти</h2></a>
+                <span class="date">08 Август, 2025 07:20</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article ">
+                <a href="/slaba-zetva-za-kolku-poskapea-leshnicite-vo-makedonija"><img src="/media/main/375x201/2015/08/Lesnici.jpg" alt="СЛАБА ЖЕТВА: За колку поскапеа лешниците во Турција?"></a>
+                <a href="/slaba-zetva-za-kolku-poskapea-leshnicite-vo-makedonija"><h2>СЛАБА ЖЕТВА: За колку поскапеа лешниците во Турција?</h2></a>
+                <span class="date">07 Август, 2025 21:01</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article fullwidth-left">
+                <a href="/tramp-svetot-kje-vidi-mnogu-povekje-sankcii-protiv-zemjite-shto-kupuvaat-ruska-nafta"><img src="/media/main/375x201/2025/08/20250807193603.jpg" alt="Трамп: Светот ќе види „многу повеќе“ санкции против земјите што купуваат руска нафта"></a>
+                <a href="/tramp-svetot-kje-vidi-mnogu-povekje-sankcii-protiv-zemjite-shto-kupuvaat-ruska-nafta"><h2>Трамп: Светот ќе види „многу повеќе“ санкции против земјите што купуваат руска нафта</h2></a>
+                <span class="date">07 Август, 2025 19:29</span>
+                <p></p>
+            </div>
+
+        
+    
+
+        
+            <div class="article ">
+                <a href="/crna-gora-gubi-86-milioni-evra-godishno-poradi-sivata-ekonomija-vo-smestuvanjeto"><img src="/media/main/375x201/2025/08/20250807184836.jpg" alt="Црна Гора губи 86 милиони евра годишно поради сивата економија во сместувањето?"></a>
+                <a href="/crna-gora-gubi-86-milioni-evra-godishno-poradi-sivata-ekonomija-vo-smestuvanjeto"><h2>Црна Гора губи 86 милиони евра годишно поради сивата економија во сместувањето?</h2></a>
+                <span class="date">07 Август, 2025 18:41</span>
+                <p></p>
+            </div>
+
+        
+        <div class="clear"></div>
+
+    <div class="pagination"><span class="current">1</span><a href="?page=2">2</a><a href="?page=3">3</a><a href="?page=4">4</a><a href="?page=5">5</a><a href="?page=6">6</a><a href="?page=7">7</a><a class="disabled">...</a><a href="?page=2">Следна</a>
+                         <a href="?page=2106">Последна</a></div>
+
+</div></div>
+
+<div id="sidebar">
+
+    <div class="widget">
+        <script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_top_0');
+    // ]]> -->
+</script><a href="https://ads.faktor.mk/www/delivery/ck.php?oaparams=2__bannerid=7885__zoneid=59__cb=6499da3423__oadest=https%3A%2F%2Fmintcredit.mk%2Fpromo-kredit%2F%3Fmd%3Dju20" target="_blanck"><img src="https://ads.faktor.mk/www/images/6d99e0f483ae23ef5eda316dd0c5bd16.gif" width="300" height="600" alt="" title="" border="0"></a><div id="beacon_6499da3423" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=7885&amp;campaignid=5080&amp;zoneid=59&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=6499da3423" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_top_1');
+    // ]]> -->
+</script><script type="application/javascript" src="https://ced.sascdn.com/tag/2255/smart.js" async=""></script>
+<div id="sas_47175"><script id="sas_script_sas_47175">if (navigator && navigator.platform) {
+    var sasIsIosUiwebview = false;
+    if (navigator.platform.substr(0,2) === 'iP') {
+      var lte9 = /constructor/i.test(window.HTMLElement);
+      var nav = window.navigator, ua = nav.userAgent, idb = !!window.indexedDB;
+      if (ua.indexOf('Safari') !== -1 && ua.indexOf('Version') !== -1 && !nav.standalone) {      
+        sasIsIosUiwebview = false;
+      } else if ((!idb && lte9) || !window.statusbar.visible) {
+        sasIsIosUiwebview = true;
+      } else if ((window.webkit && window.webkit.messageHandlers) || !lte9 || idb) {
+        sasIsIosUiwebview = true;
+      }
+    }
+    if (!sasIsIosUiwebview) {
+        var smartCsync=document.createElement('IFRAME');smartCsync.src='//csync.smartadserver.com/diff/rtb/csync/CookieSync.html?nwid=2255&dcid=14&gdpr=1&gdprc=';
+        smartCsync.scrolling = 'no';smartCsync.frameBorder = 0;smartCsync.width = 0;smartCsync.height = 0;smartCsync.style.margin = 0;smartCsync.style.padding = 0;smartCsync.style.display = 'none';smartCsync.style.width = '0px';smartCsync.style.height = '0px';smartCsync.style.visibility = 'hidden';
+        if(document.body != null)document.body.appendChild(smartCsync);
+    }
+}sas.noad("sas_47175");</script></div>
+<script type="application/javascript">
+var sas = sas || {};
+sas.cmd = sas.cmd || [];
+sas.cmd.push(
+function () {
+sas.call(
+{ siteId: 127984, pageId: 732531, formatId: 47175, tagId: "sas_47175" },
+{ networkId: 2255, domain: "https://prg.smartadserver.com" /*, onNoad: function() {} */ }
+);
+}
+);
+</script><div id="beacon_f46e23cdd4" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=8887&amp;campaignid=449&amp;zoneid=2&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=f46e23cdd4" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div><div style="margin-bottom:10px;"></div>
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_top_2');
+    // ]]> -->
+</script><a href="https://ads.faktor.mk/www/delivery/ck.php?oaparams=2__bannerid=7312__zoneid=3__cb=3f44fdef52__oadest=https%3A%2F%2Fblackup.com.mk%2Fproizvodi%2Fproizvodi_krem_antipigmenten_spf50.html" target="_blanck"><img src="https://ads.faktor.mk/www/images/469202481439b05e591e43f985198bef.gif" width="300" height="600" alt="" title="" border="0"></a><div id="beacon_3f44fdef52" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=7312&amp;campaignid=231&amp;zoneid=3&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=3f44fdef52" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div><div style="margin-bottom:10px;"></div>
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_top_3');
+    // ]]> -->
+</script><script type="text/javascript" src="https://www8.smartadserver.com/ac?out=js&amp;nwid=2255&amp;siteid=127984&amp;pgname=desktop&amp;fmtid=47174&amp;tgt=[sas_target]&amp;visit=m&amp;tmstp=1754694689.4695&amp;clcturl=[countgo]"></script><div id="beacon_2023bfbd42" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=1796&amp;campaignid=448&amp;zoneid=4&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=2023bfbd42" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div><div style="margin-bottom:10px;"></div>
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_top_4');
+    // ]]> -->
+</script><a href="https://ads.faktor.mk/www/delivery/ck.php?oaparams=2__bannerid=9141__zoneid=10__cb=7e50b59244__oadest=https%3A%2F%2Fevn.mk%2FAboutUs%2FEvnEnergyLifeFuture.aspx%3Flang%3Dmk-mk" target="_blanck"><img src="https://ads.faktor.mk/www/images/0bbe6b982de1877c5723c82944a8fee5.png" width="300" height="250" alt="" title="" border="0"></a><div id="beacon_7e50b59244" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=9141&amp;campaignid=1130&amp;zoneid=10&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=7e50b59244" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div><div style="margin-bottom:10px;"></div>
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_top_5');
+    // ]]> -->
+</script><div id="beacon_f9a398b16a" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=0&amp;campaignid=0&amp;zoneid=11&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=f9a398b16a" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+    </div>
+
+    
+    <div class="widget">
+        <h2>Најчитани вести</h2>
+        <div class="articles">
+                        <div class="article">
+                <a href="novi-vesti-pristignuvaat-od-lidl-voveduva-proizvodi-od-poznat-proizvoditel">НОВИ ВЕСТИ ПРИСТИГНУВААТ ОД ЛИДЛ: Воведува производи од познат производител</a>
+                <img src="/media/main/99x60/2025/08/20250806171335.jpg" alt="НОВИ ВЕСТИ ПРИСТИГНУВААТ ОД ЛИДЛ: Воведува производи од познат производител">
+                <p>НОВИ ВЕСТИ ПРИСТИГНУВААТ ОД ЛИДЛ: Воведува производи од познат производител</p>
+            </div>
+                        <div class="article">
+                <a href="hristijan-mickoski-letuva-vo-hrvatska">Христијан Мицкоски летува во Хрватска</a>
+                <img src="/media/main/99x60/2025/08/20250807145052.jpg" alt="Христијан Мицкоски летува во Хрватска">
+                <p>Христијан Мицкоски летува во Хрватска</p>
+            </div>
+                        <div class="article">
+                <a href="dimitrieska-kochoska-so-golema-taga-se-prostuvame-so-golem-profesionalec--pomoshnik-direktor-na-carinskata-uprava-marjan">Димитриеска-Кочоска: Со голема тага се простуваме со голем професионалец,  помошник директор на Царинската управа, Марјан</a>
+                <img src="/media/main/99x60/2025/08/20250808170837.jpg" alt="Димитриеска-Кочоска: Со голема тага се простуваме со голем професионалец,  помошник директор на Царинската управа, Марјан">
+                <p>Димитриеска-Кочоска: Со голема тага се простуваме со голем професионалец,  помошник директор на Царинската управа, Марјан</p>
+            </div>
+                        <div class="article">
+                <a href="poradi-veenje-na-zname-na-golema-albanija-germanski-drzavjanin-dobi-uslovna-kazna-i-deportiranje">Поради веење на знаме на „Голема Албанија“ германски државјанин доби условна казна и депортирање</a>
+                <img src="/media/main/99x60/2025/08/20250807165907.jpg" alt="Поради веење на знаме на „Голема Албанија“ германски државјанин доби условна казна и депортирање">
+                <p>Поради веење на знаме на „Голема Албанија“ германски државјанин доби условна казна и депортирање</p>
+            </div>
+                        <div class="article">
+                <a href="pet-lica-zaginaa-dosega-na-noviot-ekspresen-pat-gradsko---prilep-se-pravi-novo-soobrakjajno-reshenie">Пет лица загинаа досега на новиот експресен пат Градско - Прилеп, се прави ново сообраќајно решение</a>
+                <img src="/media/main/99x60/2025/08/20250807130332.jpg" alt="Пет лица загинаа досега на новиот експресен пат Градско - Прилеп, се прави ново сообраќајно решение">
+                <p>Пет лица загинаа досега на новиот експресен пат Градско - Прилеп, се прави ново сообраќајно решение</p>
+            </div>
+                        <div class="article">
+                <a href="mishko-ralev-od-tv-doznav-deka-ne-sum-kandidat-za-skopje-na-sdsm---nikogash-ne-sum-bil-partiski-chlen">Мишко Ралев: Од ТВ дознав дека не сум кандидат за Скопје на СДСМ - Никогаш не сум бил партиски член</a>
+                <img src="/media/main/99x60/2025/08/20250806230104.png" alt="Мишко Ралев: Од ТВ дознав дека не сум кандидат за Скопје на СДСМ - Никогаш не сум бил партиски член">
+                <p>Мишко Ралев: Од ТВ дознав дека не сум кандидат за Скопје на СДСМ - Никогаш не сум бил партиски член</p>
+            </div>
+                        <div class="article">
+                <a href="ako-se-selite-vo-germanija-za-da-go-pominete-celiot-zivot-chistejkji-ili-rabotejkji-vo-prodavnica---podobro-ostanete-doma-urosh-otkriva-kako-navistina-se-zivee-tuka">„Ако се селите во Германија за да го поминете целиот живот чистејќи или работејќи во продавница - подобро останете дома!“ Урош открива како навистина се живее тука</a>
+                <img src="/media/main/99x60/2025/08/20250807172058.jpg" alt="„Ако се селите во Германија за да го поминете целиот живот чистејќи или работејќи во продавница - подобро останете дома!“ Урош открива како навистина се живее тука">
+                <p>„Ако се селите во Германија за да го поминете целиот живот чистејќи или работејќи во продавница - подобро останете дома!“ Урош открива како навистина се живее тука</p>
+            </div>
+                        <div class="article">
+                <a href="naznacheni-novi-direktori-na-klinikite-za-kardiologija-i-nevrologija-">Назначени нови директори на клиниките за Кардиологија и Неврологија</a>
+                <img src="/media/main/99x60/2022/01/20220126150657.jpeg" alt="Назначени нови директори на клиниките за Кардиологија и Неврологија">
+                <p>Назначени нови директори на клиниките за Кардиологија и Неврологија</p>
+            </div>
+                        <div class="article">
+                <a href="ushte-edna-soobrakjajka-na-noviot-ekspresen-pat-gradsko---prilep-zagina-brachen-par">Уште една сообраќајка на новиот експресен пат Градско - Прилеп, загина брачен пар</a>
+                <img src="/media/main/99x60/2025/08/20250807130332.jpg" alt="Уште една сообраќајка на новиот експресен пат Градско - Прилеп, загина брачен пар">
+                <p>Уште една сообраќајка на новиот експресен пат Градско - Прилеп, загина брачен пар</p>
+            </div>
+                    </div>
+    </div>
+
+    <div class="widget">
+        <!--<img src="/assets/images/banner300x600.png" />-->
+    </div>
+
+    
+    <div class="widget">
+        <h2>Колумни</h2>
+        <div class="articles">
+                        <div class="article">
+                <a href="zoshto-nekoi-inovativni-lekovi-ne-doagjaat-vo-makedonija">Зошто некои иновативни лекови не доаѓаат во Македонија?</a>
+                <img src="/media/main/99x60/2025/08/20250805085317.jpg" alt="Зошто некои иновативни лекови не доаѓаат во Македонија?">
+                <p>Зошто некои иновативни лекови не доаѓаат во Македонија?</p>
+            </div>
+                        <div class="article">
+                <a href="vo-ochekuvanje-na-8-avgust--teatarot-tramp-medvedev">Во очекување на 8 август – „Театарот „Трамп-Медведев“</a>
+                <img src="/media/main/99x60/2025/08/20250804083514.jpg" alt="Во очекување на 8 август – „Театарот „Трамп-Медведев“">
+                <p>Во очекување на 8 август – „Театарот „Трамп-Медведев“</p>
+            </div>
+                        <div class="article">
+                <a href="dali-poevtin-lek-sekogash-znachi-polosho-lekuvanje">Дали поевтин лек секогаш значи полошо лекување?</a>
+                <img src="/media/main/99x60/2025/07/20250728191916.jpg" alt="Дали поевтин лек секогаш значи полошо лекување?">
+                <p>Дали поевтин лек секогаш значи полошо лекување?</p>
+            </div>
+                    </div>
+    </div>
+
+    
+    <div class="widget">
+        <script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_bottom_1');
+    // ]]> -->
+</script><div id="beacon_9870608050" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=0&amp;campaignid=0&amp;zoneid=6&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=9870608050" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_bottom_2');
+    // ]]> -->
+</script><div id="beacon_07d748d4cb" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=0&amp;campaignid=0&amp;zoneid=14&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=07d748d4cb" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_bottom_3');
+    // ]]> -->
+</script><div id="beacon_0f1a3d8ae2" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=0&amp;campaignid=0&amp;zoneid=15&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=0f1a3d8ae2" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_3_bottom_4');
+    // ]]> -->
+</script><div id="beacon_45a8092421" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=0&amp;campaignid=0&amp;zoneid=16&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=45a8092421" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+    </div>
+
+    
+    <div class="widget">
+        <div class="articles">
+        </div>
+    </div>
+
+    <a href="https://www.iab.mk/etichki-kodeks/"><img src="https://www.iab.mk/wp-content/themes/iab/img/badges/crn/IAB-Badge-black-L.png" style="max-width: 100%;"></a>
+
+</div>
+<div class="clear"></div>
+
+
+<div id="footer">
+        <ul class="links">
+        <li class="title">Останати линкови</li>
+        <li><a href="/rss" target="_blank">RSS Вести</a></li>
+        <li><a href="/politika-za-privatnost" target="_blank">Политика за приватност</a></li>
+        <!--<li><a href="/kursna-lista" target="_blank">Курсна листа</a></li>-->
+    </ul>
+    <div class="copy">
+        <img src="/assets/images/footer-logo.png"><br>
+        <p>
+            Сите написи се користат само за лично информирање.<br>
+            Преземање, нивно користење и реемитување се можни само со посебен договор со основачот на порталот.<br>
+            © 2025 FAKTOR
+        </p>
+    </div>
+</div>
+
+</div>
+</div><iframe src="//csync.smartadserver.com/diff/rtb/csync/CookieSync.html?nwid=2255&amp;dcid=14&amp;gdpr=1&amp;gdprc=" scrolling="no" frameborder="0" width="0" height="0" style="margin: 0px; padding: 0px; display: none; width: 0px; height: 0px; visibility: hidden;"></iframe><iframe src="//csync.smartadserver.com/diff/rtb/csync/CookieSync.html?nwid=2255&amp;dcid=14&amp;gdpr=1&amp;gdprc=" scrolling="no" frameborder="0" width="0" height="0" style="margin: 0px; padding: 0px; display: none; width: 0px; height: 0px; visibility: hidden;"></iframe><iframe src="//csync.smartadserver.com/diff/rtb/csync/CookieSync.html?nwid=2255&amp;dcid=14&amp;gdpr=1&amp;gdprc=" scrolling="no" frameborder="0" width="0" height="0" style="margin: 0px; padding: 0px; display: none; width: 0px; height: 0px; visibility: hidden;"></iframe>
+
+
+<!-- Branding -->
+<div class="premium-banner">
+
+<div class="pb-left">
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_branding_left');
+    // ]]> -->
+</script><div id="beacon_109fa8c010" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=0&amp;campaignid=0&amp;zoneid=24&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=109fa8c010" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+</div>
+
+<div class="pb-right">
+
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_branding_right');
+    // ]]> -->
+</script><div id="beacon_341699810d" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=0&amp;campaignid=0&amp;zoneid=25&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=341699810d" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+</div>
+</div>
+
+<div class="branding-full">
+<script type="text/javascript">
+    <!--// <![CDATA[
+        OA_show('zone_branding_full');
+    // ]]> -->
+</script><div id="beacon_334ddb717c" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=0&amp;campaignid=0&amp;zoneid=34&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=334ddb717c" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+
+</div>
+
+
+<!-- End Branding -->
+
+<!-- Httpool Block -->
+<script type="text/javascript">
+	AdPlatformZone = {
+		id: "de730c9c6",
+		format: "0x0"
+	};
+</script>
+<script type="text/javascript" src="//relay-mk.ads.httpool.com"></script><span style="margin: 0px; padding: 0px; border-width: 0px; display: none; position: relative;" id="hA_c_0_2817f5ca"><script type="text/javascript" src="https://tas-mk.toboads.com/js/adl-a4605d68.js?b=1&amp;rq=27631214-102e-e887-6f67-9eea119d536b&amp;vt=b1fb2fe8-04c3-4711-95b5-301e2b89566f&amp;isf=false&amp;zn=de730c9c6&amp;tm=0&amp;af=0x0&amp;fv=undefined&amp;nw=0&amp;co=1&amp;vh=720&amp;vw=1280&amp;asc=0&amp;srf=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;loc=eq-srf&amp;rn=c5618166-17f4-abe9-f823-68a66e1384e8&amp;ct=9e0ef090-3e30-45bc-6fb5-6492456626bd&amp;c=hA_c_0_2817f5ca&amp;ah=0&amp;"></script></span>
+<!-- /Httpool Block -->
+
+<!-- floater -->
+<script type="text/javascript"><!--//<![CDATA[
+   var m3_u = (location.protocol=='https:'?'https://ads.faktor.mk/www/delivery/ajs.php':'http://ads.faktor.mk/www/delivery/ajs.php');
+   var m3_r = Math.floor(Math.random()*99999999999);
+   if (!document.MAX_used) document.MAX_used = ',';
+   document.write ("<scr"+"ipt type='text/javascript' src='"+m3_u);
+   document.write ("?zoneid=23");
+   document.write ('&amp;cb=' + m3_r);
+   if (document.MAX_used != ',') document.write ("&amp;exclude=" + document.MAX_used);
+   document.write (document.charset ? '&amp;charset='+document.charset : (document.characterSet ? '&amp;charset='+document.characterSet : ''));
+   document.write ("&amp;loc=" + escape(window.location));
+   if (document.referrer) document.write ("&amp;referer=" + escape(document.referrer));
+   if (document.context) document.write ("&context=" + escape(document.context));
+   if (document.mmm_fo) document.write ("&amp;mmm_fo=1");
+   document.write ("'><\/scr"+"ipt>");
+//]]>--></script><script type="text/javascript" src="https://ads.faktor.mk/www/delivery/ajs.php?zoneid=23&amp;cb=66418711397&amp;charset=UTF-8&amp;loc=https%3A//faktor.mk/ekonomija&amp;mmm_fo=1"></script><div id="beacon_c895caac2c" style="position: absolute; left: 0px; top: 0px; visibility: hidden;"><img src="https://ads.faktor.mk/www/delivery/lg.php?bannerid=0&amp;campaignid=0&amp;zoneid=23&amp;loc=https%3A%2F%2Ffaktor.mk%2Fekonomija&amp;cb=c895caac2c" width="0" height="0" alt="" style="width: 0px; height: 0px;"></div>
+<noscript><a href='https://ads.faktor.mk/www/delivery/ck.php?n=a69d7d19&amp;cb=INSERT_RANDOM_NUMBER_HERE' target='_blank'><img src='https://ads.faktor.mk/www/delivery/avw.php?zoneid=23&amp;cb=INSERT_RANDOM_NUMBER_HERE&amp;n=a69d7d19' border='0' alt='' /></a></noscript>
+
+
+
+
+
+<iframe src="//csync.smartadserver.com/diff/rtb/csync/CookieSync.html?nwid=2255&amp;dcid=14&amp;gdpr=1&amp;gdprc=" scrolling="no" frameborder="0" width="0" height="0" style="margin: 0px; padding: 0px; display: none; width: 0px; height: 0px; visibility: hidden;"></iframe></body><iframe src="https://ced-ns.sascdn.com/diff/js/assets/topics_frame.html" style="display: none;"></iframe></html>

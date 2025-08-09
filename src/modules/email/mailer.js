@@ -3,20 +3,14 @@ import nodemailer from 'nodemailer';
 import { logger } from '../../utils/logger.js';
 import { safeExecute } from '../../utils/helpers.js';
 import {
-  HEADLINE_RECIPIENTS,
-  SUPERVISOR_EMAIL,
-  EMAIL_CONFIG,
   SUPERVISOR_EMAIL_CONFIG,
   SMTP_CONFIG,
-  SEND_TO_DEFAULT_SUPERVISOR,
   IS_PRODUCTION,
   FORCE_EMAIL_SEND_DEV
 } from '../../config/index.js';
-import { createEmailBody } from './components/emailBodyBuilder.js';
 import { createSupervisorEmailBody } from './components/supervisorEmailBodyBuilder.js';
 
 const SMTP_UNCONFIGURED_MSG = 'SMTP authentication not fully configured.';
-const RECIPIENTS_UNCONFIGURED_MSG = 'Email recipients not configured.';
 
 async function sendEmail(mailOptions, emailType) {
     if (!IS_PRODUCTION && !FORCE_EMAIL_SEND_DEV) {
@@ -44,40 +38,33 @@ async function sendEmail(mailOptions, emailType) {
         return { error: `SMTP Error: ${sendResult.details}` };
     }
 
-    logger.info(`✅ [${emailType} Mailer] Email sent successfully.`);
+    logger.info(`✅ [${emailType} Mailer] Email sent successfully to ${mailOptions.to}.`);
     return { success: true };
 }
 
-export async function performActualEmailSend(eventsForEmail) {
-    if (!HEADLINE_RECIPIENTS || HEADLINE_RECIPIENTS.length === 0) {
-        logger.error(`❌ [Wealth Events Mailer] ${RECIPIENTS_UNCONFIGURED_MSG}`);
-        return false;
-    }
-
-    const emailBodyHtml = createEmailBody(eventsForEmail);
-    if (!emailBodyHtml) {
-        logger.error('❌ [Wealth Events Mailer] HTML email body generation failed.');
+export async function sendPersonalizedEmail({ user, subject, body }) {
+    if (!user || !user.email) {
+        logger.error(`❌ [Wealth Events Mailer] Invalid user object provided.`);
         return false;
     }
 
     const mailOptions = {
         from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`,
-        to: HEADLINE_RECIPIENTS.join(', '),
-        subject: EMAIL_CONFIG.subject,
-        html: emailBodyHtml,
+        to: user.email,
+        subject: subject,
+        html: body,
     };
 
     const result = await sendEmail(mailOptions, 'Wealth Events');
     return result.success || false;
 }
 
-export async function performActualSupervisorEmailSend(runStats) {
-    if (!SUPERVISOR_EMAIL || (SUPERVISOR_EMAIL.toLowerCase().includes('default') && !SEND_TO_DEFAULT_SUPERVISOR)) {
-        logger.warn('[Supervisor Mailer] Skipping: Supervisor email not configured or is default.');
+export async function performActualSupervisorEmailSend(runStats, recipients) {
+    if (!recipients || recipients.length === 0) {
+        logger.warn('[Supervisor Mailer] Skipping: No superusers configured to receive this report.');
         return;
     }
 
-    // CRITICAL FIX: The function createSupervisorEmailBody is now async, so we must 'await' it.
     const emailBodyHtml = await createSupervisorEmailBody(runStats);
     if (!emailBodyHtml) {
         logger.error('❌ [Supervisor Mailer] HTML email body generation failed.');
@@ -86,7 +73,7 @@ export async function performActualSupervisorEmailSend(runStats) {
 
     const mailOptions = {
         from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`,
-        to: SUPERVISOR_EMAIL,
+        to: recipients.join(', '),
         subject: SUPERVISOR_EMAIL_CONFIG.subject,
         html: emailBodyHtml,
     };

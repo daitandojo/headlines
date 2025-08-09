@@ -3,51 +3,51 @@ import { logger } from '../../../utils/logger.js';
 import { EMAIL_CONFIG } from '../../../config/index.js';
 import { LOGO_URL } from '../constants.js';
 import { formatEventForEmail } from './eventFormatter.js';
+import { countryNameToFlagMap } from '../../../config/sources.js';
 
-function createEmailWrapper(bodyContent) {
+function createEmailWrapper(bodyContent, subject) {
     return `
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${EMAIL_CONFIG.subject}</title>
+        <title>${subject}</title>
     </head>
     <body style="margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background-color: #f4f4f4;">
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
-            <tr>
-                <td align="center">
-                    <table width="600" border="0" cellspacing="0" cellpadding="20" style="max-width: 600px; width: 100%; background-color: #ffffff; margin-top: 20px; margin-bottom: 20px;">
-                        <tr>
-                            <td>
-                                ${bodyContent}
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
+            <tr><td align="center">
+                <table width="600" border="0" cellspacing="0" cellpadding="20" style="max-width: 600px; width: 100%; background-color: #ffffff; margin-top: 20px; margin-bottom: 20px;">
+                    <tr><td>${bodyContent}</td></tr>
+                </table>
+            </td></tr>
         </table>
     </body>
     </html>`;
 }
 
-export function createEmailBody(events) {
-    if (!Array.isArray(events) || events.length === 0) {
-        logger.warn('createEmailBody: No events provided to build email body.');
+export function createPersonalizedEmailBody(user, eventsByCountry, subject) {
+    if (!user || !eventsByCountry || Object.keys(eventsByCountry).length === 0) {
+        logger.warn('createPersonalizedEmailBody: Missing user or events data.');
         return null;
     }
 
-    const formattedEventsHtml = events.map(formatEventForEmail).join('');
+    let formattedEventsHtml = '';
+    for (const [country, events] of Object.entries(eventsByCountry)) {
+        const flag = countryNameToFlagMap.get(country) || '🌍';
+        formattedEventsHtml += `<h2 style="font-size: 22px; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 40px;">${flag} ${country}</h2>`;
+        formattedEventsHtml += events.map(formatEventForEmail).join('');
+    }
 
     const mainContent = `
         <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eeeeee;">
             <img src="${LOGO_URL}" alt="${EMAIL_CONFIG.brandName} Logo" style="max-width: 150px; height: auto;">
         </div>
-        <h1 style="color: #333333; text-align: center; margin-top: 20px;">${EMAIL_CONFIG.subject}</h1>
+        <h1 style="color: #333333; text-align: center; margin-top: 20px;">${subject}</h1>
         <p style="font-size: 16px; color: #555555; text-align: left;">
-            Good morning,
+            Hi ${user.firstName},
             <br><br>
-            Here are the latest potential wealth events identified and synthesized by our AI Agent:
+            Here are the latest potential wealth events identified for your subscribed regions:
         </p>
 
         <div style="text-align: center; margin: 25px 0;">
@@ -68,5 +68,5 @@ export function createEmailBody(events) {
         </div>
     `;
 
-    return createEmailWrapper(mainContent);
+    return createEmailWrapper(mainContent, subject);
 }

@@ -1,4 +1,4 @@
-// scripts/find-selectors.js (version 10.0 - Intelligent HTML Analysis)
+// scripts/find-selectors.js (version 10.11 - The Definitive Defensive Sanitizer)
 import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
@@ -12,9 +12,10 @@ import { logger } from '../src/utils/logger.js';
 // --- Configuration ---
 const PAPERS_CONFIG_PATH = path.join(process.cwd(), 'src', 'config', 'papers.json');
 const DEBUG_DIR = path.join(process.cwd(), 'debug');
+const STORAGE_STATE_PATH = path.join(process.cwd(), 'debug', 'state.json');
 const MIN_HEADLINES_THRESHOLD = 8;
 const MIN_ARTICLE_LENGTH_THRESHOLD = 500;
-const SAVE_HTML_FLAG = process.argv.includes('--save-html') || true; // Always save for debugging
+const SAVE_HTML_FLAG = process.argv.includes('--save-html') || true;
 const NO_HEADLESS_FLAG = process.argv.includes('--no-headless');
 
 const colors = { reset: "\x1b[0m", red: "\x1b[31m", green: "\x1b[32m", yellow: "\x1b[33m", cyan: "\x1b[36m", grey: "\x1b[90m" };
@@ -33,289 +34,186 @@ async function saveDebugHtml(filename, html) {
     } catch (error) { logger.error(`Failed to save debug HTML: ${error.message}`); }
 }
 
+// --- CORE FIX: The truly defensive URL sanitizer ---
 function sanitizeUrl(url, baseUrl) {
-    if (!url || typeof url !== 'string') return null;
-    
-    const lastHttp = url.lastIndexOf('http');
-    if (lastHttp > 0) {
-        const potentialUrl = url.substring(lastHttp);
-        try {
-            const corrected = new URL(potentialUrl).href;
-            logger.info(`${colors.grey}  -> URL sanitizer recovered malformed URL: "${corrected}"${colors.reset}`);
-            return corrected;
-        } catch (e) { return null; }
+    if (!url || typeof url !== 'string') {
+        logger.warn('  -> sanitizeUrl received an invalid input.');
+        return null;
+    }
+
+    let cleanUrl = url.trim();
+
+    // Fix specific typo from JSON-LD data: "https//..." -> "https://..."
+    if (cleanUrl.startsWith('https//')) {
+        cleanUrl = 'https://' + cleanUrl.substring(7);
     }
     
+    // Fix protocol-relative URLs
+    if (cleanUrl.startsWith('//')) {
+        cleanUrl = new URL(baseUrl).protocol + cleanUrl;
+    }
+
+    // Fix malformed URLs from previous bad runs that might be in the config file
+    const lastHttp = cleanUrl.lastIndexOf('http');
+    if (lastHttp > 0) {
+        cleanUrl = cleanUrl.substring(lastHttp);
+        logger.warn(`${colors.yellow}  -> Corrected a concatenated URL. Using: "${cleanUrl}"${colors.reset}`);
+    }
+
     try {
-        return new URL(url, baseUrl).href;
+        // If cleanUrl is now a full URL, baseUrl will be ignored.
+        // If cleanUrl is a relative path (e.g., /economie/article), it will be correctly joined.
+        return new URL(cleanUrl, baseUrl).href;
     } catch (e) {
+        logger.error(`  -> Unrecoverable URL sanitization failure for: "${url}"`);
         return null;
     }
 }
 
+
 // --- Agentic Browser & AI Functions ---
-async function findAndClickConsentButton(page, country) {
-    logger.info(`> AI Task: Identifying consent button...`);
-    const buttons = await page.evaluate(() => 
-        Array.from(document.querySelectorAll('button, a[role="button"]'))
-             .map(el => el.innerText.trim())
-             .filter(text => text.length > 2 && text.length < 30)
-    );
+async function findAndClickConsentButton(page) {
+    logger.info(`> Probing for consent button...`);
+    await page.waitForTimeout(2000);
+
+    const commonAcceptTexts = [ 'Akkoord', 'Accepteer alles', 'Alles accepteren', 'Ja, ik accepteer', 'Accepteren', 'Accept all', 'Agree', 'I accept', 'Aksepter' ];
     
-    if (buttons.length === 0) {
-        logger.info(`${colors.grey}  -> No buttons found to analyze for consent.${colors.reset}`);
-        return false;
+    for (const text of commonAcceptTexts) {
+        try {
+            const button = page.getByRole('button', { name: text, exact: false }).first();
+            if (await button.isVisible({ timeout: 1000 })) {
+                logger.info(`${colors.green}  -> Found and clicked consent button: "${text}"${colors.reset}`);
+                await button.click();
+                return true;
+            }
+        } catch (e) { /* Ignore */ }
     }
-    
-    const sysPrompt = `You are a web automation expert. From this JSON array of button texts from a website in ${country}, identify the SINGLE button text that accepts cookies, privacy, or consent. Prioritize clear "accept" actions (like 'Accept', 'Agree', 'OK') over ambiguous "settings" links. Respond ONLY with a valid JSON object: { "text_to_click": "The exact text of the button to click" } OR { "text_to_click": null }`;
-    
-    try {
-        const res = await client.chat.completions.create({
-            model: LLM_MODEL,
-            messages: [
-                { role: 'system', content: sysPrompt },
-                { role: 'user', content: JSON.stringify(buttons) }
-            ],
-            response_format: { type: 'json_object' }
-        });
-        
-        const { text_to_click } = JSON.parse(res.choices[0].message.content);
-        if (text_to_click) {
-            logger.info(`  -> AI advised clicking button: "${text_to_click}"`);
-            await page.getByRole('button', { name: text_to_click, exact: true }).first().click({ timeout: 5000 });
-            logger.info(`${colors.green}  -> Successfully clicked consent button.${colors.reset}`);
-            return true;
-        }
-    } catch (e) {
-        logger.error(`  -> AI consent analysis failed: ${e.message}`);
-    }
-    
-    logger.info(`${colors.grey}  -> No consent button identified.${colors.reset}`);
+    logger.info(`${colors.grey}  -> No common consent button was found or clicked.${colors.reset}`);
     return false;
 }
 
 async function getPageHtmlWithPlaywright(url, outletName, country) {
     logger.info(`> Deploying browser agent to: ${colors.cyan}${url}${colors.reset}`);
     const browser = await playwright.chromium.launch({ headless: !NO_HEADLESS_FLAG });
-    const context = await browser.newContext({ userAgent: 'Mozilla/5.0' });
+    
+    let context;
+    try {
+        context = await browser.newContext({ storageState: STORAGE_STATE_PATH });
+        logger.info(`  -> Loaded existing browser state from ${STORAGE_STATE_PATH}`);
+    } catch (e) {
+        logger.warn(`  -> Could not load browser state, starting fresh.`);
+        context = await browser.newContext();
+    }
+
     const page = await context.newPage();
-    let consentButtonClicked = false;
     
     try {
-        const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        if (response && !response.ok() && response.status() === 404) {
-            return { html: null, status: 404, consentButtonClicked: false };
+        logger.info(`  -> Navigating to URL...`);
+        const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+        logger.info(`  -> Page loaded. Current URL: ${page.url()}`);
+
+        const originalHostname = new URL(url).hostname;
+        const currentHostname = new URL(page.url()).hostname;
+
+        if (!currentHostname.includes(originalHostname)) {
+            logger.warn(`${colors.yellow}  -> Redirected to cross-domain consent manager: ${currentHostname}${colors.reset}`);
+            
+            const consentButtonClicked = await findAndClickConsentButton(page);
+
+            if (consentButtonClicked) {
+                await page.waitForLoadState('networkidle', { timeout: 10000 });
+                logger.info(`  -> Consent action processed. Navigating back to original URL...`);
+                await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+                logger.info(`${colors.green}  -> Successfully re-loaded original page with consent.${colors.reset}`);
+            }
+        } else {
+             logger.info(`  -> Successfully loaded page without consent redirect.`);
         }
         
-        consentButtonClicked = await findAndClickConsentButton(page, country);
-        if (consentButtonClicked) await page.waitForLoadState('networkidle', { timeout: 10000 });
-        
+        await context.storageState({ path: STORAGE_STATE_PATH });
+        logger.info(`  -> Browser state (cookies) saved to ${STORAGE_STATE_PATH}`);
+
         const html = await page.content();
         await saveDebugHtml(`${outletName.replace(/[^a-z0-9]/gi, '_')}.html`, html);
-        return { html, status: response?.status() || 200, consentButtonClicked };
+        return { html, status: response?.status() || 200 };
     } catch (error) {
-        logger.error(`  -> Browser agent failed: ${error.message.split('\n')[0]}`);
-        return { html: null, status: null, consentButtonClicked };
+        logger.error(`  -> Agent failed during navigation: ${error.message.split('\n')[0]}`);
+        return { html: null, status: null };
     } finally {
         await browser.close();
     }
 }
 
-// --- Intelligent HTML Analysis Functions ---
+
+async function findBusinessUrlWithAI(html, baseUrl, country) {
+    logger.info(`> AI Task: Finding the business/news section URL...`);
+    const $ = cheerio.load(html);
+    const links = [];
+    $('nav a, header a').each((_, el) => {
+        const text = $(el).text().trim();
+        const href = $(el).attr('href');
+        if (text && href) { try { links.push({ text, url: new URL(href, baseUrl).href }); } catch(e){} }
+    });
+    if (links.length === 0) { logger.warn(`  -> Could not find any navigation links to analyze.`); return null; }
+    
+    logger.info(`  -> Found ${links.length} candidate links for AI analysis.`);
+    const sysPrompt = `You are a multilingual media analyst. From this JSON of navigation links from a news website in ${country}, identify the single URL that most likely leads to the main "News", "Latest News", "Business", or "Economy" section. Respond ONLY with a valid JSON object: { "best_url": "the-full-url", "reasoning": "Your brief reasoning." }`;
+    try {
+        const res = await client.chat.completions.create({ model: LLM_MODEL, messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: JSON.stringify(links) }], response_format: { type: 'json_object' } });
+        const { best_url, reasoning } = JSON.parse(res.choices[0].message.content);
+        logger.info(`${colors.green}  -> AI identified best section URL: ${best_url}${colors.reset}`);
+        logger.info(`${colors.grey}     AI Reasoning: ${reasoning}${colors.reset}`);
+        return best_url;
+    } catch (e) {
+        logger.error(`  -> AI URL discovery failed: ${e.message}`);
+        return null;
+    }
+}
+
+// --- Core Analysis Pipeline (Unchanged) ---
 function analyzeHtmlStructure(html) {
     logger.info(`> Performing intelligent HTML structure analysis...`);
     const $ = cheerio.load(html);
     
-    // First, let's see what we're working with
     const totalLinks = $('a[href]').length;
     const totalElements = $('*').length;
     logger.info(`  -> HTML contains ${totalElements} total elements, ${totalLinks} links with href`);
     
-    // Remove noise elements that aren't content
-    const beforeCleanup = $('*').length;
-    $('nav, footer, header .search, .cookie-banner, .advertisement, .ads, script, style, noscript').remove();
-    const afterCleanup = $('*').length;
-    logger.info(`  -> Cleaned HTML: removed ${beforeCleanup - afterCleanup} elements, ${afterCleanup} remain`);
-    
-    const cleanedLinks = $('a[href]').length;
-    logger.info(`  -> After cleanup: ${cleanedLinks} links remaining`);
+    if (totalLinks < 20) {
+        logger.warn(`${colors.yellow}  -> WARNING: Very few links found. The page might be a loader or privacy gate.${colors.reset}`);
+        const bodyPreview = $('body').text().replace(/\s+/g, ' ').trim();
+        logger.info(`${colors.grey}  -> Body Text Preview: ${bodyPreview.substring(0, 400)}...${colors.reset}`);
+    }
+
+    $('nav, footer, header, aside, .ad, .advert, .cookie, .privacy, script, style, noscript').remove();
+    logger.info(`  -> Cleaned HTML by removing common non-content sections.`);
     
     const linkAnalysis = [];
-    let processedLinks = 0;
-    let skippedLinks = 0;
     
     $('a[href]').each((index, element) => {
         const $el = $(element);
         const href = $el.attr('href');
         
-        // Log first few links for debugging
-        if (index < 10) {
-            logger.info(`${colors.grey}    Link ${index + 1}: href="${href}", text="${$el.text().trim().substring(0, 50)}..."${colors.reset}`);
-        }
-        
-        // Skip non-content links
         if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) {
-            skippedLinks++;
-            if (index < 5) logger.info(`${colors.grey}      -> Skipped: invalid href${colors.reset}`);
             return;
         }
-        
-        processedLinks++;
-        
-        // Get all text content and structural information
-        const allText = $el.text().trim().replace(/\s+/g, ' ');
-        const directText = $el.clone().children().remove().end().text().trim().replace(/\s+/g, ' ');
-        
-        // Debug text extraction for first few links
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> All text: "${allText.substring(0, 100)}..."${colors.reset}`);
-            logger.info(`${colors.grey}      -> Direct text: "${directText.substring(0, 100)}..."${colors.reset}`);
+
+        let prominentText = $el.find('.ankeiler__title, .teaser__title, h1, h2, h3, h4, b, strong').first().text();
+        if (!prominentText) {
+             prominentText = $el.text();
         }
+        prominentText = prominentText.replace(/\s+/g, ' ').trim();
         
-        // Analyze nested structure
-        const hasImage = $el.find('img, picture').length > 0;
-        const hasVideo = $el.find('video').length > 0;
-        const headingElements = $el.find('h1, h2, h3, h4, h5, h6');
-        const strongElements = $el.find('strong, b, .title, .headline');
-        
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> Structure: img=${hasImage}, video=${hasVideo}, headings=${headingElements.length}, strong=${strongElements.length}${colors.reset}`);
-        }
-        
-        // Get the most prominent text (usually the headline)
-        let prominentText = '';
-        if (headingElements.length > 0) {
-            prominentText = headingElements.first().text().trim().replace(/\s+/g, ' ');
-            if (index < 5) logger.info(`${colors.grey}      -> Using heading text: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-        } else if (strongElements.length > 0) {
-            prominentText = strongElements.first().text().trim().replace(/\s+/g, ' ');
-            if (index < 5) logger.info(`${colors.grey}      -> Using strong text: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-        } else {
-            // Look for the largest text block
-            const textElements = $el.find('*').filter(function() {
-                const text = $(this).clone().children().remove().end().text().trim();
-                return text.length > 20;
-            });
-            if (textElements.length > 0) {
-                prominentText = textElements.first().text().trim().replace(/\s+/g, ' ');
-                if (index < 5) logger.info(`${colors.grey}      -> Using largest text block: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-            } else {
-                prominentText = allText;
-                if (index < 5) logger.info(`${colors.grey}      -> Using all text: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-            }
-        }
-        
-        // Clean up common prefixes
-        const originalText = prominentText;
-        prominentText = prominentText.replace(/^(premium artikel:|artikel:|nieuws:|breaking:|live:|video:|foto:|premium:)/i, '').trim();
-        if (originalText !== prominentText && index < 5) {
-            logger.info(`${colors.grey}      -> Text after cleanup: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-        }
-        
-        // Analyze context and positioning
-        const parentClasses = $el.parent().attr('class') || '';
-        const parentTag = $el.parent().prop('tagName')?.toLowerCase() || '';
-        const elementClasses = $el.attr('class') || '';
-        const elementId = $el.attr('id') || '';
-        
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> Context: parent=${parentTag}.${parentClasses}, element=${elementClasses}${colors.reset}`);
-        }
-        
-        // Check if it's in a content area vs navigation
-        const isInNav = $el.closest('nav, .navigation, .menu, .sidebar, footer, header .user-actions').length > 0;
-        const isInMain = $el.closest('main, .main, .content, .articles, .news').length > 0;
-        
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> Location: inNav=${isInNav}, inMain=${isInMain}${colors.reset}`);
-        }
-        
-        // Calculate positioning metrics
-        const position = index;
-        const depth = $el.parents().length;
-        
-        // Analyze siblings to detect listing patterns
-        const siblings = $el.parent().children('a').length;
-        const siblingIndex = $el.parent().children('a').index($el);
-        
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> Metrics: position=${position}, depth=${depth}, siblings=${siblings}, siblingIndex=${siblingIndex}${colors.reset}`);
-        }
-        
-        // Apply filtering criteria with detailed logging
-        const textLengthOk = prominentText.length >= 15 && prominentText.length <= 200;
-        const notInNav = !isInNav;
-        
-        if (index < 10) {
-            logger.info(`${colors.grey}      -> Filters: textLength(${prominentText.length})=${textLengthOk}, notInNav=${notInNav}${colors.reset}`);
-        }
-        
-        if (textLengthOk && notInNav) {
-            const linkData = {
+        if (prominentText.length >= 15 && prominentText.length <= 200) {
+            linkAnalysis.push({
                 text: prominentText,
                 href,
-                allText,
-                directText,
-                hasImage,
-                hasVideo,
-                headingElements: headingElements.length,
-                strongElements: strongElements.length,
-                parentClasses,
-                parentTag,
-                elementClasses,
-                elementId,
-                isInMain,
-                position,
-                depth,
-                siblings,
-                siblingIndex,
-                textLength: prominentText.length,
                 selector: generateOptimalSelector($, $el)
-            };
-            
-            linkAnalysis.push(linkData);
-            
-            if (index < 5) {
-                logger.info(`${colors.green}      -> ✅ ADDED to analysis: "${prominentText.substring(0, 40)}..."${colors.reset}`);
-            }
-        } else {
-            if (index < 10) {
-                logger.info(`${colors.grey}      -> ❌ FILTERED OUT${colors.reset}`);
-            }
+            });
         }
     });
     
-    logger.info(`  -> Link processing complete:`);
-    logger.info(`     - Total links processed: ${processedLinks}`);
-    logger.info(`     - Links skipped (invalid href): ${skippedLinks}`);
-    logger.info(`     - Links passing filters: ${linkAnalysis.length}`);
-    
-    if (linkAnalysis.length > 0) {
-        logger.info(`  -> Sample of filtered links:`);
-        linkAnalysis.slice(0, 5).forEach((link, i) => {
-            logger.info(`     ${i + 1}. "${link.text.substring(0, 60)}..." (${link.href.substring(0, 50)}...)`);
-        });
-    } else {
-        logger.warn(`${colors.yellow}  -> No links passed the filtering criteria!${colors.reset}`);
-        logger.info(`  -> Debugging: Let's check what links exist without filters...`);
-        
-        let debugCount = 0;
-        $('a[href]').each((index, element) => {
-            if (debugCount >= 10) return;
-            const $el = $(element);
-            const href = $el.attr('href');
-            const text = $el.text().trim().replace(/\s+/g, ' ');
-            
-            if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.startsWith('mailto:')) {
-                logger.info(`       Debug Link ${debugCount + 1}: "${text.substring(0, 50)}..." -> ${href.substring(0, 50)}...`);
-                logger.info(`         - Text length: ${text.length}`);
-                logger.info(`         - In nav: ${$el.closest('nav, .navigation, .menu, .sidebar, footer, header .user-actions').length > 0}`);
-                debugCount++;
-            }
-        });
-    }
-    
-    logger.info(`  -> Analysis complete: ${linkAnalysis.length} potential headline links identified`);
+    logger.info(`  -> Analysis complete: ${linkAnalysis.length} potential headline links identified after filtering.`);
     return linkAnalysis;
 }
 
@@ -325,36 +223,28 @@ function generateOptimalSelector($, element) {
     const id = $el.attr('id');
     const tag = $el.prop('tagName')?.toLowerCase();
     
-    // Priority: ID > specific class > data attributes > tag + class
     if (id) return `#${id}`;
     
     if (classes) {
-        const classList = classes.split(' ');
-        // Look for semantic class names
+        const classList = classes.split(' ').filter(Boolean);
         const semanticClasses = classList.filter(cls => 
-            cls.includes('headline') || cls.includes('title') || cls.includes('link') || 
-            cls.includes('teaser') || cls.includes('story') || cls.includes('article')
+            /headline|title|link|teaser|story|article|ankeiler/i.test(cls)
         );
         if (semanticClasses.length > 0) {
             return `.${semanticClasses[0]}`;
         }
     }
     
-    // Check for data attributes
     const dataAttrs = Object.keys($el[0].attribs || {}).filter(attr => attr.startsWith('data-'));
     if (dataAttrs.length > 0) {
-        const semanticData = dataAttrs.find(attr => 
-            attr.includes('category') || attr.includes('type') || attr.includes('content')
-        );
+        const semanticData = dataAttrs.find(attr => /category|type|content|gtm/i.test(attr));
         if (semanticData) {
-            return `${tag}[${semanticData}="${$el.attr(semanticData)}"]`;
+            return `${tag}[${semanticData}]`;
         }
     }
     
-    // Fallback to tag + first class
     if (classes) {
-        const firstClass = classes.split(' ')[0];
-        return `${tag}.${firstClass}`;
+        return `${tag}.${classes.split(' ')[0]}`;
     }
     
     return tag;
@@ -365,33 +255,18 @@ async function identifyHeadlinesWithAI(linkAnalysis, baseUrl, country) {
     
     if (linkAnalysis.length === 0) return { headlines: [], method: 'No links found', selector: null };
     
-    // Prepare data for AI analysis - include key metrics but limit size
     const analysisData = linkAnalysis.slice(0, 100).map(link => ({
         text: link.text,
         href: link.href,
-        hasImage: link.hasImage,
-        hasVideo: link.hasVideo,
-        headingElements: link.headingElements,
-        strongElements: link.strongElements,
-        isInMain: link.isInMain,
-        siblings: link.siblings,
-        textLength: link.textLength,
-        position: link.position,
-        elementClasses: link.elementClasses,
-        parentClasses: link.parentClasses,
         selector: link.selector
     }));
     
     const sysPrompt = `You are an expert web scraping analyst. Analyze this JSON array of links from a news website in ${country}. Your task is to identify which links are most likely to be NEWS HEADLINES (not navigation, ads, or utility links).
 
 Consider these factors:
-- Headlines are usually 20-150 characters long
-- They often have images associated with them
-- They're typically in main content areas
-- They often appear in groups (siblings)
-- They may use semantic HTML (headings, strong text)
-- Class names might indicate content type
-- Position matters (earlier links often more important)
+- Headline text content and length.
+- URL structure.
+- The CSS selector associated with the link.
 
 Respond with a JSON object containing:
 {
@@ -403,8 +278,8 @@ Respond with a JSON object containing:
       "confidence": 0.95
     }
   ],
-  "pattern_analysis": "Description of the common pattern you identified",
-  "recommended_selector": "CSS selector that would capture these headlines"
+  "pattern_analysis": "Description of the common pattern you identified for headlines",
+  "recommended_selector": "A robust CSS selector that would capture these headlines, e.g., 'a.story-link' or 'article h3 a'"
 }
 
 Select the TOP 15-25 most likely headlines, prioritizing quality over quantity.`;
@@ -426,7 +301,6 @@ Select the TOP 15-25 most likely headlines, prioritizing quality over quantity.`
         logger.info(`${colors.grey}     Recommended selector: ${analysis.recommended_selector}${colors.reset}`);
         
         if (analysis.headline_links && analysis.headline_links.length > 0) {
-            // Convert to expected format and sanitize URLs
             const headlines = analysis.headline_links.map(link => ({
                 headline: link.text,
                 link: sanitizeUrl(link.href, baseUrl)
@@ -438,7 +312,7 @@ Select the TOP 15-25 most likely headlines, prioritizing quality over quantity.`
                 selector: analysis.recommended_selector || 'AI-identified pattern',
                 aiAnalysis: {
                     pattern: analysis.pattern_analysis,
-                    confidence: analysis.headline_links.map(h => h.confidence).reduce((a, b) => a + b, 0) / analysis.headline_links.length
+                    confidence: analysis.headline_links.map(h => h.confidence).reduce((a, b) => a + b, 0) / (analysis.headline_links.length || 1)
                 }
             };
         }
@@ -449,7 +323,6 @@ Select the TOP 15-25 most likely headlines, prioritizing quality over quantity.`
     return null;
 }
 
-// --- JSON-LD Analysis (Golden Path) ---
 async function tryJsonLdExtraction(html, baseUrl) {
     logger.info(`  -> Trying golden path (JSON-LD structured data)...`);
     const $ = cheerio.load(html);
@@ -490,25 +363,21 @@ async function tryJsonLdExtraction(html, baseUrl) {
     return null;
 }
 
-// --- Main Analysis Pipeline ---
 async function getHeadlineData(html, baseUrl, country) {
     logger.info(`> Stage 2: Intelligent headline detection...`);
     
-    // Try golden path first
     const jsonLdResult = await tryJsonLdExtraction(html, baseUrl);
     if (jsonLdResult) return jsonLdResult;
     
     logger.info(`${colors.yellow}  -> Golden path failed. Analyzing HTML structure...${colors.reset}`);
     
-    // Intelligent structure analysis
     const linkAnalysis = analyzeHtmlStructure(html);
     
-    if (linkAnalysis.length === 0) {
-        logger.error(`  -> No analyzable links found in HTML`);
+    if (linkAnalysis.length < MIN_HEADLINES_THRESHOLD) {
+        logger.error(`  -> Not enough analyzable links found in HTML (${linkAnalysis.length}). Aborting analysis for this source.`);
         return null;
     }
     
-    // AI-powered headline identification
     const aiResult = await identifyHeadlinesWithAI(linkAnalysis, baseUrl, country);
     
     if (aiResult && aiResult.headlines.length >= MIN_HEADLINES_THRESHOLD) {
@@ -516,7 +385,6 @@ async function getHeadlineData(html, baseUrl, country) {
         return aiResult;
     } else if (aiResult && aiResult.headlines.length > 0) {
         logger.warn(`${colors.yellow}  -> AI found ${aiResult.headlines.length} headlines (below threshold of ${MIN_HEADLINES_THRESHOLD})${colors.reset}`);
-        // Still return it - might be a smaller page
         return aiResult;
     }
     
@@ -531,19 +399,16 @@ async function getArticleData(url, outletName, country, learnedSelectors) {
     
     const $ = cheerio.load(html);
     
-    // Intelligent content analysis
     logger.info(`  -> Performing intelligent content analysis...`);
     
     const contentAnalysis = [];
     
-    // Analyze different potential content containers
     const potentialSelectors = [
         'article p', 'main p', '.content p', '.article-body p', '.post-content p',
         'div[class*="content"] p', 'div[class*="body"] p', 'div[class*="text"] p',
         '.story-body p', '.article-text p', 'meta[name="description"]'
     ];
     
-    // Add learned selectors
     if (learnedSelectors && learnedSelectors.length > 0) {
         potentialSelectors.unshift(...learnedSelectors);
     }
@@ -565,16 +430,13 @@ async function getArticleData(url, outletName, country, learnedSelectors) {
                     paragraphs: selector.includes('meta') ? 1 : $(selector).length
                 });
             }
-        } catch (e) {
-            // Skip invalid selectors
-        }
+        } catch (e) { /* Skip invalid selectors */ }
     }
     
-    // Sort by length and find the best content
     contentAnalysis.sort((a, b) => b.length - a.length);
     
     if (contentAnalysis.length > 0 && contentAnalysis[0].length >= MIN_ARTICLE_LENGTH_THRESHOLD) {
-        logger.info(`${colors.green}  -> Found article content (${contentAnalysis[0].length} chars)${colors.reset}`);
+        logger.info(`${colors.green}  -> Found article content (${contentAnalysis[0].length} chars) using selector: ${contentAnalysis[0].selector}${colors.reset}`);
         return {
             selector: contentAnalysis[0].selector,
             text: contentAnalysis[0].text,
@@ -582,7 +444,6 @@ async function getArticleData(url, outletName, country, learnedSelectors) {
         };
     }
     
-    // Fallback: full page text extraction
     logger.warn(`  -> Using fallback full-page text extraction...`);
     $('nav, header, footer, aside, .sidebar, .comments, .ads, script, style, noscript').remove();
     const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
@@ -598,51 +459,6 @@ async function getArticleData(url, outletName, country, learnedSelectors) {
     return null;
 }
 
-async function findBusinessUrlWithAI(html, baseUrl, country) {
-    logger.info(`> AI Task: Finding business/news section URL...`);
-    const $ = cheerio.load(html);
-    const links = [];
-    
-    $('nav a, header a').each((_, el) => {
-        const text = $(el).text().trim();
-        const href = $(el).attr('href');
-        if (text && href) {
-            try {
-                links.push({ text, url: new URL(href, baseUrl).href });
-            } catch(e) {}
-        }
-    });
-    
-    if (links.length === 0) {
-        logger.warn(`  -> No navigation links found`);
-        return null;
-    }
-    
-    logger.info(`  -> Analyzing ${links.length} navigation links`);
-    
-    const sysPrompt = `You are a multilingual media analyst. From this JSON of navigation links from a news website in ${country}, identify the single URL that most likely leads to the main "News", "Latest News", "Business", or "Economy" section. Respond ONLY with a valid JSON object: { "best_url": "the-full-url", "reasoning": "Your brief reasoning." }`;
-    
-    try {
-        const res = await client.chat.completions.create({
-            model: LLM_MODEL,
-            messages: [
-                { role: 'system', content: sysPrompt },
-                { role: 'user', content: JSON.stringify(links) }
-            ],
-            response_format: { type: 'json_object' }
-        });
-        
-        const { best_url, reasoning } = JSON.parse(res.choices[0].message.content);
-        logger.info(`${colors.green}  -> AI identified: ${best_url}${colors.reset}`);
-        logger.info(`${colors.grey}     Reasoning: ${reasoning}${colors.reset}`);
-        return best_url;
-    } catch (e) {
-        logger.error(`  -> AI navigation analysis failed: ${e.message}`);
-        return null;
-    }
-}
-
-// --- Main Outlet Analysis ---
 async function analyzeOutlet(outlet, learnedSelectors) {
     console.log(`\n\n======================================================================`);
     console.log(`${colors.yellow}🔍 ANALYZING: ${outlet.name} (${outlet.country})${colors.reset}`);
@@ -651,7 +467,7 @@ async function analyzeOutlet(outlet, learnedSelectors) {
     logger.info(`> Stage 1: Locating content page...`);
     let finalUrl = outlet.url;
     let urlDiscoveryMethod = 'initial';
-    let { html, status, consentButtonClicked } = await getPageHtmlWithPlaywright(finalUrl, outlet.name, outlet.country);
+    let { html, status } = await getPageHtmlWithPlaywright(finalUrl, outlet.name, outlet.country);
 
     if (status === 404) {
         logger.warn(`  -> Initial URL returned 404. Attempting root domain analysis...`);
@@ -663,17 +479,13 @@ async function analyzeOutlet(outlet, learnedSelectors) {
             const correctedUrl = await findBusinessUrlWithAI(rootResult.html, rootUrl, outlet.country);
             if (correctedUrl) {
                 finalUrl = correctedUrl;
-                ({ html, consentButtonClicked } = await getPageHtmlWithPlaywright(finalUrl, outlet.name, outlet.country));
-            } else {
-                html = null;
-            }
-        } else {
-            html = null;
-        }
+                ({ html } = await getPageHtmlWithPlaywright(finalUrl, outlet.name, outlet.country));
+            } else { html = null; }
+        } else { html = null; }
     }
 
     if (!html) {
-        console.log(`\n${colors.red}❌ ANALYSIS FAILED: Could not retrieve valid page content${colors.reset}`);
+        console.log(`\n${colors.red}❌ ANALYSIS FAILED: Could not retrieve valid page content for ${finalUrl}${colors.reset}`);
         return null;
     }
 
@@ -688,8 +500,14 @@ async function analyzeOutlet(outlet, learnedSelectors) {
         logger.error(`❌ No valid article URLs found in headlines`);
         return null;
     }
+    
+    const sanitizedArticleUrl = sanitizeUrl(firstArticleUrl, finalUrl);
+    if(!sanitizedArticleUrl) {
+        logger.error(`❌ Could not sanitize the first article URL: ${firstArticleUrl}`);
+        return null;
+    }
 
-    const articleData = await getArticleData(firstArticleUrl, outlet.name, outlet.country, learnedSelectors.articles);
+    const articleData = await getArticleData(sanitizedArticleUrl, outlet.name, outlet.country, learnedSelectors.articles);
 
     const analysisResult = {
         urlDiscoveryMethod,
@@ -698,10 +516,11 @@ async function analyzeOutlet(outlet, learnedSelectors) {
         headlineSelectorMethod: headlineData.method,
         headlineSelector: headlineData.selector,
         headlinesFound: headlineData.headlines.length,
+        firstArticleUrl: sanitizedArticleUrl,
         articleContentSelector: articleData ? articleData.selector : null,
         sampleArticleLength: articleData ? articleData.text.length : 0,
         aiInsights: headlineData.aiAnalysis || null,
-        notes: consentButtonClicked ? 'Consent button clicked by agent.' : 'No interaction required.'
+        notes: `Handled consent using persistent browser state.`
     };
 
     console.log(`\n--- ✅ CONFIGURATION DISCOVERED FOR: ${outlet.name} ---`);
@@ -711,9 +530,8 @@ async function analyzeOutlet(outlet, learnedSelectors) {
     return analysisResult;
 }
 
-// --- Main Execution Logic ---
 async function main() {
-    logger.info(`🚀 Starting Intelligent Source Configuration Agent (v10.0)...`);
+    logger.info(`🚀 Starting Intelligent Source Configuration Agent (v10.11)...`);
     
     let allPapersData;
     try {
@@ -728,7 +546,7 @@ async function main() {
     const outletsToProcess = getOutletsToProcess(allPapersData);
     
     if (!outletsToProcess || outletsToProcess.length === 0) {
-        logger.info('✅ All outlets analyzed. No new outlets to process.');
+        logger.info('✅ All outlets analyzed or none targeted.');
         rl.close();
         return;
     }
@@ -757,7 +575,7 @@ async function main() {
             logger.warn(`${colors.yellow}⚠️  Analysis unsuccessful for ${outlet.name} - will retry next run${colors.reset}`);
         }
 
-        await pause();
+        // if (outletsToProcess.length > 1 && outletsToProcess.indexOf(outlet) < outletsToProcess.length - 1) await pause();
     }
 
     logger.info('🎉 Analysis complete for all targeted outlets.');
@@ -792,26 +610,34 @@ function getOutletsToProcess(allPapersData) {
         c.outlets.map(o => ({...o, country: `${c.flag_emoji} ${c.country}`}))
     );
 
-    if (args[0]) allOutlets = allOutlets.filter(o => o.country.toLowerCase().includes(args[0].toLowerCase()));
-    if (args[1]) allOutlets = allOutlets.filter(o => o.name.toLowerCase().includes(args[1].toLowerCase()));
+    if (args.length > 0) {
+      const targetName = args.join(' ').toLowerCase();
+      allOutlets = allOutlets.filter(o => o.name.toLowerCase().includes(targetName) || o.country.toLowerCase().includes(targetName));
+    }
 
     const unprocessedOutlets = allOutlets.filter(o => 
         !o.labCheckPerformed || 
         !o.analysis?.articleContentSelector || 
-        o.analysis?.sampleArticleLength < MIN_ARTICLE_LENGTH_THRESHOLD
+        o.analysis?.sampleArticleLength < MIN_ARTICLE_LENGTH_THRESHOLD ||
+        !o.analysis?.firstArticleUrl
     );
 
     if (unprocessedOutlets.length === 0 && allOutlets.length > 0) {
-        logger.info(`Found ${allOutlets.length} matching outlet(s), but all analyzed. To re-run, set "labCheckPerformed" to false.`);
+        logger.info(`Found ${allOutlets.length} matching outlet(s), but all appear to be analyzed. To re-run, set "labCheckPerformed" to false in papers.json.`);
+        return [];
+    }
+    
+    if (unprocessedOutlets.length === 0) {
+        logger.info(`✅ All outlets have been successfully analyzed.`);
         return [];
     }
 
-    logger.info(`Found ${unprocessedOutlets.length} unprocessed outlet(s) to analyze.`);
+    logger.info(`Found ${unprocessedOutlets.length} unprocessed or incomplete outlet(s) to analyze.`);
     return unprocessedOutlets;
 }
 
 main().catch(e => { 
-    logger.fatal('Critical error occurred:', e); 
+    logger.fatal('A critical error occurred:', e); 
     rl.close(); 
     process.exit(1); 
 });

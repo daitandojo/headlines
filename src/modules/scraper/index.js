@@ -4,9 +4,10 @@ import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { logger } from '../../utils/logger.js';
-import { safeExecute, truncateString } from '../../utils/helpers.js'; // FIX: truncateString is now imported
+import { safeExecute, truncateString } from '../../utils/helpers.js';
 import { CONCURRENCY_LIMIT, SCRAPER_PROXY_URL, MIN_ARTICLE_CHARS } from '../../config/index.js';
-import { SITES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js';
+// MODIFIED: Import the new country-based config
+import { COUNTRIES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js';
 
 const limit = pLimit(CONCURRENCY_LIMIT);
 
@@ -50,10 +51,6 @@ async function fetchPage(url) {
 }
 
 export async function scrapeSite(site) {
-    // This function is now used by both the main app and the scrape.js script.
-    // We avoid logging here to keep the scrape.js output clean.
-    
-    // --- SPECIAL API-BASED SCRAPING FOR EQT ---
     if (site.name === 'EQT') {
         const pageResponse = await fetchPage(site.url);
         if (!pageResponse) return { source: site.name, articles: [], success: false };
@@ -84,7 +81,6 @@ export async function scrapeSite(site) {
         }
     }
 
-    // --- STANDARD HTML SCRAPING FOR ALL OTHER SITES ---
     const response = await fetchPage(site.url);
     if (!response) {
         return { source: site.name, articles: [], success: false };
@@ -100,7 +96,6 @@ export async function scrapeSite(site) {
                 if (jsonData['@type'] === 'ItemList' && jsonData.itemListElement) {
                     jsonData.itemListElement.forEach(item => {
                         if (item.name && item.url) {
-                           // FIX: Ensure URL is absolute before pushing
                            const absoluteUrl = new URL(item.url, site.url).href;
                            articles.push({ headline: item.name, link: absoluteUrl, source: site.name, newspaper: site.newspaper || site.name });
                         }
@@ -114,7 +109,6 @@ export async function scrapeSite(site) {
         $(site.selector).each((_, el) => {
             const articleData = site.extract($(el), site);
             if (articleData && articleData.headline && articleData.link) {
-                // Ensure URL is absolute
                 articleData.link = new URL(articleData.link, site.url).href;
                 articleData.newspaper = site.newspaper || site.name;
                 articles.push(articleData);
@@ -128,7 +122,11 @@ export async function scrapeSite(site) {
 
 export async function scrapeAllHeadlines() {
     logger.info('📰 Starting headline scraping from all sources...');
-    const promises = Object.values(SITES_CONFIG).map(site => limit(() => scrapeSite(site)));
+    
+    // MODIFIED: Flatten the new country-based structure into a single list of sites to scrape.
+    const allSites = COUNTRIES_CONFIG.flatMap(country => country.sites);
+    
+    const promises = allSites.map(site => limit(() => scrapeSite(site)));
     const results = await Promise.all(promises);
     
     results.forEach(r => {
@@ -150,7 +148,6 @@ export async function scrapeArticleContent(article) {
         return { ...article, enrichment_error: 'Failed to fetch page' };
     }
     
-    // --- SPECIAL JSON-BASED ENRICHMENT FOR EQT ARTICLES ---
     if (article.newspaper === 'EQT') {
         const $page = cheerio.load(pageResponse.data);
         const scriptData = $page('script#__NEXT_DATA__').html();

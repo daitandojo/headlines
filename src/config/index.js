@@ -44,8 +44,8 @@ export const SCRAPER_PROXY_URL = getCleanStringEnv('SCRAPER_PROXY_URL') || null;
 
 
 // --- Thresholds ---
-export const HEADLINES_RELEVANCE_THRESHOLD = 20; // MODIFIED: Changed from 10 to 20
-export const ARTICLES_RELEVANCE_THRESHOLD = 50; // MODIFIED: Changed from 30 to 50
+export const HEADLINES_RELEVANCE_THRESHOLD = 20;
+export const ARTICLES_RELEVANCE_THRESHOLD = 50;
 export const MIN_ARTICLE_CHARS = 150;
 export const MAX_ARTICLE_CHARS = 100000;
 export const MIN_HEADLINE_CHARS = 5;
@@ -65,22 +65,18 @@ export const SMTP_CONFIG = {
     fromName: getCleanStringEnv('SMTP_FROM_NAME', 'Headlines Bot'),
 };
 
-export const HEADLINE_RECIPIENTS_STR = getCleanStringEnv('HEADLINE_RECIPIENTS');
-export const SUPERVISOR_EMAIL_ENV = getCleanStringEnv('SUPERVISOR_EMAIL', 'your-supervisor-default@example.com');
-export const SEND_TO_DEFAULT_SUPERVISOR_ENV = process.env.SEND_TO_DEFAULT_SUPERVISOR === 'true';
+// REMOVED: All recipient logic is now handled by the email module via src/config/users.js.
+// export const HEADLINE_RECIPIENTS_STR = getCleanStringEnv('HEADLINE_RECIPIENTS');
+// export const HEADLINE_RECIPIENTS = HEADLINE_RECIPIENTS_STR.split(',').map(e => e.trim()).filter(Boolean);
 
-// Derived Email Config
-export const HEADLINE_RECIPIENTS = HEADLINE_RECIPIENTS_STR.split(',').map(e => e.trim()).filter(Boolean);
-export const SUPERVISOR_EMAIL = SUPERVISOR_EMAIL_ENV;
-export const SEND_TO_DEFAULT_SUPERVISOR = SEND_TO_DEFAULT_SUPERVISOR_ENV;
 
 // --- Email Template Config ---
 export const EMAIL_CONFIG = {
   templateName: 'wealthEvents',
-  subject: '🇩🇰 🇳🇴 New Nordic Banking Opportunities Detected',
+  subject: 'New Nordic Banking Opportunities Detected', // This will be customized per user
   language: 'en',
-  brandName: 'Nordic Wealth Watch',
-  companyAddress: 'Wealth Watch Inc., Copenhagen, Denmark',
+  brandName: 'Your Wealth Watch',
+  companyAddress: 'Wealth Watch Inc., Paris, France',
   unsubscribeUrl: '#',
 };
 

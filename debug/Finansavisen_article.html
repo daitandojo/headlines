@@ -1,0 +1,981 @@
+<!DOCTYPE html><html lang="no"><head><style type="text/css">:root{--toastify-color-light: #fff;--toastify-color-dark: #121212;--toastify-color-info: #3498db;--toastify-color-success: #07bc0c;--toastify-color-warning: #f1c40f;--toastify-color-error: hsl(6, 78%, 57%);--toastify-color-transparent: rgba(255, 255, 255, .7);--toastify-icon-color-info: var(--toastify-color-info);--toastify-icon-color-success: var(--toastify-color-success);--toastify-icon-color-warning: var(--toastify-color-warning);--toastify-icon-color-error: var(--toastify-color-error);--toastify-container-width: fit-content;--toastify-toast-width: 320px;--toastify-toast-offset: 16px;--toastify-toast-top: max(var(--toastify-toast-offset), env(safe-area-inset-top));--toastify-toast-right: max(var(--toastify-toast-offset), env(safe-area-inset-right));--toastify-toast-left: max(var(--toastify-toast-offset), env(safe-area-inset-left));--toastify-toast-bottom: max(var(--toastify-toast-offset), env(safe-area-inset-bottom));--toastify-toast-background: #fff;--toastify-toast-padding: 14px;--toastify-toast-min-height: 64px;--toastify-toast-max-height: 800px;--toastify-toast-bd-radius: 6px;--toastify-toast-shadow: 0px 4px 12px rgba(0, 0, 0, .1);--toastify-font-family: sans-serif;--toastify-z-index: 9999;--toastify-text-color-light: #757575;--toastify-text-color-dark: #fff;--toastify-text-color-info: #fff;--toastify-text-color-success: #fff;--toastify-text-color-warning: #fff;--toastify-text-color-error: #fff;--toastify-spinner-color: #616161;--toastify-spinner-color-empty-area: #e0e0e0;--toastify-color-progress-light: linear-gradient(to right, #4cd964, #5ac8fa, #007aff, #34aadc, #5856d6, #ff2d55);--toastify-color-progress-dark: #bb86fc;--toastify-color-progress-info: var(--toastify-color-info);--toastify-color-progress-success: var(--toastify-color-success);--toastify-color-progress-warning: var(--toastify-color-warning);--toastify-color-progress-error: var(--toastify-color-error);--toastify-color-progress-bgo: .2}.Toastify__toast-container{z-index:var(--toastify-z-index);-webkit-transform:translate3d(0,0,var(--toastify-z-index));position:fixed;width:var(--toastify-container-width);box-sizing:border-box;color:#fff;display:flex;flex-direction:column}.Toastify__toast-container--top-left{top:var(--toastify-toast-top);left:var(--toastify-toast-left)}.Toastify__toast-container--top-center{top:var(--toastify-toast-top);left:50%;transform:translate(-50%);align-items:center}.Toastify__toast-container--top-right{top:var(--toastify-toast-top);right:var(--toastify-toast-right);align-items:end}.Toastify__toast-container--bottom-left{bottom:var(--toastify-toast-bottom);left:var(--toastify-toast-left)}.Toastify__toast-container--bottom-center{bottom:var(--toastify-toast-bottom);left:50%;transform:translate(-50%);align-items:center}.Toastify__toast-container--bottom-right{bottom:var(--toastify-toast-bottom);right:var(--toastify-toast-right);align-items:end}.Toastify__toast{--y: 0;position:relative;touch-action:none;width:var(--toastify-toast-width);min-height:var(--toastify-toast-min-height);box-sizing:border-box;margin-bottom:1rem;padding:var(--toastify-toast-padding);border-radius:var(--toastify-toast-bd-radius);box-shadow:var(--toastify-toast-shadow);max-height:var(--toastify-toast-max-height);font-family:var(--toastify-font-family);z-index:0;display:flex;flex:1 auto;align-items:center;word-break:break-word}@media only screen and (max-width: 480px){.Toastify__toast-container{width:100vw;left:env(safe-area-inset-left);margin:0}.Toastify__toast-container--top-left,.Toastify__toast-container--top-center,.Toastify__toast-container--top-right{top:env(safe-area-inset-top);transform:translate(0)}.Toastify__toast-container--bottom-left,.Toastify__toast-container--bottom-center,.Toastify__toast-container--bottom-right{bottom:env(safe-area-inset-bottom);transform:translate(0)}.Toastify__toast-container--rtl{right:env(safe-area-inset-right);left:initial}.Toastify__toast{--toastify-toast-width: 100%;margin-bottom:0;border-radius:0}}.Toastify__toast-container[data-stacked=true]{width:var(--toastify-toast-width)}.Toastify__toast--stacked{position:absolute;width:100%;transform:translate3d(0,var(--y),0) scale(var(--s));transition:transform .3s}.Toastify__toast--stacked[data-collapsed] .Toastify__toast-body,.Toastify__toast--stacked[data-collapsed] .Toastify__close-button{transition:opacity .1s}.Toastify__toast--stacked[data-collapsed=false]{overflow:visible}.Toastify__toast--stacked[data-collapsed=true]:not(:last-child)>*{opacity:0}.Toastify__toast--stacked:after{content:"";position:absolute;left:0;right:0;height:calc(var(--g) * 1px);bottom:100%}.Toastify__toast--stacked[data-pos=top]{top:0}.Toastify__toast--stacked[data-pos=bot]{bottom:0}.Toastify__toast--stacked[data-pos=bot].Toastify__toast--stacked:before{transform-origin:top}.Toastify__toast--stacked[data-pos=top].Toastify__toast--stacked:before{transform-origin:bottom}.Toastify__toast--stacked:before{content:"";position:absolute;left:0;right:0;bottom:0;height:100%;transform:scaleY(3);z-index:-1}.Toastify__toast--rtl{direction:rtl}.Toastify__toast--close-on-click{cursor:pointer}.Toastify__toast-icon{margin-inline-end:10px;width:22px;flex-shrink:0;display:flex}.Toastify--animate{animation-fill-mode:both;animation-duration:.5s}.Toastify--animate-icon{animation-fill-mode:both;animation-duration:.3s}.Toastify__toast-theme--dark{background:var(--toastify-color-dark);color:var(--toastify-text-color-dark)}.Toastify__toast-theme--light,.Toastify__toast-theme--colored.Toastify__toast--default{background:var(--toastify-color-light);color:var(--toastify-text-color-light)}.Toastify__toast-theme--colored.Toastify__toast--info{color:var(--toastify-text-color-info);background:var(--toastify-color-info)}.Toastify__toast-theme--colored.Toastify__toast--success{color:var(--toastify-text-color-success);background:var(--toastify-color-success)}.Toastify__toast-theme--colored.Toastify__toast--warning{color:var(--toastify-text-color-warning);background:var(--toastify-color-warning)}.Toastify__toast-theme--colored.Toastify__toast--error{color:var(--toastify-text-color-error);background:var(--toastify-color-error)}.Toastify__progress-bar-theme--light{background:var(--toastify-color-progress-light)}.Toastify__progress-bar-theme--dark{background:var(--toastify-color-progress-dark)}.Toastify__progress-bar--info{background:var(--toastify-color-progress-info)}.Toastify__progress-bar--success{background:var(--toastify-color-progress-success)}.Toastify__progress-bar--warning{background:var(--toastify-color-progress-warning)}.Toastify__progress-bar--error{background:var(--toastify-color-progress-error)}.Toastify__progress-bar-theme--colored.Toastify__progress-bar--info,.Toastify__progress-bar-theme--colored.Toastify__progress-bar--success,.Toastify__progress-bar-theme--colored.Toastify__progress-bar--warning,.Toastify__progress-bar-theme--colored.Toastify__progress-bar--error{background:var(--toastify-color-transparent)}.Toastify__close-button{color:#fff;position:absolute;top:6px;right:6px;background:transparent;outline:none;border:none;padding:0;cursor:pointer;opacity:.7;transition:.3s ease;z-index:1}.Toastify__toast--rtl .Toastify__close-button{left:6px;right:unset}.Toastify__close-button--light{color:#000;opacity:.3}.Toastify__close-button>svg{fill:currentColor;height:16px;width:14px}.Toastify__close-button:hover,.Toastify__close-button:focus{opacity:1}@keyframes Toastify__trackProgress{0%{transform:scaleX(1)}to{transform:scaleX(0)}}.Toastify__progress-bar{position:absolute;bottom:0;left:0;width:100%;height:100%;z-index:1;opacity:.7;transform-origin:left}.Toastify__progress-bar--animated{animation:Toastify__trackProgress linear 1 forwards}.Toastify__progress-bar--controlled{transition:transform .2s}.Toastify__progress-bar--rtl{right:0;left:initial;transform-origin:right;border-bottom-left-radius:initial}.Toastify__progress-bar--wrp{position:absolute;overflow:hidden;bottom:0;left:0;width:100%;height:5px;border-bottom-left-radius:var(--toastify-toast-bd-radius);border-bottom-right-radius:var(--toastify-toast-bd-radius)}.Toastify__progress-bar--wrp[data-hidden=true]{opacity:0}.Toastify__progress-bar--bg{opacity:var(--toastify-color-progress-bgo);width:100%;height:100%}.Toastify__spinner{width:20px;height:20px;box-sizing:border-box;border:2px solid;border-radius:100%;border-color:var(--toastify-spinner-color-empty-area);border-right-color:var(--toastify-spinner-color);animation:Toastify__spin .65s linear infinite}@keyframes Toastify__bounceInRight{0%,60%,75%,90%,to{animation-timing-function:cubic-bezier(.215,.61,.355,1)}0%{opacity:0;transform:translate3d(3000px,0,0)}60%{opacity:1;transform:translate3d(-25px,0,0)}75%{transform:translate3d(10px,0,0)}90%{transform:translate3d(-5px,0,0)}to{transform:none}}@keyframes Toastify__bounceOutRight{20%{opacity:1;transform:translate3d(-20px,var(--y),0)}to{opacity:0;transform:translate3d(2000px,var(--y),0)}}@keyframes Toastify__bounceInLeft{0%,60%,75%,90%,to{animation-timing-function:cubic-bezier(.215,.61,.355,1)}0%{opacity:0;transform:translate3d(-3000px,0,0)}60%{opacity:1;transform:translate3d(25px,0,0)}75%{transform:translate3d(-10px,0,0)}90%{transform:translate3d(5px,0,0)}to{transform:none}}@keyframes Toastify__bounceOutLeft{20%{opacity:1;transform:translate3d(20px,var(--y),0)}to{opacity:0;transform:translate3d(-2000px,var(--y),0)}}@keyframes Toastify__bounceInUp{0%,60%,75%,90%,to{animation-timing-function:cubic-bezier(.215,.61,.355,1)}0%{opacity:0;transform:translate3d(0,3000px,0)}60%{opacity:1;transform:translate3d(0,-20px,0)}75%{transform:translate3d(0,10px,0)}90%{transform:translate3d(0,-5px,0)}to{transform:translateZ(0)}}@keyframes Toastify__bounceOutUp{20%{transform:translate3d(0,calc(var(--y) - 10px),0)}40%,45%{opacity:1;transform:translate3d(0,calc(var(--y) + 20px),0)}to{opacity:0;transform:translate3d(0,-2000px,0)}}@keyframes Toastify__bounceInDown{0%,60%,75%,90%,to{animation-timing-function:cubic-bezier(.215,.61,.355,1)}0%{opacity:0;transform:translate3d(0,-3000px,0)}60%{opacity:1;transform:translate3d(0,25px,0)}75%{transform:translate3d(0,-10px,0)}90%{transform:translate3d(0,5px,0)}to{transform:none}}@keyframes Toastify__bounceOutDown{20%{transform:translate3d(0,calc(var(--y) - 10px),0)}40%,45%{opacity:1;transform:translate3d(0,calc(var(--y) + 20px),0)}to{opacity:0;transform:translate3d(0,2000px,0)}}.Toastify__bounce-enter--top-left,.Toastify__bounce-enter--bottom-left{animation-name:Toastify__bounceInLeft}.Toastify__bounce-enter--top-right,.Toastify__bounce-enter--bottom-right{animation-name:Toastify__bounceInRight}.Toastify__bounce-enter--top-center{animation-name:Toastify__bounceInDown}.Toastify__bounce-enter--bottom-center{animation-name:Toastify__bounceInUp}.Toastify__bounce-exit--top-left,.Toastify__bounce-exit--bottom-left{animation-name:Toastify__bounceOutLeft}.Toastify__bounce-exit--top-right,.Toastify__bounce-exit--bottom-right{animation-name:Toastify__bounceOutRight}.Toastify__bounce-exit--top-center{animation-name:Toastify__bounceOutUp}.Toastify__bounce-exit--bottom-center{animation-name:Toastify__bounceOutDown}@keyframes Toastify__zoomIn{0%{opacity:0;transform:scale3d(.3,.3,.3)}50%{opacity:1}}@keyframes Toastify__zoomOut{0%{opacity:1}50%{opacity:0;transform:translate3d(0,var(--y),0) scale3d(.3,.3,.3)}to{opacity:0}}.Toastify__zoom-enter{animation-name:Toastify__zoomIn}.Toastify__zoom-exit{animation-name:Toastify__zoomOut}@keyframes Toastify__flipIn{0%{transform:perspective(400px) rotateX(90deg);animation-timing-function:ease-in;opacity:0}40%{transform:perspective(400px) rotateX(-20deg);animation-timing-function:ease-in}60%{transform:perspective(400px) rotateX(10deg);opacity:1}80%{transform:perspective(400px) rotateX(-5deg)}to{transform:perspective(400px)}}@keyframes Toastify__flipOut{0%{transform:translate3d(0,var(--y),0) perspective(400px)}30%{transform:translate3d(0,var(--y),0) perspective(400px) rotateX(-20deg);opacity:1}to{transform:translate3d(0,var(--y),0) perspective(400px) rotateX(90deg);opacity:0}}.Toastify__flip-enter{animation-name:Toastify__flipIn}.Toastify__flip-exit{animation-name:Toastify__flipOut}@keyframes Toastify__slideInRight{0%{transform:translate3d(110%,0,0);visibility:visible}to{transform:translate3d(0,var(--y),0)}}@keyframes Toastify__slideInLeft{0%{transform:translate3d(-110%,0,0);visibility:visible}to{transform:translate3d(0,var(--y),0)}}@keyframes Toastify__slideInUp{0%{transform:translate3d(0,110%,0);visibility:visible}to{transform:translate3d(0,var(--y),0)}}@keyframes Toastify__slideInDown{0%{transform:translate3d(0,-110%,0);visibility:visible}to{transform:translate3d(0,var(--y),0)}}@keyframes Toastify__slideOutRight{0%{transform:translate3d(0,var(--y),0)}to{visibility:hidden;transform:translate3d(110%,var(--y),0)}}@keyframes Toastify__slideOutLeft{0%{transform:translate3d(0,var(--y),0)}to{visibility:hidden;transform:translate3d(-110%,var(--y),0)}}@keyframes Toastify__slideOutDown{0%{transform:translate3d(0,var(--y),0)}to{visibility:hidden;transform:translate3d(0,500px,0)}}@keyframes Toastify__slideOutUp{0%{transform:translate3d(0,var(--y),0)}to{visibility:hidden;transform:translate3d(0,-500px,0)}}.Toastify__slide-enter--top-left,.Toastify__slide-enter--bottom-left{animation-name:Toastify__slideInLeft}.Toastify__slide-enter--top-right,.Toastify__slide-enter--bottom-right{animation-name:Toastify__slideInRight}.Toastify__slide-enter--top-center{animation-name:Toastify__slideInDown}.Toastify__slide-enter--bottom-center{animation-name:Toastify__slideInUp}.Toastify__slide-exit--top-left,.Toastify__slide-exit--bottom-left{animation-name:Toastify__slideOutLeft;animation-timing-function:ease-in;animation-duration:.3s}.Toastify__slide-exit--top-right,.Toastify__slide-exit--bottom-right{animation-name:Toastify__slideOutRight;animation-timing-function:ease-in;animation-duration:.3s}.Toastify__slide-exit--top-center{animation-name:Toastify__slideOutUp;animation-timing-function:ease-in;animation-duration:.3s}.Toastify__slide-exit--bottom-center{animation-name:Toastify__slideOutDown;animation-timing-function:ease-in;animation-duration:.3s}@keyframes Toastify__spin{0%{transform:rotate(0)}to{transform:rotate(360deg)}}
+</style><meta http-equiv="origin-trial" content="A7vZI3v+Gz7JfuRolKNM4Aff6zaGuT7X0mf3wtoZTnKv6497cVMnhy03KDqX7kBz/q/iidW7srW31oQbBt4VhgoAAACUeyJvcmlnaW4iOiJodHRwczovL3d3dy5nb29nbGUuY29tOjQ0MyIsImZlYXR1cmUiOiJEaXNhYmxlVGhpcmRQYXJ0eVN0b3JhZ2VQYXJ0aXRpb25pbmczIiwiZXhwaXJ5IjoxNzU3OTgwODAwLCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ==">
+    <!-- Article Template -->
+    
+
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,user-scalable=yes">
+<script async="" src="https://scripts.clarity.ms/0.8.23/clarity.js"></script><script type="text/javascript" async="" src="//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-PJE2YR5S99&amp;cx=c&amp;gtm=45He5870h2v811280863za200&amp;tag_exp=101509157~103116026~103200004~103233427~104684208~104684211~105033763~105033765~105103161~105103163~105135708~105135710"></script><script async="" src="https://www.clarity.ms/tag/bq3qzqmpss?ref=gtm2"></script><script async="" src="https://c.bannerflow.net/scripts/conversion/1.0.41/conversion.min.js"></script><script type="text/javascript" async="" src="https://cdn.mxpnl.com/libs/mixpanel-js-wrapper.min.js"></script><script type="text/javascript" async="" charset="utf-8" src="https://www.gstatic.com/recaptcha/releases/07cvpCr3Xe3g2ttJNUkC6W0J/recaptcha__en.js" crossorigin="anonymous" integrity="sha384-TG5g5Dk43Fs+5i/7xL9a4bBQ4Pg/EAutBT8nLaRiYl1GoFPQDxyCkJYzTQEw2Njo"></script><script async="" type="text/javascript" src="https://macro.adnami.io/macro/gen/adsm.macro.rmb.js"></script><script async="" type="text/javascript" data-src="lwhb" src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script><script async="" type="text/javascript" data-src="lwhb" src="https://content.lwadm.com/prebid/8.14.0/7af92cae-4570-4609-a9df-e875355b1685/prebid.js"></script><script async="" type="text/javascript" data-src="lwhb" src="https://btloader.com/tag?o=6218142170218496&amp;upapi=true"></script><script type="module" src="https://cloud.get-advantage.org/enabler.js?domain=www.finansavisen.no"></script><script async="" src="https://www.googletagmanager.com/gtm.js?id=GTM-W3GDQPF"></script><script type="text/javascript" src="/static/iphone-scale-rule.js?v=1"></script>
+
+
+<meta charset="utf-8">
+
+  <meta name="apple-itunes-app" content="app-id=434568179">
+  <meta name="theme-color" content="#004182">
+
+<!-- Fix for Microsoft Edge -->
+<meta name="format-detection" content="telephone=no">
+
+<title>Nasdaq med ny toppnotering – Apple opp 12 prosent på to dager | Finansavisen</title>
+
+
+
+<!--[if lt IE 10]>
+<script>window.isIe9 = true;</script>
+<![endif]-->
+<!--[if IE 10]>
+<script>window.isIe10 = true;</script>
+<![endif]-->
+
+<script>
+  var env = 'production';
+  var app = {
+    componentData: '{&quot;dp-plugin-element-related-18221754682994701--replaced&quot;:{&quot;nodeName&quot;:&quot;RelatedLinksList&quot;,&quot;id&quot;:&quot;dp-plugin-element-related-18221754682994701--replaced&quot;,&quot;relatedLinks&quot;:[{&quot;containerId&quot;:&quot;dp-plugin-element-related-18221754682994701&quot;,&quot;title&quot;:&quot;USA–Russland-samtaler: Vil gi Putin territoriell gevinst&quot;,&quot;url&quot;:&quot;https://finansavisen.no/artikkel/8284355&quot;,&quot;id&quot;:&quot;8284355&quot;,&quot;imageUrl&quot;:&quot;https://smooth-storage.aptoma.no/users/hegnar/images/131617933.jpg?&amp;accessToken=84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e&quot;,&quot;preamble&quot;:&quot;USA og Russland forhandler om fredsavtale som kan gi Putin kontroll over store, okkuperte områder i Ukraina. Avtalen kan være ferdig neste uke.&quot;}]},&quot;dp-plugin-element-related-41011754682360327--replaced&quot;:{&quot;nodeName&quot;:&quot;RelatedLinksList&quot;,&quot;id&quot;:&quot;dp-plugin-element-related-41011754682360327--replaced&quot;,&quot;relatedLinks&quot;:[{&quot;containerId&quot;:&quot;dp-plugin-element-related-41011754682360327&quot;,&quot;title&quot;:&quot;Det hvite hus: Feilinformasjon om gulltoll&quot;,&quot;url&quot;:&quot;https://finansavisen.no/artikkel/8284378&quot;,&quot;id&quot;:&quot;8284378&quot;,&quot;imageUrl&quot;:&quot;https://smooth-storage.aptoma.no/users/hegnar/images/131626299.jpg?&amp;accessToken=a66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c&quot;,&quot;preamble&quot;:&quot;Trump-administrasjonen varsler en avklaring etter forvirring om toll på gullimport. &quot;}]},&quot;dp-plugin-element-related-99221754682370513--replaced&quot;:{&quot;nodeName&quot;:&quot;RelatedLinksList&quot;,&quot;id&quot;:&quot;dp-plugin-element-related-99221754682370513--replaced&quot;,&quot;relatedLinks&quot;:[{&quot;containerId&quot;:&quot;dp-plugin-element-related-99221754682370513&quot;,&quot;title&quot;:&quot;Trump gjør globale børser «great again»&quot;,&quot;url&quot;:&quot;https://finansavisen.no/artikkel/8284373&quot;,&quot;id&quot;:&quot;8284373&quot;,&quot;imageUrl&quot;:&quot;https://smooth-storage.aptoma.no/users/hegnar/images/131624355.jpg?&amp;accessToken=a4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea&quot;,&quot;preamble&quot;:&quot;Internasjonale aksjemarkeder slår amerikanske for første gang på flere år, drevet av tollfrykt og investorrotasjon.&quot;}]},&quot;takeover-page&quot;:{&quot;nodeName&quot;:&quot;TakeoverPage&quot;,&quot;id&quot;:&quot;takeover-page&quot;,&quot;format&quot;:&quot;finansavisen_desktop-welcome-page&quot;,&quot;showAds&quot;:true},&quot;bors-topbar&quot;:{&quot;nodeName&quot;:&quot;BorsTopbar&quot;,&quot;id&quot;:&quot;bors-topbar&quot;,&quot;originHostname&quot;:&quot;https://static.finansavisen.no&quot;},&quot;vimond-video-playlist-ur1qVXkmDv-BPBNE_NPvmMndftO0RVxk&quot;:{&quot;nodeName&quot;:&quot;VideoPlaylist&quot;,&quot;id&quot;:&quot;vimond-video-playlist-ur1qVXkmDv-BPBNE_NPvmMndftO0RVxk&quot;,&quot;playerId&quot;:&quot;BPBNE_NPvmMndftO0RVxk&quot;,&quot;profileId&quot;:&quot;QY6A_YRBt6TNSgftmn0ui&quot;,&quot;playlistId&quot;:&quot;ur1qVXkmDv&quot;,&quot;carouselType&quot;:&quot;grid&quot;,&quot;primaryColor&quot;:&quot;#024588&quot;,&quot;isAutoplay&quot;:true,&quot;isMuted&quot;:true,&quot;showDescription&quot;:true,&quot;stickyOnScroll&quot;:true},&quot;date-time&quot;:{&quot;nodeName&quot;:&quot;ArticleDateTime&quot;,&quot;published&quot;:{&quot;raw&quot;:&quot;2025-08-08T22:00:39+02:00&quot;,&quot;formatted&quot;:&quot;22:00 - 8. 08 2025&quot;,&quot;long&quot;:&quot;fredag 8. august 2025&quot;,&quot;short&quot;:&quot;22:00 - 8.08.25&quot;},&quot;modified&quot;:{&quot;raw&quot;:&quot;2025-08-08T22:18:44+02:00&quot;,&quot;formatted&quot;:&quot;22:18 - 8. 08 2025&quot;,&quot;long&quot;:&quot;fredag 8. august 2025&quot;,&quot;short&quot;:&quot;22:18&quot;},&quot;id&quot;:&quot;date-time&quot;},&quot;byline&quot;:{&quot;nodeName&quot;:&quot;Byline&quot;,&quot;authors&quot;:[{&quot;email&quot;:&quot;ole.tjelle-heen@finansavisen.no&quot;,&quot;fullname&quot;:&quot;Ole Tjelle-Heen&quot;,&quot;id&quot;:&quot;732&quot;,&quot;imageUrl&quot;:&quot;https://imaginary.finansavisen.no/resize?width=280&amp;aspectratio=1%3A1&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fstorage.googleapis.com%2Ffinansavisen-employees-square2%2FOleTjelleheen.jpg&quot;,&quot;jobTitle&quot;:&quot;&quot;,&quot;profileText&quot;:&quot;&quot;,&quot;profileTitle&quot;:&quot;&quot;,&quot;title&quot;:&quot;&quot;,&quot;twitter&quot;:&quot;&quot;}],&quot;isPaid&quot;:false,&quot;id&quot;:&quot;byline&quot;},&quot;end-of-article-tracking&quot;:{&quot;nodeName&quot;:&quot;EndOfArticleTracking&quot;,&quot;id&quot;:&quot;end-of-article-tracking&quot;},&quot;get-mws-token&quot;:{&quot;nodeName&quot;:&quot;MwsToken&quot;,&quot;id&quot;:&quot;get-mws-token&quot;}}',
+  };
+  window.dataLayer = [{"event":"custom_mixpanel_event","event_name":"mixpanel-pageview","mixpanel:platform":"web","mixpanel:publication":"Finansavisen","mixpanel:page_type":"article","mixpanel:article_id":"8284380","mixpanel:article_title":"Nasdaq med ny toppnotering: – Tollene har «en enormt positiv effekt på aksjemarkedet», hevder Trump.","mixpanel:article_author":["Ole Tjelle-Heen"],"mixpanel:article_publish_timestamp":"2025-08-08T22:00:39+02:00","mixpanel:article_last_modified_timestamp":"2025-08-08T22:18:44+02:00","mixpanel:article_tags":["wall street"],"mixpanel:article_tema_tags":[],"mixpanel:article_ticker_tags":[],"mixpanel:article_bellsheep_tags":[],"mixpanel:article_column_tags":["Børsoppdatering"],"mixpanel:article_length_characters":3527,"mixpanel:article_length_words":543,"mixpanel:article_estimated_reading_time":3,"mixpanel:article_category":["Finans"],"mixpanel:article_tier":"free","mixpanel:article_embedded_items":["related_article"],"mixpanel:article_market_news":true,"mixpanel:article_package_type":"Nyheter","articleTypeName":"Artikkel","id":"8284380","author":["Ole Tjelle-Heen"],"category":["Finans"],"hasMainVideo":false,"publishedTimestamp":"2025-08-08T22:00:39+02:00","tags":["wall street"],"segment":"Finans","wordCount":543,"isPaid":false}];
+  window.PUBLICATION_NAME = 'finansavisen';
+  window.MediaConnectConfiguration = {"paymentScriptSource":"https://api.mediaconnect.no/mcpay/lib/v/1/mediaconnectpay.js","paymentApiServer":"https://api.mediaconnect.no/capi/mcpay"};
+  window.ZephrConfiguration = {"apiBaseUrl":"https://www.finansavisen.no","siteSlug":"finansavisen-prod","isAuthenticated":false};
+  window.ZephrConfiguration.Article = {"title":"Nasdaq i ny all-time high: – Tollene er enormt positivt","categories":["Finans"],"tags":["wall street"],"authors":["Ole Tjelle-Heen"],"isPaid":false,"publishedTimestamp":"2025-08-08T22:00:39+02:00","wordCount":543,"product":"Finansavisen"};
+  window.ads = {"keywords":{"publication":"finansavisen","section":"finans"}};
+  window.product = 'Finansavisen';
+</script>
+
+
+  <link href="https://www.finansavisen.no/finans/2025/08/08/8284380/nasdaq-med-ny-toppnotering-apple-opp-12-prosent-pa-to-dager" rel="canonical">
+
+
+<link rel="modulepreload" fetchpriority="high" href="https://static.finansavisen.no/static/assets/ad-livewrapped-CJAa_KHj.js">
+
+  <link rel="modulepreload" fetchpriority="high" href="https://static.finansavisen.no/static/assets/tiny-invariant-CopsF_GD.js">
+
+  <link rel="modulepreload" fetchpriority="high" href="https://static.finansavisen.no/static/assets/scaleSkyscrapers-B8Z1ecPT.js">
+
+  <link rel="modulepreload" fetchpriority="high" href="https://static.finansavisen.no/static/assets/isObject-DRAWwtqI.js">
+
+  <link rel="modulepreload" fetchpriority="high" href="https://static.finansavisen.no/static/assets/_commonjsHelpers-Bx2EM-6T.js">
+
+<script async="" type="module" src="https://static.finansavisen.no/static/assets/ad-livewrapped-CJAa_KHj.js"></script>
+<script>
+  window.livewrappedAds = window.livewrappedAds || [];
+</script>
+
+
+<!-- fonts that are not used so often -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;800&amp;family=Barlow+Semi+Condensed:wght@400;600;800&amp;family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&amp;family=Inter:wght@100..900&amp;family=Merriweather:ital,wght@0,400;0,700;1,700&amp;family=Open+Sans:wght@300..800&amp;family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&amp;family=Playfair+Display:wght@400..900&amp;family=Roboto:wght@300;400;900&amp;display=swap" rel="stylesheet">
+
+<!--[if IE 9]><link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@700&family=Barlow:wght@700;800&display=swap" rel="stylesheet"><![endif]-->
+
+
+  <link rel="stylesheet" href="https://static.finansavisen.no/static/assets/finansavisen-ChmopK3e.css">
+
+<script async="" type="module" src="https://static.finansavisen.no/static/assets/finansavisen-Dnsmo5ta.js"></script>
+<script type="module" src="https://static.finansavisen.no/static/assets/finansavisen-react-BeK7QGrQ.js"></script>
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/index-DqLLNxEW.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/index-DdQznQYy.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/useInterval-BFJIb_JP.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/_commonjsHelpers-Bx2EM-6T.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/scaleSkyscrapers-B8Z1ecPT.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/tiny-invariant-CopsF_GD.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/datetime-CJkxCJd-.js">
+
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/componentSetup-ZPK0LGvD.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/index-DdQznQYy.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/tiny-invariant-CopsF_GD.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/_commonjsHelpers-Bx2EM-6T.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/datetime-CJkxCJd-.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/useInterval-BFJIb_JP.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/isObject-DRAWwtqI.js">
+
+  <link rel="modulepreload" href="https://static.finansavisen.no/static/assets/client-DwsNyXk5.js">
+
+
+<script>
+  window.originHostname = 'https://static.finansavisen.no';
+</script>
+
+
+<noscript>
+  <meta content="600" http-equiv="refresh">
+</noscript>
+
+
+
+
+
+  <meta property="zephr:article-type" content="free">
+
+
+<meta property="lp.article:score" content="3">
+
+
+  <meta property="k5a:section" content="Finans">
+
+
+
+  
+    <meta property="article:author" content="Ole Tjelle-Heen">
+  
+
+
+<meta property="article:product" content="Finansavisen">
+
+  
+    <meta property="article:section" content="Finans">
+  
+
+
+
+<meta name="format-detection" content="telephone=no">
+
+<meta name="title" content="Nasdaq med ny toppnotering – Apple opp 12 prosent på to dager">
+
+<meta name="description" content="Tech-aksjer løftet S&amp;amp;P 500 og Nasdaq til nye toppnoteringer fredag. Apple er opp 12 prosent på to dager. Trump mener tollsatsene har «en enormt positiv effekt på aksjemarkedet».">
+
+<meta name="keywords" content="wall street">
+
+<meta name="news_keywords" content="wall street">
+
+
+
+  
+    <meta property="og:url" content="https://www.finansavisen.no/finans/2025/08/08/8284380/nasdaq-med-ny-toppnotering-apple-opp-12-prosent-pa-to-dager">
+  
+
+  
+    <meta property="fb:pages" content="331621851200">
+  
+
+  
+    <meta property="og:title" content="Nasdaq med ny toppnotering – Apple opp 12 prosent på to dager">
+  
+
+  
+    <meta property="og:type" content="article">
+  
+
+  
+    <meta property="og:locality" content="no_NB">
+  
+
+  
+    <meta property="og:image" content="https://imaginary.finansavisen.no/resize?width=980&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626773.jpg%3F%26accessToken%3D270e13c13399a492bb5d7eb1cd5a504db97fc8c679564738567cc89695eab896">
+  
+
+  
+    <meta property="twitter:card" content="summary_large_image">
+  
+
+  
+    <meta property="twitter:site" content="@Finansavisen">
+  
+
+  
+    <meta property="twitter:app:id:iphone" content="903343924">
+  
+
+  
+    <meta property="twitter:app:name:iphone" content="Finansavisen">
+  
+
+  
+    <meta property="twitter:app:id:googleplay" content="no.finansavisen">
+  
+
+  
+    <meta property="twitter:app:name:googleplay" content="Finansavisen">
+  
+
+  
+    <meta property="twitter:image" content="https://imaginary.finansavisen.no/resize?width=980&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626773.jpg%3F%26accessToken%3D270e13c13399a492bb5d7eb1cd5a504db97fc8c679564738567cc89695eab896">
+  
+
+  
+    <meta property="twitter:image:src" content="https://imaginary.finansavisen.no/resize?width=980&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626773.jpg%3F%26accessToken%3D270e13c13399a492bb5d7eb1cd5a504db97fc8c679564738567cc89695eab896">
+  
+
+  
+    <meta property="B-verify" content="42ef3f0f2682d8e76b4a87e5fc401bdf85b9f3bc">
+  
+
+  
+    <meta property="article:updated_time" content="2025-08-08T22:18:44+02:00">
+  
+
+  
+    <meta property="article:published_time" content="2025-08-08T22:00:39+02:00">
+  
+
+  
+    <meta property="article:modified_time" content="2025-08-08T22:18:44+02:00">
+  
+
+  
+    <meta property="og:description" content="Tech-aksjer løftet S&amp;amp;P 500 og Nasdaq til nye toppnoteringer fredag. Apple er opp 12 prosent på to dager. Trump mener tollsatsene har «en enormt positiv effekt på aksjemarkedet».">
+  
+
+  
+    <meta property="og:updated_time" content="2025-08-08T22:18:44+02:00">
+  
+
+  
+    <meta property="twitter:title" content="Nasdaq med ny toppnotering – Apple opp 12 prosent på to dager">
+  
+
+  
+    <meta property="twitter:description" content="Tech-aksjer løftet Nasdaq til ny toppnotering fredag. Apple er opp 12 prosent på to dager, mens gullprisen svingte kraftig etter tollforvirring.&nbsp;">
+  
+
+  
+    <meta property="k5a:title" content="Nasdaq i ny all-time high: – Tollene er enormt positivt">
+  
+
+  
+    
+      <meta property="k5a:contentTag" content="Nyheter">
+    
+  
+
+  
+    
+      <meta property="k5a:columnTag" content="Børsoppdatering">
+    
+  
+
+
+
+  <meta property="article:tag" content="wall street">
+
+
+<link href="https://static.finansavisen.no/static/favicons/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png">
+<link href="https://static.finansavisen.no/static/favicons/favicon-230x230.png" rel="icon" sizes="230x230" type="image/png">
+<link href="https://static.finansavisen.no/static/favicons/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png">
+<link href="https://static.finansavisen.no/static/favicons/favicon-96x96.png" rel="icon" sizes="96x96" type="image/png">
+<link href="https://static.finansavisen.no/static/favicons/favicon.ico" rel="shortcut icon">
+<link href="https://static.finansavisen.no/static/favicons/android-chrome-192x192.png" rel="icon" sizes="192x192" type="image/png">
+<link href="https://static.finansavisen.no/static/favicons/apple-touch-icon-114x114.png" rel="apple-touch-icon" sizes="114x114">
+<link href="https://static.finansavisen.no/static/favicons/apple-touch-icon-120x120.png" rel="apple-touch-icon" sizes="120x120">
+<link href="https://static.finansavisen.no/static/favicons/apple-touch-icon-144x144.png" rel="apple-touch-icon" sizes="144x144">
+<link href="https://static.finansavisen.no/static/favicons/apple-touch-icon-152x152.png" rel="apple-touch-icon" sizes="152x152">
+<link href="https://static.finansavisen.no/static/favicons/apple-touch-icon-180x180.png" rel="apple-touch-icon" sizes="180x180">
+<link href="https://static.finansavisen.no/static/favicons/apple-touch-icon-57x57.png" rel="apple-touch-icon" sizes="57x57">
+<link href="https://static.finansavisen.no/static/favicons/apple-touch-icon-60x60.png" rel="apple-touch-icon" sizes="60x60">
+<link href="https://static.finansavisen.no/static/favicons/apple-touch-icon-72x72.png" rel="apple-touch-icon" sizes="72x72">
+<link href="https://static.finansavisen.no/static/favicons/apple-touch-icon-76x76.png" rel="apple-touch-icon" sizes="76x76">
+
+
+
+  <script id="parsely_json" type="application/ld+json">
+    {"url":"https://www.finansavisen.no/finans/2025/08/08/8284380/nasdaq-med-ny-toppnotering-apple-opp-12-prosent-pa-to-dager","@type":"NewsArticle","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.finansavisen.no/finans/2025/08/08/8284380/nasdaq-med-ny-toppnotering-apple-opp-12-prosent-pa-to-dager"},"articleSection":"Finans","headline":"Nasdaq med ny toppnotering: – Tollene har «en enormt positiv effekt på aksjemarkedet», hevder Trump.","description":"Tech-aksjer løftet Nasdaq til ny toppnotering fredag. Apple er opp 12 prosent på to dager, mens gullprisen svingte kraftig etter tollforvirring. ","thumbnailUrl":"https://imaginary.finansavisen.no/resize?width=500&interlace=true&url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626773.jpg%3F%26accessToken%3D270e13c13399a492bb5d7eb1cd5a504db97fc8c679564738567cc89695eab896","image":"https://imaginary.finansavisen.no/resize?width=980&interlace=true&url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626773.jpg%3F%26accessToken%3D270e13c13399a492bb5d7eb1cd5a504db97fc8c679564738567cc89695eab896","creator":"Ole Tjelle-Heen","author":{"@type":"Person","name":"Ole Tjelle-Heen"},"dateCreated":"2025-08-08T22:00:39+02:00","datePublished":"2025-08-08T22:00:39+02:00","dateModified":"2025-08-08T22:18:44+02:00","keywords":["wall street"]}
+  </script>
+
+
+
+
+
+<script>
+  var googletag = googletag || {};
+  googletag.cmd = googletag.cmd || [];
+</script>
+<script>
+  (function(w,d,s,l,i){
+    w[l]=w[l]||[];
+    w[l].push({
+      'gtm.start': new Date().getTime(),
+      event:'gtm.js'
+    });
+    var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),
+    dl=l!='dataLayer'?'&l='+l:'';
+    j.async=true;
+    j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+    f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-W3GDQPF');
+</script>
+
+
+
+<script async="" src="https://functions.adnami.io/api/macro/adsm.macro.finansavisen.no.js"></script>
+
+
+<script id="hegnar-logging" async="" type="text/javascript" src="https://static.finansavisen.no/static/hegnar-logging.js?v=1"></script>
+
+
+<script id="device-tracking" type="text/javascript" src="https://static.finansavisen.no/static/device-tracking.js?v=1"></script>
+
+
+<script type="text/javascript">
+    subscriberTrackingMeta = {
+    	userType: "ANONYMOUS",
+    	isSubscriber: false,
+    	access: null
+    };
+</script><script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['finansavisen-subscriber-tracking'] = {
+    featureLabel: 'Finansavisen Subscriber Tracking ',
+    outcomeId: 'transformation/9',
+    outcomeLabel: 'Anonymous No Access'
+  };
+</script>
+
+
+<script type="text/javascript">
+   window.dataLayer.push({
+        hasCompanyAccess: false
+    });
+</script><script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['hegnar-b2b-tracking'] = {
+    featureLabel: 'Hegnar B2B Tracking',
+    outcomeId: 'transformation/1',
+    outcomeLabel: 'Anonymous'
+  };
+</script>
+
+
+<script>
+    window.dataLayer.push({
+        articleView: "Gratis"
+    })
+</script><script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['hegnar-article-view-tracking'] = {
+    featureLabel: 'Hegnar Article View Tracking',
+    outcomeId: 'transformation/2',
+    outcomeLabel: 'Gratis'
+  };
+</script>
+
+
+
+
+
+
+  <script>
+  "use strict";
+  function _typeof(t) {
+    return(
+      _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator
+        ? function (t) {
+          return typeof t
+        }
+        : function (t) {
+          return t && "function" == typeof Symbol && t.constructor === Symbol && t !== Symbol.prototype
+            ? "symbol"
+            : typeof t
+        }
+    )(t)
+  }
+  !function () {
+    var t = function () {
+  var t,
+  e,
+  o = [],
+  n = window,
+  r = n;
+        for (; r;) {
+          try {
+            if (r.frames.__tcfapiLocator) {
+              t = r;
+              break
+            }
+          } catch (t) {}
+          if (r === n.top) 
+            break;
+          
+          r = r.parent
+        }
+        t || (!function t() {
+          var e = n.document,
+            o = !! n.frames.__tcfapiLocator;
+          if (! o) 
+            if (e.body) {
+              var r = e.createElement("iframe");
+              r.style.cssText = "display:none",
+              r.name = "__tcfapiLocator",
+              e.body.appendChild(r)
+            }
+           else 
+            setTimeout(t, 5);
+          
+        
+        return ! o
+    }(),
+  n.__tcfapi = function () {
+      for (var t = arguments.length, n = new Array(t), r = 0; r < t; r++) 
+        n[r] = arguments[r];
+      
+      if (! n.length) 
+        return o;
+      
+      "setGdprApplies" === n[0]
+        ? n.length > 3 && 2 === parseInt(n[1], 10) && "boolean" == typeof n[3] && (e = n[3], "function" == typeof n[2] && n[2]("set", !0))
+        : "ping" === n[0]
+          ? "function" == typeof n[2] && n[2]({
+            gdprApplies: e,
+            cmpLoaded: !1,
+            cmpStatus: "stub"
+          })
+          : o.push(n)
+    },
+  n.addEventListener("message", (function (t) {
+      var e = "string" == typeof t.data,
+        o = {};
+      if (e) 
+        try {
+          o = JSON.parse(t.data)
+        }
+       catch (t) {} else 
+        o = t.data;
+      
+      var n = "object" === _typeof(o) && null !== o
+        ? o.__tcfapiCall
+        : null;
+      n && window.__tcfapi(n.command, n.version, (function (o, r) {
+        var a = {
+          __tcfapiReturn: {
+            returnValue: o,
+            success: r,
+            callId: n.callId
+          }
+        };
+        t && t.source && t.source.postMessage && t.source.postMessage(
+          e
+            ? JSON.stringify(a)
+            : a,
+          "*"
+        )
+      }), n.parameter)
+    }), !1)
+)};"undefined" != typeof module
+? module.exports = t
+: t()}();
+</script>
+<script>
+  window._sp_queue = [];
+  window._sp_ = {
+    config: {
+      accountId: 1923,
+      baseEndpoint: 'https://cdn.privacy-mgmt.com',
+      gdpr: {},
+      events: {
+        onMessageChoiceSelect: function () {
+          console.log('[event] onMessageChoiceSelect', arguments);
+        },
+        onMessageReady: function () {
+          console.log('[event] onMessageReady', arguments);
+        },
+        onMessageChoiceError: function () {
+          console.log('[event] onMessageChoiceError', arguments);
+        },
+        onPrivacyManagerAction: function () {
+          console.log('[event] onPrivacyManagerAction', arguments);
+        },
+        onPMCancel: function () {
+          console.log('[event] onPMCancel', arguments);
+        },
+        onMessageReceiveData: function () {
+          console.log('[event] onMessageReceiveData', arguments);
+        },
+        onSPPMObjectReady: function () {
+          console.log('[event] onSPPMObjectReady', arguments);
+        },
+        onConsentReady: function (consentUUID, euconsent) {
+          console.log('[event] onConsentReady', arguments);
+        },
+        onError: function () {
+          console.log('[event] onError', arguments);
+        }
+      }
+    }
+  }
+</script>
+<script src="https://cdn.privacy-mgmt.com/unified/wrapperMessagingWithoutDetection.js" async=""></script>
+
+
+
+
+<!-- Livewrapped -->
+
+<script id="livewrapped-script" async="" fetchpriority="high" src="https://lwadm.com/lw/pbjs?pid=6c737f30-bde2-41d4-a2ba-be95c074e8d5"></script>
+
+<script>window.lwhb = window.lwhb || {cmd:[]};</script>
+<!-- Livewrapped -->
+
+<script async="" src="https://static.readpeak.com/js/rp-int.js"></script>
+
+
+  <script>
+    window.forumAccessLevel = {
+        isAnonymous: true,
+        isRegistered: false,
+        isActive: false,
+        isAdmin: false,
+        isBanned: false
+    }
+</script><script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['forum-user-access-level'] = {
+    featureLabel: 'Forum-User-Access-Level',
+    outcomeId: 'transformation/1',
+    outcomeLabel: 'Anonymous-User-Access-Level'
+  };
+</script><script type="text/javascript" src="https://www.google.com/recaptcha/api.js?render=6LfJpXEnAAAAAIH-9bfLH1C1DpiQab7u4xchWNIE"></script><meta http-equiv="origin-trial" content="AlK2UR5SkAlj8jjdEc9p3F3xuFYlF6LYjAML3EOqw1g26eCwWPjdmecULvBH5MVPoqKYrOfPhYVL71xAXI1IBQoAAAB8eyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiV2ViVmlld1hSZXF1ZXN0ZWRXaXRoRGVwcmVjYXRpb24iLCJleHBpcnkiOjE3NTgwNjcxOTksImlzU3ViZG9tYWluIjp0cnVlfQ=="><meta http-equiv="origin-trial" content="Amm8/NmvvQfhwCib6I7ZsmUxiSCfOxWxHayJwyU1r3gRIItzr7bNQid6O8ZYaE1GSQTa69WwhPC9flq/oYkRBwsAAACCeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiV2ViVmlld1hSZXF1ZXN0ZWRXaXRoRGVwcmVjYXRpb24iLCJleHBpcnkiOjE3NTgwNjcxOTksImlzU3ViZG9tYWluIjp0cnVlfQ=="><meta http-equiv="origin-trial" content="A9nrunKdU5m96PSN1XsSGr3qOP0lvPFUB2AiAylCDlN5DTl17uDFkpQuHj1AFtgWLxpLaiBZuhrtb2WOu7ofHwEAAACKeyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElNdWx0aW1vZGFsSW5wdXQiLCJleHBpcnkiOjE3NzQzMTA0MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="A93bovR+QVXNx2/38qDbmeYYf1wdte9EO37K9eMq3r+541qo0byhYU899BhPB7Cv9QqD7wIbR1B6OAc9kEfYCA4AAACQeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElNdWx0aW1vZGFsSW5wdXQiLCJleHBpcnkiOjE3NzQzMTA0MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><meta http-equiv="origin-trial" content="A1S5fojrAunSDrFbD8OfGmFHdRFZymSM/1ss3G+NEttCLfHkXvlcF6LGLH8Mo5PakLO1sCASXU1/gQf6XGuTBgwAAACQeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElNdWx0aW1vZGFsSW5wdXQiLCJleHBpcnkiOjE3NzQzMTA0MDAsImlzU3ViZG9tYWluIjp0cnVlLCJpc1RoaXJkUGFydHkiOnRydWV9"><script src="https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202508060101/pubads_impl.js?cb=31093956" async=""></script><link href="https://securepubads.g.doubleclick.net/pagead/managed/dict/m202508070101/gpt" rel="compression-dictionary"><style></style><iframe src="https://btloader.com/trustedIframe.html?o=6218142170218496&amp;tid=LUTra9gTX-Jo0lAOcaZW-988bb3e57e&amp;upapi=true" referrerpolicy="origin" style="display: none !important; width: 0px !important; height: 0px !important;"></iframe><script type="module" src="https://cl.k5a.io/60ba0d8b5e8f2224b83d43c2.module.js" defer=""></script><script charset="utf-8" src="https://cdn.privacy-mgmt.com/unified/4.37.1/gdpr-tcf.b521910849dfd2aa2880.bundle.js"></script><style type="text/css">[data-vaul-drawer]{touch-action:none;will-change:transform;transition:transform .5s cubic-bezier(.32, .72, 0, 1);animation-duration:.5s;animation-timing-function:cubic-bezier(0.32,0.72,0,1)}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=bottom][data-state=open]{animation-name:slideFromBottom}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=bottom][data-state=closed]{animation-name:slideToBottom}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=top][data-state=open]{animation-name:slideFromTop}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=top][data-state=closed]{animation-name:slideToTop}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=left][data-state=open]{animation-name:slideFromLeft}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=left][data-state=closed]{animation-name:slideToLeft}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=right][data-state=open]{animation-name:slideFromRight}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=right][data-state=closed]{animation-name:slideToRight}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=bottom]{transform:translate3d(0,var(--initial-transform,100%),0)}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=top]{transform:translate3d(0,calc(var(--initial-transform,100%) * -1),0)}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=left]{transform:translate3d(calc(var(--initial-transform,100%) * -1),0,0)}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=right]{transform:translate3d(var(--initial-transform,100%),0,0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=top]{transform:translate3d(0,var(--snap-point-height,0),0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=bottom]{transform:translate3d(0,var(--snap-point-height,0),0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=left]{transform:translate3d(var(--snap-point-height,0),0,0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=right]{transform:translate3d(var(--snap-point-height,0),0,0)}[data-vaul-overlay][data-vaul-snap-points=false]{animation-duration:.5s;animation-timing-function:cubic-bezier(0.32,0.72,0,1)}[data-vaul-overlay][data-vaul-snap-points=false][data-state=open]{animation-name:fadeIn}[data-vaul-overlay][data-state=closed]{animation-name:fadeOut}[data-vaul-animate=false]{animation:none!important}[data-vaul-overlay][data-vaul-snap-points=true]{opacity:0;transition:opacity .5s cubic-bezier(.32, .72, 0, 1)}[data-vaul-overlay][data-vaul-snap-points=true]{opacity:1}[data-vaul-drawer]:not([data-vaul-custom-container=true])::after{content:'';position:absolute;background:inherit;background-color:inherit}[data-vaul-drawer][data-vaul-drawer-direction=top]::after{top:initial;bottom:100%;left:0;right:0;height:200%}[data-vaul-drawer][data-vaul-drawer-direction=bottom]::after{top:100%;bottom:initial;left:0;right:0;height:200%}[data-vaul-drawer][data-vaul-drawer-direction=left]::after{left:initial;right:100%;top:0;bottom:0;width:200%}[data-vaul-drawer][data-vaul-drawer-direction=right]::after{left:100%;right:initial;top:0;bottom:0;width:200%}[data-vaul-overlay][data-vaul-snap-points=true]:not([data-vaul-snap-points-overlay=true]):not(
+[data-state=closed]
+){opacity:0}[data-vaul-overlay][data-vaul-snap-points-overlay=true]{opacity:1}[data-vaul-handle]{display:block;position:relative;opacity:.7;background:#e2e2e4;margin-left:auto;margin-right:auto;height:5px;width:32px;border-radius:1rem;touch-action:pan-y}[data-vaul-handle]:active,[data-vaul-handle]:hover{opacity:1}[data-vaul-handle-hitarea]{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max(100%,2.75rem);height:max(100%,2.75rem);touch-action:inherit}@media (hover:hover) and (pointer:fine){[data-vaul-drawer]{user-select:none}}@media (pointer:fine){[data-vaul-handle-hitarea]:{width:100%;height:100%}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes fadeOut{to{opacity:0}}@keyframes slideFromBottom{from{transform:translate3d(0,var(--initial-transform,100%),0)}to{transform:translate3d(0,0,0)}}@keyframes slideToBottom{to{transform:translate3d(0,var(--initial-transform,100%),0)}}@keyframes slideFromTop{from{transform:translate3d(0,calc(var(--initial-transform,100%) * -1),0)}to{transform:translate3d(0,0,0)}}@keyframes slideToTop{to{transform:translate3d(0,calc(var(--initial-transform,100%) * -1),0)}}@keyframes slideFromLeft{from{transform:translate3d(calc(var(--initial-transform,100%) * -1),0,0)}to{transform:translate3d(0,0,0)}}@keyframes slideToLeft{to{transform:translate3d(calc(var(--initial-transform,100%) * -1),0,0)}}@keyframes slideFromRight{from{transform:translate3d(var(--initial-transform,100%),0,0)}to{transform:translate3d(0,0,0)}}@keyframes slideToRight{to{transform:translate3d(var(--initial-transform,100%),0,0)}}</style><script type="module" src="https://log.medietall.no/analytics.v2.js"></script><link rel="modulepreload" as="script" crossorigin="" href="/static/assets/client-DwsNyXk5.js"><link rel="modulepreload" as="script" crossorigin="" href="/static/assets/index-DdQznQYy.js"><link rel="modulepreload" as="script" crossorigin="" href="/static/assets/_commonjsHelpers-Bx2EM-6T.js"><style type="text/css">#sp_message_iframe_1036478 { display:block; width: 100%; height: 100%; border: 0 none; } #sp_message_container_1036478 { overflow:auto;-webkit-overflow-scrolling:touch; display: none; position: fixed; z-index: 2147483647; left: 0; right: 0; bottom: 0; top: 0; height: 100%; width: 100%; max-width: 100%; max-height: 100vh;}.sp-message-open { height: 100vh !important; width: 100vw !important } .sp-message-open body { overflow: hidden !important; position: fixed !important; margin-top: 0px !important; top: 0px !important; left: 0px !important; right: 0px !important; }</style><script type="module" src="https://cl.k5a.io/60ba0d8b5e8f2224b83d43c2.streams.module.js" defer=""></script></head>
+
+
+  <!--[if IE 10]><body class="ie10 "><![endif]-->
+  <!--[if IE 9]><body class="ie9 "><![endif]-->
+  <!--[if gt IE 9]><!--><body class="" data-k5a-trackerid="toolbar-0"><!--<![endif]-->
+    
+
+
+<noscript>
+  <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W3GDQPF" height="0" width="0" style="display:none;visibility:hidden"></iframe>
+</noscript>
+
+
+    <script async="" src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script><link rel="modulepreload" href="https://static.finansavisen.no/static/assets/skyscrapers-N-euMmV6.js"><link rel="modulepreload" href="https://static.finansavisen.no/static/assets/tiny-invariant-CopsF_GD.js"><iframe scrolling="no" marginheight="0" marginwidth="0" frameborder="0" style="border: 0px; padding: 0px; margin: 0px; display: none;" width="1px" height="1px"></iframe><div class="c-skin--default"><div class="container-takeover-page"><div id="takeover-page"></div></div><script>window.app.componentData['takeover-page'] = {"nodeName":"TakeoverPage","id":"takeover-page","format":"finansavisen_desktop-welcome-page","showAds":true};</script><div class="container-bors-topbar"><div id="bors-topbar" class="c-bors" data-testid="bors-widget"><div class="c-bors__stock"><a href="/ticker/^OSEBX" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Oslo Børs</span> <span class="c-bors__item--value">1.622,72</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,06 %</span></span></a><a href="/ticker/UKOILUSD%3DF" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Brent Spot</span> <span class="c-bors__item--value">65,88</span> <span class="c-bors__item--negative"><svg class="c-bors__item--icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="currentColor" d="M5.49947 5.00005H10.5005L12.5799 5.00002C12.7413 4.99864 12.8891 5.08145 12.959 5.21246C13.0289 5.34346 13.0082 5.49902 12.906 5.61153L8.32618 10.8616C8.24585 10.9493 8.12622 11 8 11C7.87378 11 7.75415 10.9493 7.67382 10.8616L3.09396 5.61153C2.99176 5.49902 2.97111 5.34346 3.04099 5.21246C3.11086 5.08145 3.25866 4.99864 3.42014 5.00002L5.49947 5.00005Z"></path></svg> <span class="c-bors__item--pct">-0,42 %</span></span></a><a href="/ticker/USDNOK=X" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Dollar</span> <span class="c-bors__item--value">10,29</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,61 %</span></span></a><a href="/ticker/EURNOK%3DX" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Euro</span> <span class="c-bors__item--value">11,98</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,41 %</span></span></a><a href="/ticker/^US10Y" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">US 10 ÅR</span> <span class="c-bors__item--value">4,27</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">1,18 %</span></span></a><a href="/ticker/BTC-USD" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Bitcoin</span> <span class="c-bors__item--value">116.920</span> <span class="c-bors__item--negative"><svg class="c-bors__item--icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="currentColor" d="M5.49947 5.00005H10.5005L12.5799 5.00002C12.7413 4.99864 12.8891 5.08145 12.959 5.21246C13.0289 5.34346 13.0082 5.49902 12.906 5.61153L8.32618 10.8616C8.24585 10.9493 8.12622 11 8 11C7.87378 11 7.75415 10.9493 7.67382 10.8616L3.09396 5.61153C2.99176 5.49902 2.97111 5.34346 3.04099 5.21246C3.11086 5.08145 3.25866 4.99864 3.42014 5.00002L5.49947 5.00005Z"></path></svg> <span class="c-bors__item--pct">-0,51 %</span></span></a><a href="/ticker/XAUUSD%3DF" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Gull</span> <span class="c-bors__item--value">3.398,12</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,07 %</span></span></a><a href="/ticker/^N225" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Nikkei 225</span> <span class="c-bors__item--value">41.759,38</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">1,71 %</span></span></a><a href="/ticker/SEKNOK%3DX" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">SEK</span> <span class="c-bors__item--value">1,07</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,45 %</span></span></a></div><div class="c-bors__stock"><a href="/ticker/^OSEBX" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Oslo Børs</span> <span class="c-bors__item--value">1.622,72</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,06 %</span></span></a><a href="/ticker/UKOILUSD%3DF" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Brent Spot</span> <span class="c-bors__item--value">65,88</span> <span class="c-bors__item--negative"><svg class="c-bors__item--icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="currentColor" d="M5.49947 5.00005H10.5005L12.5799 5.00002C12.7413 4.99864 12.8891 5.08145 12.959 5.21246C13.0289 5.34346 13.0082 5.49902 12.906 5.61153L8.32618 10.8616C8.24585 10.9493 8.12622 11 8 11C7.87378 11 7.75415 10.9493 7.67382 10.8616L3.09396 5.61153C2.99176 5.49902 2.97111 5.34346 3.04099 5.21246C3.11086 5.08145 3.25866 4.99864 3.42014 5.00002L5.49947 5.00005Z"></path></svg> <span class="c-bors__item--pct">-0,42 %</span></span></a><a href="/ticker/USDNOK=X" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Dollar</span> <span class="c-bors__item--value">10,29</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,61 %</span></span></a><a href="/ticker/EURNOK%3DX" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Euro</span> <span class="c-bors__item--value">11,98</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,41 %</span></span></a><a href="/ticker/^US10Y" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">US 10 ÅR</span> <span class="c-bors__item--value">4,27</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">1,18 %</span></span></a><a href="/ticker/BTC-USD" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Bitcoin</span> <span class="c-bors__item--value">116.920</span> <span class="c-bors__item--negative"><svg class="c-bors__item--icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="currentColor" d="M5.49947 5.00005H10.5005L12.5799 5.00002C12.7413 4.99864 12.8891 5.08145 12.959 5.21246C13.0289 5.34346 13.0082 5.49902 12.906 5.61153L8.32618 10.8616C8.24585 10.9493 8.12622 11 8 11C7.87378 11 7.75415 10.9493 7.67382 10.8616L3.09396 5.61153C2.99176 5.49902 2.97111 5.34346 3.04099 5.21246C3.11086 5.08145 3.25866 4.99864 3.42014 5.00002L5.49947 5.00005Z"></path></svg> <span class="c-bors__item--pct">-0,51 %</span></span></a><a href="/ticker/XAUUSD%3DF" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Gull</span> <span class="c-bors__item--value">3.398,12</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,07 %</span></span></a><a href="/ticker/^N225" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Nikkei 225</span> <span class="c-bors__item--value">41.759,38</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">1,71 %</span></span></a><a href="/ticker/SEKNOK%3DX" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">SEK</span> <span class="c-bors__item--value">1,07</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,45 %</span></span></a></div><div class="c-bors__stock"><a href="/ticker/^OSEBX" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Oslo Børs</span> <span class="c-bors__item--value">1.622,72</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,06 %</span></span></a><a href="/ticker/UKOILUSD%3DF" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Brent Spot</span> <span class="c-bors__item--value">65,88</span> <span class="c-bors__item--negative"><svg class="c-bors__item--icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="currentColor" d="M5.49947 5.00005H10.5005L12.5799 5.00002C12.7413 4.99864 12.8891 5.08145 12.959 5.21246C13.0289 5.34346 13.0082 5.49902 12.906 5.61153L8.32618 10.8616C8.24585 10.9493 8.12622 11 8 11C7.87378 11 7.75415 10.9493 7.67382 10.8616L3.09396 5.61153C2.99176 5.49902 2.97111 5.34346 3.04099 5.21246C3.11086 5.08145 3.25866 4.99864 3.42014 5.00002L5.49947 5.00005Z"></path></svg> <span class="c-bors__item--pct">-0,42 %</span></span></a><a href="/ticker/USDNOK=X" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Dollar</span> <span class="c-bors__item--value">10,29</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,61 %</span></span></a><a href="/ticker/EURNOK%3DX" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Euro</span> <span class="c-bors__item--value">11,98</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,41 %</span></span></a><a href="/ticker/^US10Y" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">US 10 ÅR</span> <span class="c-bors__item--value">4,27</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">1,18 %</span></span></a><a href="/ticker/BTC-USD" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Bitcoin</span> <span class="c-bors__item--value">116.920</span> <span class="c-bors__item--negative"><svg class="c-bors__item--icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="currentColor" d="M5.49947 5.00005H10.5005L12.5799 5.00002C12.7413 4.99864 12.8891 5.08145 12.959 5.21246C13.0289 5.34346 13.0082 5.49902 12.906 5.61153L8.32618 10.8616C8.24585 10.9493 8.12622 11 8 11C7.87378 11 7.75415 10.9493 7.67382 10.8616L3.09396 5.61153C2.99176 5.49902 2.97111 5.34346 3.04099 5.21246C3.11086 5.08145 3.25866 4.99864 3.42014 5.00002L5.49947 5.00005Z"></path></svg> <span class="c-bors__item--pct">-0,51 %</span></span></a><a href="/ticker/XAUUSD%3DF" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Gull</span> <span class="c-bors__item--value">3.398,12</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,07 %</span></span></a><a href="/ticker/^N225" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">Nikkei 225</span> <span class="c-bors__item--value">41.759,38</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">1,71 %</span></span></a><a href="/ticker/SEKNOK%3DX" class="c-bors__item" rel="noreferrer"><span class="c-bors__item--name">SEK</span> <span class="c-bors__item--value">1,07</span> <span class="c-bors__item--positive"><svg class="c-bors__item--icon" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M5.49947 11H10.5005L12.5799 11C12.7413 11.0014 12.8891 10.9186 12.959 10.7875C13.0289 10.6565 13.0082 10.501 12.906 10.3885L8.32618 5.13835C8.24585 5.05074 8.12622 5 8 5C7.87378 5 7.75415 5.05074 7.67382 5.13835L3.09396 10.3885C2.99176 10.501 2.97111 10.6565 3.04099 10.7875C3.11086 10.9186 3.25866 11.0014 3.42014 11L5.49947 11Z" fill="currentColor"></path></svg> <span class="c-bors__item--pct">0,45 %</span></span></a></div></div></div><script>window.app.componentData['bors-topbar'] = {"nodeName":"BorsTopbar","id":"bors-topbar","originHostname":"https://static.finansavisen.no"};</script><script type="module" crossorigin="" src="https://prod-zephr-components.finansavisen.no/static/header-XLMd1eyM.js"></script>
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/index-B31os8jI.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/consts-u4LLzn4D.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/clsx-B-dksMZM.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/consts-s3J7kKNY.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/url-DHhII1jL.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/userProfileDropdownItems-wEyVqeZS.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/user-cWSrXZbQ.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/index-er0jcCsu.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/use-resolve-button-type-DGCKPUKA.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/Close-D2yJ4tCR.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/ModalRendered-DwFDtScA.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/Button-ClkHrGFb.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/Typography-Dj8IbD4s.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/FormValidator-CtzwXTiu.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/ZephrService-DzRvjYOL.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/CookieJourney-BXlsQpLP.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/renderPrivacyPolicyLink-CBP2HtPC.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/WebService-G7GBSaWx.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/Regwall-YGyPfGUW.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/UserAvatar-Iv0psOaw.js">
+<link rel="stylesheet" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/ModalRendered-CbDiv3Qb.css">
+<link rel="stylesheet" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/Typography-DjRaLLUB.css">
+<link rel="stylesheet" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/FormValidator-zAWJ_xHA.css">
+<link rel="stylesheet" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/Regwall-H2GMEHlZ.css">
+<link rel="stylesheet" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/UserAvatar-lSZFje9B.css">
+<link rel="stylesheet" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/Button-DZJiUtP1.css">
+<link rel="stylesheet" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/header-SlByUWJq.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1">
+<script>function appendRecaptchaScript(){if(window.grecaptcha)return;const t=document.createElement("script");t.setAttribute("type","text/javascript"),t.setAttribute("src","https://www.google.com/recaptcha/api.js?render=6LfJpXEnAAAAAIH-9bfLH1C1DpiQab7u4xchWNIE"),document.querySelector("head").append(t)}appendRecaptchaScript()</script>
+<script>window.Header={pagetype:"-",registration:{title:"Registrer deg og kjøp abonnement",text:"Betal med Vipps! "},user:{firstName:"",lastName:"",email:"",accessLevel:"anonymous"}}</script>
+<div id="header"><header class="text-white [--breakpoint:theme(screens.header)]" data-ga-category="header" data-ga-pagetype="-"><div class="h-px bg-blue-700"></div><script>
+              ;(function () {
+                const sticker = document.currentScript.previousElementSibling;
+                if (sticker) {
+                  window.Header.initialSticking = sticker.getBoundingClientRect().top < 0;
+                  sticker.classList.toggle('bg-gray-800', window.product === 'Kapital');
+                  sticker.classList.toggle('bg-blue-700', window.product !== 'Kapital');
+                }
+              })();
+            </script><div data-testid="header-bar" class="px-[30px] text-sm antialiased" data-headlessui-state=""><div class="absolute inset-0 overflow-hidden"><div class="absolute inset-0 transition-transform duration-150 ease-in bg-blue-700"></div></div><div class="mx-auto max-w-[1380px] pb-[44px]"><div class="relative flex items-center py-[12px] has-[.search[data-open]]:z-10"><div class="flex-1"><div class=""><a aria-label="Logo" class="block w-[177px]" href="https://www.finansavisen.no/" data-ga-action="logo" data-ga-label="/" data-ga-traffictype="corporate"><div class="relative h-[36px] overflow-hidden text-white"><div class="absolute inset-y-0 flex items-center transition-transform duration-150 data-[closed]:-translate-y-full"><svg width="177" height="29" viewBox="0 0 177 29" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><title>Finansavisen</title><path d="M96.886 8.0569C93.4545 8.0569 89.424 9.20142 89.424 14.4678L94.6854 14.4699C94.7976 13.3344 95.2824 12.6008 96.6626 12.6008C97.7444 12.6008 98.2292 13.3736 98.2292 14.5904V15.9711C94.1626 16.0927 88.6528 17.399 88.6528 22.8774C88.6528 26.8556 90.9865 28.9176 94.2337 28.9176C96.0967 28.9176 98.2292 27.2777 98.2292 27.2777V28.9176H104.303L104.271 14.2659C104.271 9.76112 100.504 8.0569 96.886 8.0569ZM98.2282 23.7225C97.483 24.656 96.8119 25.0218 96.289 25.0218C95.2073 25.0218 94.2297 24.232 94.2297 22.8111C94.2267 20.92 95.9165 19.8649 98.2292 19.6217L98.2282 23.7225Z"></path><path d="M47.4865 8.0569C44.0539 8.0569 40.0244 9.20142 40.0244 14.4678L45.2859 14.4699C45.3971 13.3344 45.8819 12.6008 47.2621 12.6008C48.3438 12.6008 48.8286 13.3736 48.8286 14.5904V15.9711C44.7631 16.0927 39.2532 17.399 39.2532 22.8774C39.2532 26.8556 41.589 28.9176 44.8342 28.9176C46.6972 28.9176 48.8296 27.2777 48.8296 27.2777V28.9176H54.9034L54.8713 14.2659C54.8713 9.76112 51.1043 8.0569 47.4875 8.0569H47.4865ZM48.8286 23.7225C48.0824 24.656 47.4113 25.0218 46.8895 25.0218C45.8078 25.0218 44.8292 24.232 44.8292 22.8111C44.8272 20.92 46.5159 19.8649 48.8286 19.6217V23.7225Z"></path><path d="M0 28.9628H6.74988V17.0855H13.3876V11.4724H6.74988V5.61611H14.0236V0.00301481H0V28.9628Z"></path><path d="M15.3647 28.9598V8.54123H21.4345V28.9598H15.3647Z"></path><path d="M15.3647 5.85828V0H21.4345V5.85828H15.3647Z"></path><path d="M34.4174 8.05589C32.2439 8.05589 30.3308 9.19439 29.0548 11.2694H28.9797V8.54324H22.9049V28.9628H28.9797V14.0348L29.3172 13.5464C29.7299 12.9776 30.2547 12.6933 30.8927 12.6933C32.0175 12.6933 32.3551 13.4248 32.3551 14.5231V28.9628H38.4299V12.6521C38.4299 9.84553 36.8553 8.05589 34.4174 8.05589Z"></path><path d="M67.6149 8.05589C65.4394 8.05589 63.5273 9.19439 62.2522 11.2694H62.1771V8.54324H56.1023V28.9628H62.1771V14.0348L62.5147 13.5464C62.9273 12.9776 63.4522 12.6933 64.0902 12.6933C65.215 12.6933 65.5525 13.4248 65.5525 14.5231V28.9628H71.6273V12.6521C71.6273 9.84553 70.0518 8.05589 67.6149 8.05589Z"></path><path d="M78.6386 13.3916C78.6386 12.7546 79.2015 12.1175 80.4385 12.1175C81.9389 12.1175 82.7262 13.471 83.2881 14.6658L87.5259 13.47C86.4382 9.56919 83.3632 8.0569 80.3263 8.0569C74.9637 8.0569 73.0146 12.1567 73.0146 14.2669C73.0146 21.1953 82.2394 19.882 82.2394 23.2261C82.2394 24.1024 81.4511 24.7002 80.3263 24.7002C78.5635 24.7002 77.7762 23.3065 77.0641 21.7932L72.4136 23.3457C73.3892 26.6105 76.1266 29 80.3263 29C84.7885 29 87.8635 26.4909 87.8635 22.1911C87.8635 15.5822 78.6386 16.6172 78.6386 13.3916Z"></path><path d="M112.84 19.6489H112.765L110.627 8.54425H104.327L109.615 28.9628H114.19L120.227 8.54425H115.427L112.84 19.6489Z"></path><path d="M121.015 28.9598V8.54123H127.085V28.9598H121.015Z"></path><path d="M121.015 5.85828V0H127.085V5.85828H121.015Z"></path><path d="M134.288 13.3916C134.288 12.7546 134.851 12.1185 136.088 12.1185C137.589 12.1185 138.376 13.472 138.938 14.6658L143.175 13.472C142.089 9.5692 139.013 8.05589 135.976 8.05589C130.614 8.05589 128.663 12.1577 128.663 14.2679C128.663 21.1963 137.888 19.882 137.888 23.2261C137.888 24.1024 137.101 24.7002 135.975 24.7002C134.212 24.7002 133.426 23.3065 132.714 21.7932L128.063 23.3457C129.039 26.6115 131.776 29 135.976 29C140.438 29 143.513 26.4919 143.513 22.1911C143.513 15.5822 134.288 16.6172 134.288 13.3916Z"></path><path d="M152.513 8.05589C146.925 8.05589 144.15 12.834 144.15 18.4883C144.15 24.023 146.775 29 152.588 29C157.987 29 159.862 24.4601 160.125 23.5447L156.038 21.952C155.663 23.5849 154.426 24.6992 152.963 24.6992C150.562 24.6992 150.225 21.7128 150.225 19.9614H160.387V18.6068C160.387 13.3917 158.362 8.05589 152.513 8.05589ZM150.225 16.1389C150.225 14.2679 150.75 12.1175 152.475 12.1175C154.575 12.1175 154.725 14.2679 154.762 16.1389H150.225Z"></path><path d="M172.988 8.05589C170.813 8.05589 168.9 9.19539 167.625 11.2694H167.551V8.54425H161.475V28.9628H167.551V14.0348L167.888 13.5474C168.3 12.9777 168.825 12.6933 169.463 12.6933C170.588 12.6933 170.925 13.4248 170.925 14.5231V28.9628H177V12.6521C177 9.84553 175.424 8.05589 172.988 8.05589Z"></path></svg></div></div></a></div></div><div class="flex space-x-4"><div class="relative z-0 w-[683px]"><div class="transition-opacity duration-150 data-[closed]:opacity-0"><div class="search group/combobox" data-headlessui-state=""><div class="relative"><div class="group relative flex items-center px-[16px] py-[8px] text-white header:relative header:space-x-0 header:p-0 header:text-gray-300 header:focus-within:text-gray-900 header:group-data-[open]/combobox:text-gray-900 bg-blue-700"><input class="peer relative z-[1] block w-full rounded-[20px] py-[10px] pl-[40px] text-sm placeholder:text-gray-300 focus:outline-none data-[focus]:bg-white data-[focus]:placeholder:text-gray-300 data-[open]:aria-[expanded=true]:rounded-b-none bg-blue-800" placeholder="Søk på ticker eller selskap" data-testid="desktop-search-field" autocomplete="off" id="headlessui-combobox-input-«r4»" role="combobox" aria-expanded="false" aria-autocomplete="list" data-headlessui-state="" type="text" value=""><svg width="16" height="16" viewBox="0 0 22 22" fill="none" aria-hidden="true" class="pointer-events-none absolute bottom-1/2 left-[17px] z-[1] translate-y-1/2 text-gray-300 peer-data-[focus]:text-inherit"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M14.2415 15.8117C13.6247 16.3148 12.9274 16.7403 12.1581 17.0673C7.77334 18.9307 2.70819 16.8869 0.844731 12.5023C-1.01873 8.11777 1.02515 3.05282 5.40987 1.18943C9.79459 -0.673956 14.8597 1.36984 16.7232 5.75439C18.0195 8.80438 17.425 12.1836 15.4671 14.5854L20.9014 20.0203C21.2399 20.3588 21.2399 20.9077 20.9013 21.2462C20.5627 21.5847 20.0139 21.5846 19.6753 21.2461L14.2415 15.8117ZM2.44038 11.8242C0.951442 8.32088 2.58454 4.27389 6.08801 2.78502C9.59148 1.29614 13.6386 2.92917 15.1276 6.4325C16.2509 9.07563 15.5971 12.0282 13.7038 13.9582C13.6879 13.972 13.6724 13.9864 13.6573 14.0014C13.6421 14.0167 13.6275 14.0323 13.6137 14.0484C13.0152 14.6361 12.2986 15.1238 11.4799 15.4717C7.97646 16.9606 3.92932 15.3275 2.44038 11.8242Z"></path></svg></div></div></div></div></div></div><div class="flex flex-1 items-center justify-end space-x-2"><div class="flex space-x-2 transition-opacity duration-150 data-[closed]:opacity-0"><div><button type="button" id="header-login-button" class="inline-block rounded-full px-[20px] py-[10px] font-bold text-white bg-blue-500 hover:bg-blue-400" data-ga-action="login" data-ga-category="header" data-ga-label="/login">Logg inn</button></div><a class="inline-block rounded-full bg-white px-[20px] py-[10px] font-bold text-blue-900 hover:bg-blue-100" href="https://www.finansavisen.no/abonnement" data-ga-category="header" data-ga-label="/abonnement" data-ga-action="abonnement" id="header-desktop-subscribe-button" data-testid="subscribe-button">Kjøp</a></div><button aria-label="Meny" class="inline-flex h-10 items-center space-x-[10px] px-3 outline-none" type="button" aria-expanded="false" data-headlessui-state="" id="headlessui-popover-button-«r8»"><span class="text-sm font-semibold transition-opacity duration-150 data-[closed]:opacity-0">Meny</span><span class="inline-flex w-6 justify-center"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.38732 4.5C1.89727 4.5 1.5 4.93798 1.5 5.47826C1.5 6.01854 1.89727 6.45652 2.38732 6.45652H21.6127C22.1027 6.45652 22.5 6.01854 22.5 5.47826C22.5 4.93798 22.1027 4.5 21.6127 4.5H2.38732Z"></path><path d="M1.5 12C1.5 11.4597 1.89727 11.0217 2.38732 11.0217H21.6127C22.1027 11.0217 22.5 11.4597 22.5 12C22.5 12.5403 22.1027 12.9783 21.6127 12.9783H2.38732C1.89727 12.9783 1.5 12.5403 1.5 12Z"></path><path d="M1.5 18.5217C1.5 17.9815 1.89727 17.5435 2.38732 17.5435H21.6127C22.1027 17.5435 22.5 17.9815 22.5 18.5217C22.5 19.062 22.1027 19.5 21.6127 19.5H2.38732C1.89727 19.5 1.5 19.062 1.5 18.5217Z"></path></svg></span></button></div></div><div class="absolute inset-x-0 bottom-0 items-center pb-[11px] transition-transform duration-150 ease-in"><div class="relative mx-auto flex max-w-[1380px]"><div class="flex-1"></div><div class="flex items-center divide-x divide-white divide-opacity-20"><div class="flex items-center space-x-[2px] px-2"><a class="flex items-center space-x-2 rounded-full px-[8px] py-[8px] font-semibold text-white inline-block hover:bg-blue-600 active:bg-blue-500" href="https://www.finansavisen.no/siste">Siste nytt</a></div><div class="flex items-center space-x-[2px] px-2"><a class="flex items-center space-x-2 rounded-full px-[8px] py-[8px] font-semibold text-white inline-block hover:bg-blue-600 active:bg-blue-500" href="https://www.finansavisen.no/forum/">Forum</a><a class="flex items-center space-x-2 rounded-full px-[8px] py-[8px] font-semibold text-white inline-block hover:bg-blue-600 active:bg-blue-500" href="https://www.finansavisen.no/bors">Børs</a><a class="flex items-center space-x-2 rounded-full px-[8px] py-[8px] font-semibold text-white inline-block hover:bg-blue-600 active:bg-blue-500" href="https://www.finansavisen.no/watchlist">Watchlist</a><a class="flex items-center space-x-2 rounded-full px-[8px] py-[8px] font-semibold text-white inline-block hover:bg-blue-600 active:bg-blue-500" href="https://www.finansavisen.no/bjellesauer">Bjellesauer</a></div><div class="flex items-center space-x-[2px] px-2"><a class="flex items-center space-x-2 rounded-full px-[8px] py-[8px] font-semibold text-white inline-block hover:bg-blue-600 active:bg-blue-500" href="https://www.finansavisen.no/aksjer">Aksjer</a><a class="flex items-center space-x-2 rounded-full px-[8px] py-[8px] font-semibold text-white inline-block hover:bg-blue-600 active:bg-blue-500" href="https://www.finansavisen.no/aksjonaerregister">Aksjonærer</a><a class="flex items-center space-x-2 rounded-full px-[8px] py-[8px] font-semibold text-white inline-block hover:bg-blue-600 active:bg-blue-500" href="https://www.finansavisen.no/valuta">Valuta</a><a class="flex items-center space-x-2 rounded-full px-[8px] py-[8px] font-semibold text-white inline-block hover:bg-blue-600 active:bg-blue-500" href="https://www.finansavisen.no/rapporter">Rapporter</a><div class="relative inline-block text-left" data-headlessui-state=""><div><button class="inline-block rounded-full px-[12px] py-[8px] font-semibold text-white data-[active]:bg-blue-500 data-[active]:data-[open]:bg-blue-500 data-[hover]:bg-blue-600 data-[open]:bg-blue-600" id="headlessui-menu-button-«rc»" type="button" aria-haspopup="menu" aria-expanded="false" data-headlessui-state="">Mer<span class="rounded-full bg-red-500 px-[4px] py-0 text-[10px]/[16px] font-semibold tracking-[0.004em] text-white ml-[8px] inline-block">NY</span></button></div></div></div><div class="flex items-center space-x-[2px] px-2"><div class="relative inline-block text-left" data-headlessui-state=""><div><a href="https://tv.finansavisen.no/" class="inline-block rounded-full px-[12px] py-[8px] font-semibold text-white data-[active]:bg-blue-500 data-[active]:data-[open]:bg-blue-500 data-[hover]:bg-blue-600 data-[open]:bg-blue-600" id="headlessui-menu-button-«rf»" aria-haspopup="menu" aria-expanded="false" data-headlessui-state="">Video</a></div></div></div></div><div class="flex-1"></div></div><div class="absolute inset-x-0 bottom-0 transition-transform duration-150"><svg aria-hidden="true" class="absolute bottom-0 left-0 translate-y-full fill-blue-700" width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 0C3.58173 0 0 3.58173 0 8V0H8Z"></path></svg><svg aria-hidden="true" class="absolute bottom-0 right-0 translate-y-full fill-blue-700" width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 8V0H0C4.41827 0 8 3.58173 8 8Z"></path></svg></div></div></div></div></header></div>
+<style></style><script>
+    (() => {
+        console.log(
+            '%cHegnar Mixpanel Anonymous Script%c: Initializing',
+            'padding: 2px 6px; border-radius: 3px; color: white; background-color: #024588;',
+            ''
+        );
+        
+        const LOGIN_KEY = 'mixpanel-login';
+        const REGISTER_KEY = 'mixpanel-register';
+        const ZEPHR_SSO_QUERY_PARAMETER = 'zephr_sso_ott';
+        
+        localStorage.removeItem(LOGIN_KEY);
+        localStorage.removeItem(REGISTER_KEY);
+        
+        const searchParams = new URLSearchParams(window.location.search);
+        
+        const ssoKey = searchParams.get(ZEPHR_SSO_QUERY_PARAMETER);
+        
+        if (ssoKey) {
+            localStorage.setItem(ssoKey, "true");
+        }
+        
+        console.log(
+            '%cHegnar Mixpanel Anonymous Script%c: Initialized',
+            'padding: 2px 6px; border-radius: 3px; color: white; background-color: #024588;',
+            ''
+        );
+    })();
+</script><script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['finansavisen-header'] = {
+    featureLabel: 'Finansavisen Header',
+    outcomeId: 'transformation/1',
+    outcomeLabel: 'Guest header'
+  };
+</script>
+<div id=":R4:-container" class="c-skyscrapers" style="--scrollbar-width: 0px; --fixed-top: 109px;"><div id=":R4:-measurer"></div><div id=":R4:-scrollbar" class="c-skyscrapers__scrollbar"></div><div class="c-skyscrapers__inner"><div id=":R4:-ad-left" class="c-skyscrapers__left c-skyscrapers__left--ad" data-testid="skyscraper-ad-left" style="visibility: visible;"><div class="c-ad"><div id="finansavisen_sticky-left-skyscraper-markedsnytt" class="c-ad__ad"></div><script>window.livewrappedAds.push({"prepare":false,"tagId":"finansavisen_sticky-left-skyscraper-markedsnytt","transform":"skyscraper-left","scale":true})</script></div></div><div id=":R4:-ad-right" class="c-skyscrapers__right c-skyscrapers__right--ad" data-testid="skyscraper-ad-right" style="visibility: visible;"><div class="c-ad"><div id="finansavisen_sticky-skyscraper-markedsnytt" class="c-ad__ad"></div><script>window.livewrappedAds.push({"prepare":false,"tagId":"finansavisen_sticky-skyscraper-markedsnytt","transform":"skyscraper-right","scale":true})</script></div></div></div></div><div><script async="" type="module" src="https://static.finansavisen.no/static/assets/skyscrapers-N-euMmV6.js" data-react-id=":R4:"></script></div><div class="o-layout"><div class="o-layout__module"><div class="c-ad u-desktop-only u-mvp" style="min-width:980px;min-height:300px"><div class="c-spinner__container"><div class="c-spinner" style="width:48px;height:48px"></div></div><div id="Toppbanner_Markedsnytt" class="c-ad__ad" data-adunitid="08dd0966-bd82-40a7-8b6c-7433674e4147"></div><script>window.livewrappedAds.push({"prepare":false,"tagId":"Toppbanner_Markedsnytt","scale":true})</script></div></div></div><script>
+          window.googletag = window.googletag || {cmd: []};
+          googletag.cmd.push(function() {
+            googletag.defineSlot('/173621748/DFPAudiencePixel', [1, 1], 'div-gpt-ad-1670241698281-0').addService(googletag.pubads());
+            googletag.pubads().enableSingleRequest();
+            googletag.enableServices();
+          });
+        </script><div id="div-gpt-ad-1670241698281-0"><script>
+            googletag.cmd.push(function() { googletag.display('div-gpt-ad-1670241698281-0'); });
+          </script></div><div class="o-layout__module u-phn"><section class="o-section c-article-regular"><article class="u-size-pagewidth u-size-pagewidth--slim" id="8284380"><div class="o-grid c-article-regular__body--wrapper"><div class="c-article-regular__body u-x1of1"><h1 class="c-article-regular__title c-article-regular__title--small">Nasdaq i ny all-time high: – Tollene er enormt positivt</h1><div class="c-article-regular__top-info"></div><div class="container-vimond-video-playlist-ur1qVXkmDv-BPBNE_NPvmMndftO0RVxk"><div id="vimond-video-playlist-ur1qVXkmDv-BPBNE_NPvmMndftO0RVxk" class="c-vimond-video-playlist"><div class="c-vimond-video-playlist-container"><iframe class="vimond-iframe" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;" allowfullscreen="" src="https://tv.finansavisen.no/embedded/playlists/ur1qVXkmDv?playerId=BPBNE_NPvmMndftO0RVxk&amp;profileId=QY6A_YRBt6TNSgftmn0ui&amp;language=nb&amp;carouselType=grid&amp;primaryColor=%23024588&amp;autoplay=true&amp;muted=true"></iframe></div><div class="c-vimond-description"><div class="c-vimond-description__info"><div class="c-vimond-description__info__title">Er festen over for bankaksjer?</div><div class="c-vimond-description__info__description js-caption-toggle" data-ready="true"><div class="c-vimond-description__info__description__content js-caption">8. aug. 2025 - Forvalter Anders Johansen i Danske Invest sitter med storbanken DNB på topp i den norske porteføljen, men hvor mye mer er det egentlig å gå på i norske bankaksjer etter rentefesten?</div></div></div></div></div></div><script>window.app.componentData['vimond-video-playlist-ur1qVXkmDv-BPBNE_NPvmMndftO0RVxk'] = {"nodeName":"VideoPlaylist","id":"vimond-video-playlist-ur1qVXkmDv-BPBNE_NPvmMndftO0RVxk","playerId":"BPBNE_NPvmMndftO0RVxk","profileId":"QY6A_YRBt6TNSgftmn0ui","playlistId":"ur1qVXkmDv","carouselType":"grid","primaryColor":"#024588","isAutoplay":true,"isMuted":true,"showDescription":true,"stickyOnScroll":true};</script><h2 class="c-article-regular__body__preamble c-article-regular__body__preamble--market">Tech-aksjer løftet Nasdaq til ny toppnotering fredag. Apple er opp 12 prosent på to dager, mens gullprisen svingte kraftig etter tollforvirring.&nbsp;</h2><div class="c-article-regular__date-time"><div class="container-date-time"><div class="c-article-regular__datetime" id="date-time">Publisert 8. aug. 22:00 | Oppdatert 8. aug. 22:18</div></div><script>window.app.componentData['date-time'] = {"nodeName":"ArticleDateTime","published":{"raw":"2025-08-08T22:00:39+02:00","formatted":"22:00 - 8. 08 2025","long":"fredag 8. august 2025","short":"22:00 - 8.08.25"},"modified":{"raw":"2025-08-08T22:18:44+02:00","formatted":"22:18 - 8. 08 2025","long":"fredag 8. august 2025","short":"22:18"},"id":"date-time"};</script></div><div class="o-grid c-article-regular__body--wrapper"><div class="c-article-regular__market-author u-x1of1"><div class="container-byline"><div class="c-article-authors" id="byline"><div class="c-article-authors__group"><div class="c-article-authors__author"><a href="/profil/ole-tjelle-heen" class="c-article-authors__author-regular"><div class="c-tooltip__trigger"><div class="c-article-authors__author__image" style="background-image:url(https://imaginary.finansavisen.no/resize?width=280&amp;aspectratio=1%3A1&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fstorage.googleapis.com%2Ffinansavisen-employees-square2%2FOleTjelleheen.jpg)"></div><div class="c-tooltip__text" style="visibility:hidden;position:fixed;top:0px;left:0px;transform:translateX(-50%);opacity:0.9;z-index:2;pointer-events:none" id="bla">Vis artikler</div></div></a><div class="c-article-authors__author__text"><div class="c-tooltip__trigger"><div class="c-article-authors__author__text__name"><a href="mailto:ole.tjelle-heen@finansavisen.no" class="c-article-authors__author__text-regular-name">Ole Tjelle-Heen</a></div><div class="c-tooltip__text" style="visibility:hidden;position:fixed;top:0px;left:0px;transform:translateX(-50%);opacity:0.9;z-index:2;pointer-events:none" id="contact">Send epost</div></div><div class="c-article-authors__author__text__timestamp"></div></div></div></div></div></div><script>window.app.componentData['byline'] = {"nodeName":"Byline","authors":[{"email":"ole.tjelle-heen@finansavisen.no","fullname":"Ole Tjelle-Heen","id":"732","imageUrl":"https://imaginary.finansavisen.no/resize?width=280&aspectratio=1%3A1&nocrop=false&interlace=true&url=https%3A%2F%2Fstorage.googleapis.com%2Ffinansavisen-employees-square2%2FOleTjelleheen.jpg","jobTitle":"","profileText":"","profileTitle":"","title":"","twitter":""}],"isPaid":false,"id":"byline"};</script></div></div></div></div></article></section></div><div class="c-drp js-drp"><div class="o-layout"><div class="o-layout__module u-phn"><section class="o-section c-article-regular"><article class="u-size-pagewidth"><div class="o-grid c-article-regular__body--wrapper"><div class="c-article-regular__body u-x1of1"><div class="zephr-fade-out"><p>Sammen med en rekke sterke kvartalsresultater for Q2, tech-oppgang og meldinger om fremgang i forhandlingene mellom USA og Russland om en fredsplan i Ukraina, avsluttet New York-børsen uken knallsterkt.&nbsp;</p><p><b>S&amp;P 500</b>&nbsp;steg 0,8 prosent mens <b>Nasdaq </b>endte opp 1 prosent til ny bestenotering.&nbsp;<b>Dow Jones</b> endte opp 0,5 prosent.&nbsp;</p><p>Den tiårige amerikanske statsobligasjonsrenten endte på 4,28 prosent mens VIX-indeksen, også kalt fryktindeksen, falt 4,9 prosent til 15,77.</p><p>Markedskommentator Bret Kenwell i eToro peker på at mer enn 80 prosent av selskapene i S&amp;P 500 har levert bedre resultater enn ventet, og at både tekniske og fundamentale forhold støtter videre børsoppgang, skriver&nbsp;<a href="https://www.bloomberg.com/news/articles/2025-08-07/stock-market-today-dow-s-p-live-updates">Bloomberg</a>.</p><div id="dp-plugin-element-related-18221754682994701" class="dp-plugin-element dp-plugin-related" data-ah5-type="related"><div class="container-dp-plugin-element-related-18221754682994701--replaced"><div id="dp-plugin-element-related-18221754682994701--replaced" class="c-related-link__container single-article"><a href="https://finansavisen.no/artikkel/8284355" class="c-related-link__article__anchor"><article class="c-related-link__article"><div class="c-related-link__image"><div class="c-image-fa c-related-link__responsive-image"><a href="https://finansavisen.no/artikkel/8284355" class="c-image-fa__link" target=""><div class="c-image c-image--cover c-image--aspect  lazyload"><div class="c-image__padding" style="padding-bottom: 50%;"></div><img class="lazyload " data-src="https://imaginary.finansavisen.no/resize?force=false&amp;width=980&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e" data-srcset="https://imaginary.finansavisen.no/resize?force=false&amp;width=140&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 140w, https://imaginary.finansavisen.no/resize?force=false&amp;width=200&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 200w, https://imaginary.finansavisen.no/resize?force=false&amp;width=280&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 280w, https://imaginary.finansavisen.no/resize?force=false&amp;width=560&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 560w, https://imaginary.finansavisen.no/resize?force=false&amp;width=414&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 414w, https://imaginary.finansavisen.no/resize?force=false&amp;width=768&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 768w, https://imaginary.finansavisen.no/resize?force=false&amp;width=980&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 980w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1024&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 1024w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1280&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 1280w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1366&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 1366w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1600&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 1600w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1920&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 1920w, https://imaginary.finansavisen.no/resize?force=false&amp;width=2560&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131617933.jpg%3F%26accessToken%3D84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e 2560w 1280h" data-sizes="auto" alt="" data-parent-fit="cover"></div></a></div></div><section class="c-article-text-section"><span class="c-related-link__caption">Les også</span><h2 class="c-related-link__article__title">USA–Russland-samtaler: Vil gi Putin territoriell gevinst</h2><p class="c-related-link__article__description" style="-webkit-line-clamp: 2;">USA og Russland forhandler om fredsavtale som kan gi Putin kontroll over store, okkuperte områder i Ukraina. Avtalen kan være ferdig neste uke.</p></section></article></a></div></div><script>window.app.componentData['dp-plugin-element-related-18221754682994701--replaced'] = {"nodeName":"RelatedLinksList","id":"dp-plugin-element-related-18221754682994701--replaced","relatedLinks":[{"containerId":"dp-plugin-element-related-18221754682994701","title":"USA–Russland-samtaler: Vil gi Putin territoriell gevinst","url":"https://finansavisen.no/artikkel/8284355","id":"8284355","imageUrl":"https://smooth-storage.aptoma.no/users/hegnar/images/131617933.jpg?&accessToken=84444de42f08378d2282378eaca09bcded86607d64f1d8d0a958dbeec555a46e","preamble":"USA og Russland forhandler om fredsavtale som kan gi Putin kontroll over store, okkuperte områder i Ukraina. Avtalen kan være ferdig neste uke."}]};</script></div><p data-element-label="Mellomtittel" class="subhead" data-element-type="subhead">Beste uken siden juni</p><p>Oppgangen denne uken er den beste for S&amp;P 500 siden juni. Indeksen har de siste fem dagene lagt på seg 2,3 prosent.&nbsp;</p><p>Mye av fremgangen tilskrives <b>Apple</b>, som har steget 12 prosent siden kunngjøringen om økt produksjon i USA for å imøtekomme president Donald Trumps krav om økt hjemlig produksjon.</p><p>Selskapets administrerende direktør, Tim Cook, møtte onsdag Trump i Det hvite hus for å kunngjøre planer om investeringer på rundt 600 milliarder dollar over fire år i USA.&nbsp;</p><p>Fredag endte aksjen videre opp 4 prosent og kunne med det skilte med største ukesoppgang siden 2020.</p></div></div></div></article></section></div></div><section class="parallax-container u-mtl u-mbx"><div class="parallax"><div class="c-ad"><div data-lw-cid="finansavisen_desktop-superboard-1" data-lw-obs="1"></div><div id="finansavisen_desktop-superboard-1" class="c-ad__ad" data-adunitid="08da2c3b-3f82-4786-88a5-b0464fd4829e"></div><script>window.livewrappedAds.push({"prepare":false,"tagId":"finansavisen_desktop-superboard-1","transform":"parallax","scale":true})</script></div><div class="c-ad"><div id="finansavisen_mobile-superboard-1" class="c-ad__ad"></div><script>window.livewrappedAds.push({"prepare":false,"tagId":"finansavisen_mobile-superboard-1","transform":"parallax","scale":true})</script></div></div></section><div class="o-layout"><div class="o-layout__module u-phn"><section class="o-section c-article-regular"><article class="u-size-pagewidth"><div class="o-grid c-article-regular__body--wrapper"><div class="c-article-regular__body u-x1of1"><div class="zephr-fade-out"><p><b>Meta </b>kunngjorde fredag at de har&nbsp;valgt investeringsgigantene PIMCO og Blue Owl Capital til å lede en 29 milliarder dollar stor finansieringspakke for byggingen av et nytt datasenter i Louisiana. Utbyggingen markerer selskapets neste steg i kappløpet om AI-infrastruktur. Meta endte opp 1 prosent.&nbsp;</p><p class="subhead" data-element-type="subhead" data-element-label="Mellomtittel">Tesla opp 2,3 prosent</p><p>Samtidig meldte&nbsp;<b>Tesla </b>at det kontroversielle Dojo-prosjektet legges ned, og at prosjektlederen forlater selskapet. Det setter en brå stopper for Teslas ambisjon om å utvikle sin egen superdatamaskin for selvkjørende teknologi. Tesla endte handelsdagen opp hele 2,3 prosent.</p><p>Hos <b>Intel </b>forsikret konsernsjef Lip-Bu Tan at han har full støtte fra styret, etter at president Donald Trump krevde hans avgang med henvisning til interessekonflikter. Nyheten sendte aksjen opp 1 prosent.&nbsp;</p><p>Fredag meldte Wall Street Journal at Trump-administrasjonen planlegger å <a href="/finans/2025/08/08/8284360/trump-vil-borsnotere-fannie-mae-og-freddie-mac-kan-bli-en-av-historiens-storste">børsnotere de statlig eide boliglånsgigantene <b>Fannie Mae</b> og <b>Freddie Mac</b></a>. Noteringen som etter planen skal skje innen årslutt, ventes å bli blant tidenes største.</p><p class="subhead" data-element-type="subhead" data-element-label="Mellomtittel">Opp- og ned for gull</p><p>Etter at gullprisen fredag nådde et historisk toppnivå på 3.534 dollar per unse, varslet Det hvite hus timer senere om at de vil komme med en <a href="/ravarer/2025/08/08/8284378/det-hvite-hus-vil-rette-opp-feilinformasjon-om-gulltoll">oppklaring rundt&nbsp;«feilinformasjon» om toll på import av gull.</a>&nbsp;</p><p>Meldingen kom etter at tollmyndighetene tidligere denne uken slo fast at ettkilos- og 100-unse-barrer skal ilegges toll, som blant annet innebærer 39 prosent avgift på varer fra Sveits.</p><p>Ved stengetid på New York-børsen handles futureskontraktene på gull til 3.455 dollar per unse.&nbsp;</p><div id="dp-plugin-element-related-41011754682360327" class="dp-plugin-element dp-plugin-related" data-ah5-type="related"><div class="container-dp-plugin-element-related-41011754682360327--replaced"><div id="dp-plugin-element-related-41011754682360327--replaced" class="c-related-link__container single-article"><a href="https://finansavisen.no/artikkel/8284378" class="c-related-link__article__anchor"><article class="c-related-link__article"><div class="c-related-link__image"><div class="c-image-fa c-related-link__responsive-image"><a href="https://finansavisen.no/artikkel/8284378" class="c-image-fa__link" target=""><div class="c-image c-image--cover c-image--aspect  lazyload"><div class="c-image__padding" style="padding-bottom: 50%;"></div><img class="lazyload " data-src="https://imaginary.finansavisen.no/resize?force=false&amp;width=980&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c" data-srcset="https://imaginary.finansavisen.no/resize?force=false&amp;width=140&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 140w, https://imaginary.finansavisen.no/resize?force=false&amp;width=200&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 200w, https://imaginary.finansavisen.no/resize?force=false&amp;width=280&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 280w, https://imaginary.finansavisen.no/resize?force=false&amp;width=560&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 560w, https://imaginary.finansavisen.no/resize?force=false&amp;width=414&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 414w, https://imaginary.finansavisen.no/resize?force=false&amp;width=768&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 768w, https://imaginary.finansavisen.no/resize?force=false&amp;width=980&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 980w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1024&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 1024w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1280&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 1280w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1366&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 1366w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1600&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 1600w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1920&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 1920w, https://imaginary.finansavisen.no/resize?force=false&amp;width=2560&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131626299.jpg%3F%26accessToken%3Da66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c 2560w 1280h" data-sizes="auto" alt="" data-parent-fit="cover"></div></a></div></div><section class="c-article-text-section"><span class="c-related-link__caption">Les også</span><h2 class="c-related-link__article__title">Det hvite hus: Feilinformasjon om gulltoll</h2><p class="c-related-link__article__description" style="-webkit-line-clamp: 2;">Trump-administrasjonen varsler en avklaring etter forvirring om toll på gullimport.&nbsp;</p></section></article></a></div></div><script>window.app.componentData['dp-plugin-element-related-41011754682360327--replaced'] = {"nodeName":"RelatedLinksList","id":"dp-plugin-element-related-41011754682360327--replaced","relatedLinks":[{"containerId":"dp-plugin-element-related-41011754682360327","title":"Det hvite hus: Feilinformasjon om gulltoll","url":"https://finansavisen.no/artikkel/8284378","id":"8284378","imageUrl":"https://smooth-storage.aptoma.no/users/hegnar/images/131626299.jpg?&accessToken=a66f1140dcce0a7511e42d569ef8874fa50e6a47060b225101a27d1b329ea20c","preamble":"Trump-administrasjonen varsler en avklaring etter forvirring om toll på gullimport. "}]};</script></div><p data-element-label="Mellomtittel" class="subhead" data-element-type="subhead">Vil føre til «en ny depresjon som i 1929»</p><p>Ifølge kilder jobber amerikanske og russiske myndigheter med å fastsette territorielle rammer for et toppmøte mellom Donald Trump og Vladimir Putin, potensielt allerede neste uke.</p><p>Fredag uttalte Trump at tollene har «en enormt positiv effekt på aksjemarkedet» og hevdet at «det settes nye rekorder nesten hver dag.»&nbsp;</p><p>Han la til at «hundrevis av milliarder dollar strømmer inn i landets statskasse,» skriver <a href="https://www.cnbc.com/2025/08/08/trump-warns-courts-against-knocking-down-tariffs-says-duties-are-huge-positive-for-stock-market.html">CNBC</a>.&nbsp;&nbsp;</p><p>Samtidig advarte Trump mot at domstoler opphever tollpolitikken hans, og at et slikt utfall vil føre til «en ny depresjon som i 1929».</p><div id="dp-plugin-element-related-99221754682370513" class="dp-plugin-element dp-plugin-related" data-ah5-type="related"><div class="container-dp-plugin-element-related-99221754682370513--replaced"><div id="dp-plugin-element-related-99221754682370513--replaced" class="c-related-link__container single-article"><a href="https://finansavisen.no/artikkel/8284373" class="c-related-link__article__anchor"><article class="c-related-link__article"><div class="c-related-link__image"><div class="c-image-fa c-related-link__responsive-image"><a href="https://finansavisen.no/artikkel/8284373" class="c-image-fa__link" target=""><div class="c-image c-image--cover c-image--aspect  lazyload"><div class="c-image__padding" style="padding-bottom: 50%;"></div><img class="lazyload " data-src="https://imaginary.finansavisen.no/resize?force=false&amp;width=980&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea" data-srcset="https://imaginary.finansavisen.no/resize?force=false&amp;width=140&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 140w, https://imaginary.finansavisen.no/resize?force=false&amp;width=200&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 200w, https://imaginary.finansavisen.no/resize?force=false&amp;width=280&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 280w, https://imaginary.finansavisen.no/resize?force=false&amp;width=560&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 560w, https://imaginary.finansavisen.no/resize?force=false&amp;width=414&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 414w, https://imaginary.finansavisen.no/resize?force=false&amp;width=768&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 768w, https://imaginary.finansavisen.no/resize?force=false&amp;width=980&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 980w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1024&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 1024w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1280&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 1280w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1366&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 1366w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1600&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 1600w, https://imaginary.finansavisen.no/resize?force=false&amp;width=1920&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 1920w, https://imaginary.finansavisen.no/resize?force=false&amp;width=2560&amp;aspectratio=18%3A9&amp;nocrop=false&amp;interlace=true&amp;url=https%3A%2F%2Fsmooth-storage.aptoma.no%2Fusers%2Fhegnar%2Fimages%2F131624355.jpg%3F%26accessToken%3Da4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea 2560w 1280h" data-sizes="auto" alt="" data-parent-fit="cover"></div></a></div></div><section class="c-article-text-section"><span class="c-related-link__caption">Les også</span><h2 class="c-related-link__article__title">Trump gjør globale børser&nbsp;«great again»</h2><p class="c-related-link__article__description" style="-webkit-line-clamp: 2;">Internasjonale aksjemarkeder slår amerikanske for første gang på flere år, drevet av tollfrykt og investorrotasjon.</p></section></article></a></div></div><script>window.app.componentData['dp-plugin-element-related-99221754682370513--replaced'] = {"nodeName":"RelatedLinksList","id":"dp-plugin-element-related-99221754682370513--replaced","relatedLinks":[{"containerId":"dp-plugin-element-related-99221754682370513","title":"Trump gjør globale børser «great again»","url":"https://finansavisen.no/artikkel/8284373","id":"8284373","imageUrl":"https://smooth-storage.aptoma.no/users/hegnar/images/131624355.jpg?&accessToken=a4d6b59ce6521ba611cfdebaa2a56e0ac784635932686c83b7e711ae543753ea","preamble":"Internasjonale aksjemarkeder slår amerikanske for første gang på flere år, drevet av tollfrykt og investorrotasjon."}]};</script></div><p></p></div><script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['finansavisen-general-paywall'] = {
+    featureLabel: 'Finansavisen General Paywall',
+    outcomeId: 'transformation/1',
+    outcomeLabel: 'Show Article'
+  };
+</script>
+</div></div></article></section></div></div></div><div class="container-end-of-article-tracking"><div id="end-of-article-tracking"></div></div><script>window.app.componentData['end-of-article-tracking'] = {"nodeName":"EndOfArticleTracking","id":"end-of-article-tracking"};</script><div class="preflight flex justify-center bg-white pb-6"><div class="mx-[10px] flex w-full flex-col gap-4 rounded-2xl border border-gray-100 bg-gray-25 p-6 font-sans sm:mx-0 sm:w-auto sm:flex-row sm:items-center sm:gap-12 sm:p-6 sm:pr-0"><div class="order-1 sm:order-none"><div class="text-lg/6 font-semibold text-gray-900">Bli automatisk varslet om <br class="hidden sm:block">Børsoppdatering</div><div class="mt-2 text-sm text-gray-500">Bruk Finansavisen-appen for<!-- --> <a class="font-semibold text-blue-500 hover:underline" href="https://apps.apple.com/no/app/finansavisen/id434568179" target="_blank" rel="noopener noreferrer">iOS</a> <!-- -->og<!-- --> <a class="font-semibold text-blue-500 hover:underline" href="https://play.google.com/store/apps/details?id=com.trab.finansavisen&amp;hl=en&amp;gl=US" target="_blank" rel="noopener noreferrer">Android</a></div></div><div class="relative mx-auto max-w-[230px] pb-3 pl-2 pt-1 sm:mx-0 sm:max-w-none [mask-image:linear-gradient(to_left,rgb(255_255_255_/_0),rgb(255_255_255_/_1)_3.625rem)]"><div class="relative z-[2] flex items-center gap-2 rounded-xl bg-white px-3 py-[0.625rem] shadow-[0px_3.345px_6.691px_0px_rgba(21,23,25,0.14)]"><img src="data:image/svg+xml,%3csvg%20width='24'%20height='24'%20viewBox='0%200%2024%2024'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='24'%20height='24'%20fill='%23024588'/%3e%3cpath%20d='M15.3906%209.2222C14.0046%209.2222%2012.3776%209.68009%2012.3776%2011.7871L14.5021%2011.7879C14.5469%2011.3336%2014.7427%2011.0401%2015.3%2011.0401C15.7367%2011.0401%2015.9325%2011.3493%2015.9325%2011.8361V12.3885C14.2909%2012.4371%2012.0662%2012.9598%2012.0662%2015.1516C12.0662%2016.7432%2013.0093%2017.5681%2014.3197%2017.5681C15.0719%2017.5681%2015.9329%2016.912%2015.9329%2016.912V17.5681H18.3853L18.3723%2011.7063C18.3723%209.90402%2016.8513%209.2222%2015.391%209.2222H15.3906ZM15.9325%2015.4897C15.6312%2015.8632%2015.3602%2016.0095%2015.1495%2016.0095C14.7127%2016.0095%2014.3176%2015.6935%2014.3176%2015.125C14.3168%2014.3684%2014.9987%2013.9463%2015.9325%2013.849V15.4897Z'%20fill='white'/%3e%3cpath%20d='M6%2017.5862H8.72537V12.8343H11.4054V10.5887H8.72537V8.24568H11.6622V6H6V17.5862Z'%20fill='white'/%3e%3c/svg%3e" alt="Finansavisen" width="32" height="32" class="rounded-[7.109px]"><div class="text-[0.8125rem]/[17px] tracking-[-0.02em]"><div class="font-medium text-black">Børsoppdatering</div><div class="text-[#808080]">Oslo Børs åpner rett opp…</div></div></div><div class="relative z-[1] -mt-[0.875rem] ml-3 h-[1.625rem] rounded-2xl bg-[#F7F7F7] shadow-[0px_3.345px_6.691px_0px_rgba(21,23,25,0.14)] blur-[0.5px]"></div><div class="relative -mt-3 ml-7 h-5 rounded-2xl bg-[#EDEDED] shadow-[0px_3px_10px_0px_rgba(21,23,25,0.15)] blur-[0.5px]"></div></div></div></div><div class="o-layout"><div class="o-layout__module u-phn"><section class="o-section c-article-regular"><article class="u-size-pagewidth u-size-pagewidth--slim"><div class="o-grid c-article-regular__body--wrapper"><div class="c-article-regular__body u-x1of1"><div class="c-article-regular__body__flex"><a href="/tema/wall_street"><div class="c-article__tags-item">wall street</div></a><a href="/siste/fa/finans"><div class="c-article-regular__categories-item">Finans</div></a></div><a class="c-ai-badge" href="/bruk-av-ai"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 0C13 1.65685 11.6569 3 10 3C11.6569 3 13 4.34315 13 6C13 4.34315 14.3431 3 16 3C14.3431 3 13 1.65685 13 0Z" fill="#67737E"></path><path d="M7.5 1C7.5 5.14214 4.14214 8.5 0 8.5C4.14214 8.5 7.5 11.8579 7.5 16C7.5 11.8579 10.8579 8.5 15 8.5C10.8579 8.5 7.5 5.14214 7.5 1Z" fill="#67737E"></path></svg><h1 class="c-ai-badge__title">Informasjon om bruk av AI</h1></a><hr></div></div></article></section></div></div><div class="o-layout"><div class="o-layout__module u-phn"><section class="u-x1of1 u-ptm"><k5a-stream data-k5a-topname="stream" name="belowArticle" id="belowArticle_0" slot-name-alias="belowArticle"></k5a-stream><div id="container-readpeak-widget"></div></section></div></div><div class="container-get-mws-token"><div id="get-mws-token"></div></div><script>window.app.componentData['get-mws-token'] = {"nodeName":"MwsToken","id":"get-mws-token"};</script><script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['new-password-modal'] = {
+    featureLabel: 'New password modal',
+    outcomeId: 'graph/2#3',
+    outcomeLabel: 'FeatureContentPristine'
+  };
+</script>
+<script type="module" crossorigin="" src="https://prod-zephr-components.finansavisen.no/static/footer-DKYlZfE_.js"></script>
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/index-B31os8jI.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/clsx-B-dksMZM.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/url-DHhII1jL.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/userProfileDropdownItems-wEyVqeZS.js">
+<link rel="modulepreload" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/user-cWSrXZbQ.js">
+<link rel="stylesheet" crossorigin="" href="https://prod-zephr-components.finansavisen.no/static/footer-DLlWP4-s.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1">
+
+<style>
+  /* the following styles ensure proper rendering and behavior on various devices and screen sizes. */
+  /* z-index set to 9999 to ensure it always appears above other elements */
+  #footer {
+    position: relative;
+  }
+</style>
+
+<script>window.Footer={accessLevel:"anonymous"}</script>
+
+<div id="footer"><footer class="relative flex w-full flex-col items-center px-4 py-8 f4:px-[30px] bg-blue-700"><div class="absolute top-0 h-2 w-full rounded-b-lg bg-white"></div><div class="flex w-full max-w-[1380px] flex-col"><div class="flex w-full flex-col justify-between gap-8 pb-8 f3:gap-0 f4:flex-row"><div class="flex flex-col gap-8 pb-8 f3:flex-row f3:gap-20 f4:pb-0"><div><div><a href="https://www.finansavisen.no/"><svg width="177" height="29" viewBox="0 0 177 29" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Finansavisen" class="h-[18px] w-[110px] f4:h-[29px] f4:w-[177px]"><path d="M96.886 8.0569C93.4545 8.0569 89.424 9.20142 89.424 14.4678L94.6855 14.4699C94.7976 13.3344 95.2824 12.6008 96.6626 12.6008C97.7444 12.6008 98.2292 13.3736 98.2292 14.5904V15.9711C94.1626 16.0927 88.6528 17.399 88.6528 22.8774C88.6528 26.8556 90.9865 28.9176 94.2337 28.9176C96.0967 28.9176 98.2292 27.2777 98.2292 27.2777V28.9176H104.303L104.271 14.2659C104.271 9.76113 100.504 8.0569 96.886 8.0569ZM98.2282 23.7225C97.483 24.656 96.8119 25.0218 96.289 25.0218C95.2073 25.0218 94.2297 24.232 94.2297 22.8111C94.2267 20.92 95.9165 19.8649 98.2292 19.6217L98.2282 23.7225Z" fill="white"></path><path d="M47.4865 8.0569C44.0539 8.0569 40.0244 9.20142 40.0244 14.4678L45.2859 14.4699C45.3971 13.3344 45.8819 12.6008 47.2621 12.6008C48.3438 12.6008 48.8286 13.3736 48.8286 14.5904V15.9711C44.7631 16.0927 39.2532 17.399 39.2532 22.8774C39.2532 26.8556 41.589 28.9176 44.8342 28.9176C46.6972 28.9176 48.8296 27.2777 48.8296 27.2777V28.9176H54.9034L54.8713 14.2659C54.8713 9.76113 51.1043 8.0569 47.4875 8.0569H47.4865ZM48.8286 23.7225C48.0824 24.656 47.4113 25.0218 46.8895 25.0218C45.8078 25.0218 44.8292 24.232 44.8292 22.8111C44.8272 20.92 46.5159 19.8649 48.8286 19.6217V23.7225Z" fill="white"></path><path d="M0 28.9628H6.74988V17.0855H13.3876V11.4724H6.74988V5.61611H14.0236V0.00301481H0V28.9628Z" fill="white"></path><path d="M15.3647 28.9598V8.54123H21.4345V28.9598H15.3647Z" fill="white"></path><path d="M15.3647 5.85828V0H21.4345V5.85828H15.3647Z" fill="white"></path><path d="M34.4174 8.05589C32.2439 8.05589 30.3308 9.19439 29.0548 11.2694H28.9797V8.54324H22.9049V28.9628H28.9797V14.0348L29.3172 13.5464C29.7299 12.9776 30.2547 12.6933 30.8927 12.6933C32.0175 12.6933 32.3551 13.4248 32.3551 14.5231V28.9628H38.4299V12.6521C38.4299 9.84553 36.8553 8.05589 34.4174 8.05589Z" fill="white"></path><path d="M67.6149 8.05589C65.4394 8.05589 63.5273 9.19439 62.2522 11.2694H62.1771V8.54324H56.1023V28.9628H62.1771V14.0348L62.5147 13.5464C62.9273 12.9776 63.4522 12.6933 64.0902 12.6933C65.215 12.6933 65.5525 13.4248 65.5525 14.5231V28.9628H71.6273V12.6521C71.6273 9.84553 70.0518 8.05589 67.6149 8.05589Z" fill="white"></path><path d="M78.6386 13.3916C78.6386 12.7546 79.2015 12.1175 80.4385 12.1175C81.9389 12.1175 82.7262 13.471 83.2881 14.6658L87.5259 13.47C86.4382 9.56919 83.3632 8.0569 80.3263 8.0569C74.9637 8.0569 73.0146 12.1567 73.0146 14.2669C73.0146 21.1953 82.2394 19.882 82.2394 23.2261C82.2394 24.1024 81.4511 24.7002 80.3263 24.7002C78.5635 24.7002 77.7762 23.3065 77.0641 21.7932L72.4136 23.3457C73.3892 26.6105 76.1266 29 80.3263 29C84.7885 29 87.8635 26.4909 87.8635 22.1911C87.8635 15.5822 78.6386 16.6172 78.6386 13.3916Z" fill="white"></path><path d="M112.84 19.6489H112.765L110.627 8.54425H104.327L109.615 28.9628H114.19L120.227 8.54425H115.427L112.84 19.6489Z" fill="white"></path><path d="M121.015 28.9598V8.54123H127.085V28.9598H121.015Z" fill="white"></path><path d="M121.015 5.85828V0H127.085V5.85828H121.015Z" fill="white"></path><path d="M134.288 13.3916C134.288 12.7546 134.851 12.1185 136.088 12.1185C137.589 12.1185 138.376 13.472 138.938 14.6658L143.175 13.472C142.089 9.5692 139.013 8.05589 135.976 8.05589C130.614 8.05589 128.663 12.1577 128.663 14.2679C128.663 21.1963 137.888 19.882 137.888 23.2261C137.888 24.1024 137.101 24.7002 135.975 24.7002C134.212 24.7002 133.426 23.3065 132.714 21.7932L128.063 23.3457C129.039 26.6115 131.776 29 135.976 29C140.438 29 143.513 26.4919 143.513 22.1911C143.513 15.5822 134.288 16.6172 134.288 13.3916Z" fill="white"></path><path d="M152.513 8.05589C146.925 8.05589 144.15 12.834 144.15 18.4883C144.15 24.023 146.775 29 152.588 29C157.987 29 159.862 24.4601 160.125 23.5447L156.038 21.952C155.663 23.5849 154.426 24.6992 152.963 24.6992C150.562 24.6992 150.225 21.7128 150.225 19.9614H160.387V18.6068C160.387 13.3917 158.362 8.05589 152.513 8.05589ZM150.225 16.1389C150.225 14.2679 150.75 12.1175 152.475 12.1175C154.575 12.1175 154.725 14.2679 154.762 16.1389H150.225Z" fill="white"></path><path d="M172.988 8.05589C170.813 8.05589 168.9 9.19539 167.625 11.2694H167.551V8.54425H161.475V28.9628H167.551V14.0348L167.888 13.5474C168.3 12.9777 168.825 12.6933 169.463 12.6933C170.588 12.6933 170.925 13.4248 170.925 14.5231V28.9628H177V12.6521C177 9.84553 175.424 8.05589 172.988 8.05589Z" fill="white"></path></svg></a><div class="flex flex-col gap-4 py-6 text-xs font-medium text-white opacity-50"><div><div>Utgis av Hegnar Media AS</div><div>Hoffsveien 70 A, Postboks 724 Skøyen, 0214 Oslo</div><div>Sjefredaktør/adm.dir: Trygve Hegnar</div></div><div>©2025 Hegnar Media AS</div></div><div class="flex items-center gap-4"><a href="https://www.finansavisen.no/kontakt-oss" class="mb-0 flex-shrink-0 rounded-full bg-white px-[22px] py-2 text-xs font-medium">Kontakt oss</a><div class="flex gap-2 text-white/20"><a href="https://twitter.com/Finansavisen" target="_blank" rel="noopener noreferrer"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Twitter" class="size-8"><rect width="32" height="32" rx="16" fill="currentColor"></rect><path d="M20.6411 8.75H23.0936L17.7088 14.9031L24 23.25H19.063L15.1976 18.1777L10.7724 23.25H8.31989L14.0247 16.6688L8 8.75H13.0596L16.5518 13.3836L20.6411 8.75ZM19.7827 21.8054H21.1423L12.3452 10.1411H10.8844L19.7827 21.8054Z" fill="white"></path></svg></a><a href="https://www.facebook.com/Finansavisen" target="_blank" rel="noopener noreferrer"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Facebook" class="size-8"><rect fill="currentColor" width="32" height="32" rx="16"></rect><path d="M20.0933 12.78C20.0309 12.7089 19.9412 12.6677 19.8466 12.6667H17.3333V11.7267C17.3333 11.54 17.3733 11.3267 17.6733 11.3267H19.6733C19.7622 11.3305 19.8481 11.2937 19.9066 11.2267C19.9654 11.1657 19.9988 11.0847 20 11V8.33333C20 8.14924 19.8507 8 19.6666 8H16.78C13.58 8 13.3333 10.7333 13.3333 11.5667V12.6667H11.6666C11.4826 12.6667 11.3333 12.8159 11.3333 13V15.6667C11.3333 15.8508 11.4826 16 11.6666 16H13.3333V23.6667C13.3333 23.8508 13.4826 24 13.6666 24H17C17.1841 24 17.3333 23.8508 17.3333 23.6667V16H19.5666C19.7385 16.0009 19.8828 15.871 19.9 15.7L20.18 13.0333C20.1878 12.9405 20.1563 12.8486 20.0933 12.78Z" fill="white"></path></svg></a><a href="https://www.instagram.com/finansavisen/" target="_blank" rel="noopener noreferrer"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Instagram" class="size-8"><rect fill="currentColor" width="32" height="32" rx="16"></rect><path fill-rule="evenodd" clip-rule="evenodd" d="M19.6667 8H12.3333C9.94162 8.00367 8.00367 9.94162 8 12.3333V19.6667C8.00367 22.0584 9.94162 23.9963 12.3333 24H19.6667C22.0584 23.9963 23.9963 22.0584 24 19.6667V12.3333C23.9963 9.94162 22.0584 8.00367 19.6667 8ZM16 19.6667C13.975 19.6667 12.3333 18.025 12.3333 16C12.3333 13.975 13.975 12.3333 16 12.3333C18.025 12.3333 19.6667 13.975 19.6667 16C19.6667 16.9725 19.2804 17.9051 18.5927 18.5927C17.9051 19.2804 16.9725 19.6667 16 19.6667ZM19.3333 11.3333C19.3333 11.8856 19.781 12.3333 20.3333 12.3333C20.5985 12.3333 20.8529 12.228 21.0404 12.0404C21.228 11.8529 21.3333 11.5985 21.3333 11.3333C21.3333 10.781 20.8856 10.3333 20.3333 10.3333C19.781 10.3333 19.3333 10.781 19.3333 11.3333Z" fill="white"></path></svg></a><a href="https://www.tiktok.com/@finansavisen" target="_blank" rel="noopener noreferrer"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="TikTok" class="size-8"><rect fill="currentColor" width="32" height="32" rx="16"></rect><path d="M19.3816 8H16.6851V18.8985C16.6851 20.1971 15.648 21.2638 14.3574 21.2638C13.0668 21.2638 12.0297 20.1971 12.0297 18.8985C12.0297 17.6232 13.0438 16.5797 14.2883 16.5333V13.7971C11.5457 13.8435 9.33325 16.0928 9.33325 18.8985C9.33325 21.7276 11.5918 24 14.3805 24C17.1691 24 19.4277 21.7044 19.4277 18.8985V13.3101C20.4417 14.0522 21.6862 14.4928 22.9999 14.516V11.7797C20.9718 11.7101 19.3816 10.0406 19.3816 8Z" fill="white"></path></svg></a><a href="https://www.linkedin.com/company/finansavisen" target="_blank" rel="noopener noreferrer"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" class="size-8"><rect fill="currentColor" width="32" height="32" rx="16"></rect><rect x="9.33331" y="13.6667" width="3.33333" height="9.33333" rx="0.5" fill="white"></rect><ellipse cx="10.9866" cy="10.6667" rx="1.65333" ry="1.66667" fill="white"></ellipse><path d="M20.3333 23H22.3333C22.5174 23 22.6667 22.8508 22.6667 22.6667V17.0667C22.6667 14.5533 21.2467 13.3333 19.26 13.3333C18.4676 13.3043 17.6999 13.6119 17.1467 14.18C17.0718 14.2665 16.9511 14.2972 16.844 14.257C16.737 14.2169 16.6662 14.1143 16.6667 14C16.6667 13.8159 16.5174 13.6667 16.3333 13.6667H14.3333C14.1492 13.6667 14 13.8159 14 14V22.6667C14 22.8508 14.1492 23 14.3333 23H16.3333C16.5174 23 16.6667 22.8508 16.6667 22.6667V17.6667C16.6667 16.7462 17.4129 16 18.3333 16C19.2538 16 20 16.7462 20 17.6667V22.6667C20 22.8508 20.1492 23 20.3333 23Z" fill="white"></path></svg></a></div></div></div></div><div class="flex gap-14 text-sm font-normal text-white"><div class="flex"><div class="flex flex-col gap-4"><a href="https://www.finansavisen.no/minside/eavis">eAvis</a><a href="https://annonseweb.finansavisen.no/" target="_blank" rel="noopener noreferrer">Annonse</a><a href="https://www.finansavisen.no/abonnement">Abonnement</a><a href="https://www.finansavisen.no/arkiv">Arkiv</a><a href="https://event.finansavisen.no/" target="_blank" rel="noopener noreferrer">Event</a><a href="https://www.finansavisen.no/bedriftsavtale">Bedriftsabonnement</a></div></div><div class="flex"><div class="flex flex-col gap-4"><a href="https://www.finansavisen.no/personvern">Personvernerklæring</a><a href="https://www.finansavisen.no/vilkar">Vilkår</a><a href="https://www.finansavisen.no/cookies">Cookies</a><button type="button" data-ga-label="Samtykkeinnstillinger">Samtykkeinnstillinger</button></div></div></div></div><div class="h-full rounded-2xl border bg-[#15171933] f3:w-[570px] f4:w-auto border-[#093560]"><div class="flex"><div class="w-full p-4"><div class="flex w-full flex-col justify-between gap-6 f2:flex-row f2:items-center f4:flex-col f4:items-stretch"><div class="flex max-w-none flex-col gap-1 f4:max-w-[239px]"><div class="text-sm font-semibold text-white">Bruk Finansavisen-appen</div><div class="text-xs font-medium text-white opacity-50">Få nyhetsvarsler og en personalisert FA-opplevelse</div></div><div class="flex gap-2"><a href="https://apps.apple.com/no/app/finansavisen/id434568179" target="_blank" rel="noopener noreferrer"><svg width="119" height="35" viewBox="0 0 119 35" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Apple Store" class="h-8 w-[108px]"><rect width="119" height="35" rx="4" fill="currentColor"></rect><g clip-path="url(#clip0_1389_2375)"><path d="M101.957 0H14.4178C14.1045 0 13.7912 0 13.4693 0C13.1995 0 12.9385 0.00875 12.6687 0.00875C12.0857 0.0175 11.5027 0.07 10.9284 0.16625C10.354 0.2625 9.79713 0.44625 9.27503 0.7175C8.75292 0.98 8.27433 1.33 7.86535 1.75C7.44766 2.16125 7.09959 2.6425 6.83854 3.1675C6.57749 3.6925 6.39475 4.2525 6.29903 4.83C6.20332 5.4075 6.15111 5.99375 6.1424 6.58C6.1337 6.85125 6.125 7.1225 6.125 7.385V27.6062C6.125 27.8775 6.1337 28.14 6.1424 28.4112C6.15111 28.9975 6.20332 29.5837 6.29903 30.1612C6.39475 30.7387 6.57749 31.3075 6.83854 31.8237C7.09959 32.3487 7.44766 32.8212 7.86535 33.2325C8.27433 33.6525 8.75292 33.9937 9.27503 34.265C9.79713 34.5275 10.354 34.72 10.9284 34.8162C11.5027 34.9125 12.0857 34.965 12.6687 34.9737C12.9385 34.9912 13.1995 35 13.4693 35C13.7912 35 14.1045 35 14.4178 35H101.957C102.271 35 102.584 35 102.897 35C103.158 35 103.437 35 103.698 34.9912C104.281 34.9825 104.864 34.93 105.438 34.8337C106.012 34.7375 106.578 34.545 107.1 34.2825C107.622 34.02 108.092 33.67 108.51 33.25C108.927 32.8387 109.267 32.3575 109.536 31.8412C109.798 31.3162 109.98 30.7562 110.076 30.1787C110.172 29.6012 110.224 29.015 110.241 28.4287C110.241 28.1575 110.241 27.895 110.241 27.6237C110.25 27.3087 110.25 26.9937 110.25 26.67V8.3475C110.25 8.02375 110.25 7.70875 110.241 7.39375C110.241 7.1225 110.241 6.86 110.241 6.58875C110.233 6.0025 110.18 5.41625 110.076 4.83875C109.98 4.26125 109.798 3.70125 109.536 3.17625C108.997 2.12625 108.144 1.26875 107.1 0.72625C106.578 0.46375 106.021 0.28 105.438 0.175C104.864 0.07875 104.281 0.02625 103.698 0.0175C103.437 0.0175 103.158 0.00875 102.897 0.00875C102.592 0 102.271 0 101.957 0Z" fill="currentColor"></path><path d="M13.4693 34.2387C13.2082 34.2387 12.9472 34.2387 12.6861 34.23C12.1379 34.2212 11.5984 34.1775 11.0589 34.09C10.5542 34.0025 10.0756 33.845 9.61441 33.6087C9.16192 33.3812 8.75294 33.075 8.39617 32.7162C8.0394 32.3575 7.73484 31.9462 7.50859 31.4912C7.28234 31.0362 7.11701 30.5462 7.0387 30.0387C6.95168 29.4962 6.89947 28.945 6.89077 28.3937C6.88206 28.21 6.88206 27.5975 6.88206 27.5975V7.385C6.88206 7.385 6.89077 6.78125 6.89077 6.60625C6.90817 6.055 6.95168 5.5125 7.0387 4.97C7.12571 4.4625 7.28234 3.9725 7.51729 3.5175C7.74354 3.0625 8.0394 2.65125 8.40487 2.2925C8.75294 1.93375 9.17062 1.6275 9.61441 1.4C10.0669 1.1725 10.5542 1.00625 11.0502 0.927498C11.5897 0.839998 12.1379 0.787498 12.6861 0.787498L13.4693 0.778748H102.897L103.689 0.787498C104.228 0.796248 104.768 0.839998 105.307 0.927498C105.812 1.015 106.299 1.1725 106.761 1.40875C107.666 1.8725 108.397 2.61625 108.866 3.52625C109.093 3.98125 109.249 4.47125 109.336 4.97C109.423 5.5125 109.476 6.06375 109.484 6.62375C109.484 6.86875 109.484 7.14 109.484 7.4025C109.493 7.735 109.493 8.04125 109.493 8.35625V26.67C109.493 26.985 109.493 27.3 109.484 27.615C109.484 27.9037 109.484 28.1575 109.484 28.4287C109.476 28.9712 109.423 29.5137 109.336 30.0475C109.258 30.555 109.093 31.045 108.866 31.5087C108.64 31.955 108.336 32.3662 107.979 32.725C107.622 33.0837 107.213 33.39 106.761 33.6175C106.299 33.8537 105.812 34.0112 105.307 34.0987C104.768 34.1862 104.228 34.2387 103.68 34.2387C103.428 34.2475 103.158 34.2475 102.897 34.2475H101.957L13.4693 34.2387Z" fill="currentColor"></path><path d="M27.6792 17.7625C27.6966 16.275 28.4711 14.91 29.7328 14.1313C28.9323 12.985 27.6444 12.285 26.2608 12.2413C24.7989 12.0838 23.3806 13.1163 22.6409 13.1163C21.8839 13.1163 20.7352 12.25 19.4996 12.2763C17.8724 12.3288 16.4018 13.2388 15.6099 14.665C13.9305 17.5963 15.1835 21.9013 16.7933 24.2725C17.6026 25.4363 18.5424 26.7313 19.778 26.6788C20.9876 26.6263 21.4401 25.9088 22.8933 25.9088C24.3378 25.9088 24.7554 26.6788 26.0172 26.6525C27.3137 26.635 28.1317 25.4888 28.9062 24.3163C29.4892 23.4938 29.933 22.575 30.2288 21.6125C28.6799 20.9563 27.6792 19.4425 27.6792 17.7625Z" fill="white"></path><path d="M25.3036 10.6838C26.0085 9.835 26.3566 8.7325 26.2695 7.63C25.1905 7.74375 24.1898 8.26 23.4763 9.0825C22.7714 9.8875 22.4147 10.9463 22.4843 12.0225C23.5807 12.0313 24.6162 11.5413 25.3036 10.6838Z" fill="white"></path><path d="M42.9333 23.7475H38.8174L37.8254 26.6875H36.0851L39.9835 15.82H41.7934L45.6918 26.6875H43.9166L42.9333 23.7475ZM39.2438 22.3913H42.507L40.8971 17.6225H40.8536L39.2438 22.3913Z" fill="white"></path><path d="M54.1238 22.7238C54.1238 25.1825 52.8098 26.7663 50.8345 26.7663C49.8164 26.8188 48.8505 26.285 48.3545 25.3838H48.3197V29.3038H46.7012V18.76H48.2675V20.0813H48.2936C48.807 19.1888 49.7729 18.6463 50.7997 18.6813C52.8098 18.6813 54.1238 20.265 54.1238 22.7238ZM52.4618 22.7238C52.4618 21.1225 51.6351 20.0638 50.382 20.0638C49.1464 20.0638 48.311 21.14 48.311 22.7238C48.311 24.3163 49.1464 25.3925 50.382 25.3925C51.6351 25.3925 52.4618 24.3425 52.4618 22.7238Z" fill="white"></path><path d="M62.7907 22.7238C62.7907 25.1825 61.4768 26.7663 59.5015 26.7663C58.4834 26.8188 57.5175 26.285 57.0215 25.3838H56.9867V29.3038H55.3768V18.76H56.9431V20.0813H56.9693C57.4827 19.1888 58.4485 18.6463 59.4754 18.6813C61.4768 18.6813 62.7907 20.265 62.7907 22.7238ZM61.1287 22.7238C61.1287 21.1225 60.302 20.0638 59.049 20.0638C57.8133 20.0638 56.978 21.14 56.978 22.7238C56.978 24.3163 57.8133 25.3925 59.049 25.3925C60.3107 25.3925 61.1287 24.3425 61.1287 22.7238Z" fill="white"></path><path d="M68.5252 23.66C68.647 24.7363 69.6825 25.445 71.1096 25.445C72.4757 25.445 73.4503 24.7363 73.4503 23.765C73.4503 22.925 72.8586 22.4175 71.4576 22.0675L70.0567 21.7263C68.0727 21.245 67.1503 20.3088 67.1503 18.795C67.1503 16.9225 68.7775 15.6363 71.0835 15.6363C73.3633 15.6363 74.9296 16.9225 74.9818 18.795H73.3459C73.2502 17.71 72.3539 17.0538 71.0574 17.0538C69.7608 17.0538 68.8645 17.7188 68.8645 18.6813C68.8645 19.4513 69.4301 19.8975 70.8224 20.2475L72.0146 20.545C74.2335 21.07 75.1559 21.9713 75.1559 23.555C75.1559 25.585 73.5461 26.8625 70.9878 26.8625C68.5948 26.8625 66.9762 25.62 66.8718 23.6513L68.5252 23.66Z" fill="white"></path><path d="M78.654 16.8875V18.76H80.1507V20.0463H78.654V24.4125C78.654 25.095 78.9499 25.41 79.6112 25.41C79.7852 25.41 79.968 25.3925 80.142 25.375V26.6525C79.8461 26.705 79.5416 26.7313 79.2457 26.7313C77.6533 26.7313 77.0268 26.1275 77.0268 24.5963V20.055H75.8781V18.7688H77.0268V16.8875H78.654Z" fill="white"></path><path d="M81.0209 22.7238C81.0209 20.23 82.4828 18.6638 84.7539 18.6638C87.0338 18.6638 88.487 20.23 88.487 22.7238C88.487 25.2263 87.0425 26.7838 84.7539 26.7838C82.4653 26.7838 81.0209 25.2263 81.0209 22.7238ZM86.8423 22.7238C86.8423 21.0175 86.0592 20.0025 84.7539 20.0025C83.4486 20.0025 82.6655 21.0175 82.6655 22.7238C82.6655 24.4388 83.4399 25.445 84.7539 25.445C86.0679 25.445 86.8423 24.4388 86.8423 22.7238Z" fill="white"></path><path d="M89.827 18.76H91.3672V20.1075H91.4021C91.6196 19.2413 92.4115 18.6463 93.299 18.6725C93.4818 18.6725 93.6732 18.69 93.8559 18.7338V20.2563C93.621 20.1863 93.3773 20.1513 93.1337 20.16C92.2374 20.125 91.4717 20.825 91.4369 21.735C91.4369 21.8225 91.4369 21.9013 91.4456 21.9888V26.6875H89.827V18.76Z" fill="white"></path><path d="M101.305 24.36C101.087 25.795 99.6948 26.7838 97.9109 26.7838C95.6224 26.7838 94.1953 25.2438 94.1953 22.7588C94.1953 20.2738 95.6224 18.6638 97.8413 18.6638C100.017 18.6638 101.392 20.1688 101.392 22.575V23.135H95.8312V23.2313C95.7355 24.3688 96.5622 25.3663 97.6934 25.4713C97.7804 25.48 97.8674 25.48 97.9457 25.48C98.7289 25.55 99.4685 25.1038 99.7644 24.3688L101.305 24.36ZM95.8399 21.9888H99.7818C99.8427 20.9388 99.0422 20.0375 97.9979 19.985C97.9457 19.985 97.9022 19.985 97.85 19.985C96.7449 19.9763 95.8486 20.8688 95.8399 21.98V21.9888Z" fill="white"></path><path d="M40.4011 12.8625H37.1641V7.63873H37.9734V12.11H40.4011V12.8625Z" fill="white"></path><path d="M41.2191 11.7425C41.2191 11.0338 41.7412 10.6225 42.6723 10.57L43.7339 10.5088V10.1675C43.7339 9.7475 43.4641 9.52 42.9333 9.52C42.4983 9.52 42.2024 9.6775 42.1154 9.9575H41.367C41.4453 9.28375 42.0806 8.84625 42.9681 8.84625C43.9514 8.84625 44.5084 9.33625 44.5084 10.1675V12.8625H43.76V12.3113H43.6991C43.4467 12.7138 42.9943 12.95 42.5244 12.9325C41.8717 13.0025 41.2887 12.5213 41.2278 11.8738C41.2191 11.8213 41.2191 11.7863 41.2191 11.7425ZM43.7339 11.41V11.0775L42.7767 11.1388C42.2372 11.1738 41.9936 11.3575 41.9936 11.7075C41.9936 12.0663 42.2981 12.2675 42.7158 12.2675C43.2205 12.32 43.673 11.9438 43.7252 11.4363C43.7339 11.4275 43.7339 11.4188 43.7339 11.41Z" fill="white"></path><path d="M47.1537 8.84625C48.0326 8.84625 48.6069 9.2575 48.6852 9.9575H47.9455C47.8759 9.66875 47.5888 9.485 47.1537 9.485C46.7186 9.485 46.3966 9.695 46.3966 10.0013C46.3966 10.2375 46.5968 10.3863 47.0232 10.4825L47.6758 10.6313C48.4241 10.8063 48.7722 11.13 48.7722 11.7075C48.7722 12.4513 48.0848 12.9413 47.145 12.9413C46.2139 12.9413 45.6048 12.5213 45.5352 11.8213H46.3096C46.4488 12.1625 46.7969 12.3638 47.1624 12.3113C47.641 12.3113 47.989 12.0925 47.989 11.7775C47.989 11.5413 47.8063 11.3925 47.4147 11.2963L46.7273 11.1388C45.9789 10.9638 45.6396 10.6225 45.6396 10.0363C45.6309 9.33625 46.2661 8.84625 47.1537 8.84625Z" fill="white"></path><path d="M50.8171 7.93622V8.93372H51.6699V9.58997H50.8171V11.62C50.8171 12.0312 50.9825 12.215 51.374 12.215C51.4698 12.215 51.5742 12.2062 51.6699 12.1975V12.845C51.5307 12.8712 51.3915 12.88 51.2522 12.8887C50.3908 12.8887 50.0514 12.5825 50.0514 11.8212V9.59872H49.4336V8.94247H50.0514V7.93622H50.8171Z" fill="white"></path><path d="M54.8112 8.91621H55.5596V9.54621H55.6205C55.8206 9.08246 56.2905 8.80246 56.7865 8.84621C57.4914 8.79371 58.1005 9.31871 58.1527 10.0275C58.1614 10.1237 58.1527 10.22 58.144 10.3075V12.8537H57.3695V10.5C57.3695 9.86996 57.0998 9.55496 56.5255 9.55496C56.0295 9.52871 55.6118 9.91371 55.5857 10.4125C55.5857 10.4562 55.5857 10.5087 55.5857 10.5525V12.8537H54.8112V8.91621Z" fill="white"></path><path d="M62.6515 11.795C62.4339 12.5388 61.7204 13.02 60.9546 12.9325C59.9713 12.9588 59.1534 12.18 59.1273 11.1913C59.1273 11.095 59.1273 10.9988 59.1447 10.9025C59.0142 9.905 59.7103 8.995 60.6936 8.86375C60.7806 8.855 60.8676 8.84625 60.9459 8.84625C62.0337 8.84625 62.695 9.59875 62.695 10.8325V11.1038H59.9278V11.1475C59.8756 11.725 60.302 12.2238 60.8763 12.2763C60.9111 12.2763 60.9459 12.2763 60.972 12.2763C61.3462 12.32 61.7204 12.1363 61.9031 11.795H62.6515ZM59.9278 10.5263H61.9031C61.9379 10.0013 61.5551 9.54625 61.033 9.51125C60.9981 9.51125 60.972 9.51125 60.9372 9.51125C60.3803 9.5025 59.9278 9.94875 59.9191 10.5088C59.9278 10.5088 59.9278 10.5175 59.9278 10.5263Z" fill="white"></path><path d="M63.5391 10.885C63.5391 9.64248 64.1743 8.85498 65.1663 8.85498C65.6623 8.82873 66.1322 9.09998 66.3671 9.54623H66.428V7.38498H67.2025V12.8625H66.4628V12.2412H66.4019C66.1496 12.6787 65.6797 12.95 65.175 12.9325C64.1743 12.9237 63.5391 12.1362 63.5391 10.885ZM64.3396 10.885C64.3396 11.725 64.7312 12.2237 65.3838 12.2237C66.0365 12.2237 66.4367 11.7162 66.4367 10.885C66.4367 10.0625 66.0278 9.54623 65.3838 9.54623C64.7399 9.55498 64.3396 10.0625 64.3396 10.885Z" fill="white"></path><path d="M70.8746 9.58998H70.2307V8.93373H70.8746V8.55748C70.8746 7.75248 71.3097 7.41998 72.1277 7.41998C72.2669 7.41998 72.4061 7.42873 72.5453 7.45498V8.07623C72.4322 8.05873 72.3104 8.04998 72.1973 8.04998C71.8231 8.04998 71.6317 8.21623 71.6317 8.60998V8.94248H72.5018V9.59873H71.6491V12.8625H70.8746V9.58998Z" fill="white"></path><path d="M73.4939 8.91626H74.2422V9.52001H74.3031C74.4772 9.09126 74.9035 8.82001 75.3647 8.84626C75.4779 8.84626 75.5997 8.85501 75.7128 8.88126V9.65126C75.5736 9.62501 75.4257 9.60751 75.2777 9.60751C74.773 9.56376 74.3292 9.94001 74.277 10.4475C74.277 10.4738 74.277 10.5088 74.277 10.535V12.8625H73.5026V8.91626H73.4939Z" fill="white"></path><path d="M76.3045 11.7425C76.3045 11.0338 76.8266 10.6225 77.7577 10.57L78.8193 10.5088V10.1675C78.8193 9.7475 78.5496 9.52 78.0188 9.52C77.5837 9.52 77.2878 9.6775 77.2008 9.9575H76.4524C76.5308 9.28375 77.166 8.84625 78.0536 8.84625C79.0369 8.84625 79.5938 9.33625 79.5938 10.1675V12.8625H78.8454V12.3113H78.7845C78.5322 12.7138 78.0797 12.95 77.6098 12.9325C76.9572 13.0025 76.3741 12.5213 76.3132 11.8738C76.3045 11.8213 76.3045 11.7863 76.3045 11.7425ZM78.828 11.41V11.0775L77.8708 11.1388C77.3313 11.1738 77.0877 11.3575 77.0877 11.7075C77.0877 12.0663 77.3922 12.2675 77.8099 12.2675C78.3146 12.32 78.7671 11.9438 78.8193 11.4363C78.8193 11.4275 78.828 11.4188 78.828 11.41Z" fill="white"></path></g><defs><clipPath id="clip0_1389_2375"><rect width="104.125" height="35" fill="white" transform="translate(6.125)"></rect></clipPath></defs></svg></a><a href="https://play.google.com/store/apps/details?id=com.trab.finansavisen&amp;hl=en&amp;gl=US" target="_blank" rel="noopener noreferrer"><svg width="119" height="35" viewBox="0 0 119 35" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Google Play" class="h-8 w-[108px]"><g clip-path="url(#clip0_1389_2408)"><mask id="mask0_1389_2408" maskUnits="userSpaceOnUse" x="0" y="0" width="119" height="35" style="mask-type: luminance;"><path d="M118.248 0H0.125V35H118.248V0Z" fill="white"></path></mask><g mask="url(#mask0_1389_2408)"><mask id="mask1_1389_2408" maskUnits="userSpaceOnUse" x="0" y="0" width="119" height="35" style="mask-type: luminance;"><path d="M118.248 0H0.125V35H118.248V0Z" fill="white"></path></mask><g mask="url(#mask1_1389_2408)"><path d="M113.873 35H4.50069C2.09433 35 0.125 33.0307 0.125 30.6243V4.37569C0.125 1.96933 2.09433 0 4.50069 0H113.875C116.279 0 118.248 1.96933 118.248 4.37569V30.6261C118.248 33.0307 116.279 35 113.873 35Z" fill="currentColor"></path></g><mask id="mask2_1389_2408" maskUnits="userSpaceOnUse" x="0" y="0" width="119" height="35" style="mask-type: luminance;"><path d="M118.248 0H0.125V35H118.248V0Z" fill="white"></path></mask><g mask="url(#mask2_1389_2408)"><path d="M113.873 0.700329C115.899 0.700329 117.548 2.34967 117.548 4.37569V30.6261C117.548 32.6522 115.899 34.3015 113.873 34.3015H4.50069C2.47467 34.3015 0.825329 32.6522 0.825329 30.6261V4.37569C0.825329 2.34967 2.47467 0.700329 4.50069 0.700329H113.873ZM113.873 0H4.50069C2.09433 0 0.125 1.96933 0.125 4.37569V30.6261C0.125 33.0325 2.09433 35.0018 4.50069 35.0018H113.875C116.281 35.0018 118.25 33.0325 118.25 30.6261V4.37569C118.248 1.96933 116.279 0 113.873 0Z" fill="currentColor"></path></g><mask id="mask3_1389_2408" maskUnits="userSpaceOnUse" x="0" y="0" width="119" height="35" style="mask-type: luminance;"><path d="M118.248 0H0.125V35H118.248V0Z" fill="white"></path></mask><g mask="url(#mask3_1389_2408)"><path d="M59.7426 19.0314C57.6855 19.0314 56.0069 20.5966 56.0069 22.7543C56.0069 24.8955 57.6836 26.4754 59.7426 26.4754C61.7997 26.4754 63.4783 24.8955 63.4783 22.7543C63.4783 20.5966 61.8015 19.0314 59.7426 19.0314ZM59.7426 25.0089C58.6144 25.0089 57.6416 24.0782 57.6416 22.7543C57.6416 21.414 58.6144 20.4979 59.7426 20.4979C60.8708 20.4979 61.8417 21.414 61.8417 22.7543C61.8436 24.0782 60.8708 25.0089 59.7426 25.0089ZM51.5928 19.0314C49.5357 19.0314 47.8571 20.5966 47.8571 22.7543C47.8571 24.8955 49.5339 26.4754 51.5928 26.4754C53.6499 26.4754 55.3285 24.8955 55.3285 22.7543C55.3303 20.5966 53.6517 19.0314 51.5928 19.0314ZM51.5928 25.0089C50.4664 25.0089 49.4936 24.0782 49.4936 22.7543C49.4936 21.414 50.4664 20.4979 51.5928 20.4979C52.721 20.4979 53.6938 21.414 53.6938 22.7543C53.6938 24.0782 52.721 25.0089 51.5928 25.0089ZM41.8997 20.1742V21.7523H45.6775C45.5641 22.6409 45.2697 23.2882 44.8181 23.7399C44.2677 24.2903 43.4083 24.8955 41.8997 24.8955C39.5738 24.8955 37.7544 23.0213 37.7544 20.6954C37.7544 18.3695 39.572 16.4952 41.8997 16.4952C43.1541 16.4952 44.0702 16.9871 44.7467 17.6216L45.8603 16.508C44.915 15.6066 43.6606 14.9154 41.8997 14.9154C38.7144 14.9154 36.0356 17.5101 36.0356 20.6954C36.0356 23.8825 38.7144 26.4754 41.8997 26.4754C43.6185 26.4754 44.915 25.9104 45.9316 24.8535C46.9739 23.8112 47.2994 22.3447 47.2994 21.1598C47.2994 20.7941 47.272 20.4558 47.2153 20.1742H41.8997ZM81.5442 21.4012C81.2333 20.5692 80.2898 19.0332 78.3589 19.0332C76.4426 19.0332 74.8499 20.5418 74.8499 22.7561C74.8499 24.8425 76.428 26.4772 78.5417 26.4772C80.2478 26.4772 81.2333 25.4349 81.6429 24.8279L80.3739 23.9813C79.9497 24.6011 79.3737 25.0107 78.5417 25.0107C77.7098 25.0107 77.1173 24.6304 76.737 23.8843L81.7124 21.8254L81.5442 21.4012ZM76.47 22.6409C76.428 21.2019 77.5836 20.4705 78.4156 20.4705C79.0647 20.4705 79.6151 20.7941 79.7979 21.2604L76.47 22.6409ZM72.4235 26.2505H74.0582V15.3103H72.4235V26.2505ZM69.7447 19.8634H69.688C69.3204 19.4264 68.6165 19.0314 67.7296 19.0314C65.8682 19.0314 64.164 20.6661 64.164 22.7671C64.164 24.8535 65.87 26.4735 67.7296 26.4735C68.6183 26.4735 69.3223 26.0786 69.688 25.6269H69.7447V26.1627C69.7447 27.5871 68.984 28.3478 67.757 28.3478C66.7568 28.3478 66.1351 27.6292 65.8828 27.0239L64.4584 27.6164C64.8661 28.6038 65.9523 29.8161 67.757 29.8161C69.6733 29.8161 71.2953 28.6879 71.2953 25.9396V19.2581H69.7447V19.8634ZM67.8704 25.0089C66.7422 25.0089 65.7987 24.0654 65.7987 22.7689C65.7987 21.4579 66.7422 20.4997 67.8704 20.4997C68.984 20.4997 69.858 21.4579 69.858 22.7689C69.858 24.0654 68.984 25.0089 67.8704 25.0089ZM89.2039 15.3122H85.2927V26.2505H86.9237V22.107H89.2039C91.0142 22.107 92.7915 20.7959 92.7915 18.7096C92.7915 16.6214 91.0142 15.3122 89.2039 15.3122ZM89.246 20.5838H86.9237V16.8335H89.246C90.4675 16.8335 91.1605 17.8447 91.1605 18.7078C91.1605 19.5562 90.4675 20.5838 89.246 20.5838ZM99.3358 19.0131C98.1546 19.0131 96.9295 19.5343 96.423 20.6862L97.873 21.2915C98.182 20.6862 98.7599 20.4888 99.3651 20.4888C100.21 20.4888 101.067 20.9953 101.082 21.8949V22.0083C100.786 21.84 100.153 21.5859 99.3797 21.5859C97.8182 21.5859 96.2273 22.4435 96.2273 24.0489C96.2273 25.5136 97.5091 26.4553 98.9427 26.4553C100.042 26.4553 100.645 25.9634 101.025 25.3856H101.082V26.2304H102.658V22.0357C102.656 20.0956 101.208 19.0131 99.3358 19.0131ZM99.1402 25.0071C98.6044 25.0071 97.8584 24.7401 97.8584 24.0782C97.8584 23.2334 98.7873 22.9116 99.59 22.9116C100.307 22.9116 100.645 23.067 101.082 23.2773C100.954 24.2903 100.082 25.0071 99.1402 25.0071ZM108.398 19.2508L106.526 23.9941H106.469L104.527 19.2508H102.768L105.681 25.8793L104.021 29.5656H105.723L110.212 19.2508H108.398ZM93.693 26.2505H95.3259V15.3122H93.693V26.2505Z" fill="white"></path></g><mask id="mask4_1389_2408" maskUnits="userSpaceOnUse" x="0" y="0" width="119" height="35" style="mask-type: luminance;"><path d="M118.248 0H0.125V35H118.248V0Z" fill="white"></path></mask><g mask="url(#mask4_1389_2408)"><path d="M18.2531 16.9962L8.93672 26.8831C8.93672 26.885 8.93672 26.8868 8.93855 26.8886C9.2238 27.962 10.2039 28.7519 11.3687 28.7519C11.835 28.7519 12.2701 28.6257 12.645 28.4045L12.6742 28.3862L23.1609 22.3356L18.2531 16.9962Z" fill="#EA4435"></path></g><mask id="mask5_1389_2408" maskUnits="userSpaceOnUse" x="0" y="0" width="119" height="35" style="mask-type: luminance;"><path d="M118.248 0H0.125V35H118.248V0Z" fill="white"></path></mask><g mask="url(#mask5_1389_2408)"><path d="M27.6774 15.3121L27.6682 15.3067L23.1408 12.6827L18.041 17.2211L23.1591 22.3374L27.6609 19.739C28.4508 19.3111 28.9866 18.4792 28.9866 17.521C28.9866 16.5683 28.4582 15.74 27.6774 15.3121Z" fill="#F9BC15"></path></g><mask id="mask6_1389_2408" maskUnits="userSpaceOnUse" x="0" y="0" width="119" height="35" style="mask-type: luminance;"><path d="M118.248 0H0.125V35H118.248V0Z" fill="white"></path></mask><g mask="url(#mask6_1389_2408)"><path d="M8.93669 8.11688C8.88001 8.32351 8.85075 8.5411 8.85075 8.76418V26.2358C8.85075 26.4607 8.88001 26.6765 8.93669 26.8831L18.5712 17.2486L8.93669 8.11688Z" fill="#547DBF"></path></g><mask id="mask7_1389_2408" maskUnits="userSpaceOnUse" x="0" y="0" width="119" height="35" style="mask-type: luminance;"><path d="M118.248 0H0.125V35H118.248V0Z" fill="white"></path></mask><g mask="url(#mask7_1389_2408)"><path d="M18.3208 17.5009L23.1426 12.6809L12.6688 6.60833C12.2884 6.37976 11.8441 6.24811 11.3687 6.24811C10.2057 6.24811 9.2238 7.03986 8.93672 8.11504V8.11687L18.3208 17.5009Z" fill="#33A851"></path></g></g><mask id="mask8_1389_2408" maskUnits="userSpaceOnUse" x="0" y="0" width="119" height="35" style="mask-type: luminance;"><path d="M118.248 0H0.125V35H118.248V0Z" fill="white"></path></mask><g mask="url(#mask8_1389_2408)"><path d="M36.6866 6.0415H37.524V10.7006H39.8682V11.4924H36.6866V6.0415Z" fill="white"></path><path d="M42.547 6.0415H43.4979L45.5604 11.4924H44.6389L44.136 10.0917H41.9125L41.4097 11.4924H40.4881L42.547 6.0415ZM43.8636 9.31458L43.2547 7.6433L43.0499 7.01977H43.0041L42.7994 7.6433L42.1904 9.31458H43.8636Z" fill="white"></path><path d="M46.7198 11.2181C46.3595 10.9548 46.109 10.5836 45.9664 10.1063L46.7582 9.78633C46.8386 10.0917 46.9849 10.3404 47.1915 10.5324C47.4 10.7244 47.6505 10.8213 47.9449 10.8213C48.2192 10.8213 48.4514 10.75 48.6416 10.6073C48.8317 10.4647 48.9268 10.2691 48.9268 10.0204C48.9268 9.79181 48.8427 9.60347 48.6763 9.45353C48.5081 9.30359 48.2192 9.15731 47.8077 9.01651L47.4658 8.894C47.0946 8.76235 46.7874 8.57766 46.5406 8.34178C46.2937 8.1059 46.1712 7.79322 46.1712 7.40192C46.1712 7.13312 46.2443 6.88444 46.3888 6.65587C46.5333 6.42731 46.7362 6.24811 46.9977 6.11463C47.2592 5.98297 47.5554 5.91714 47.8845 5.91714C48.3563 5.91714 48.7348 6.03234 49.0182 6.26274C49.3017 6.49313 49.4955 6.75461 49.596 7.04352L48.8427 7.36352C48.7915 7.18066 48.6854 7.02341 48.5227 6.89175C48.36 6.7601 48.1497 6.69427 47.89 6.69427C47.6413 6.69427 47.4311 6.7601 47.2574 6.89175C47.0855 7.02341 46.9977 7.19163 46.9977 7.3946C46.9977 7.58294 47.0745 7.73837 47.2299 7.86271C47.3853 7.98705 47.6249 8.1059 47.9485 8.21744L48.2996 8.33995C48.7659 8.50269 49.1261 8.71298 49.3803 8.97263C49.6344 9.23228 49.7606 9.57604 49.7606 10.0076C49.7606 10.3623 49.671 10.6604 49.49 10.9017C49.309 11.1431 49.0786 11.3223 48.797 11.4393C48.5154 11.5563 48.2265 11.6149 47.9321 11.6149C47.4859 11.613 47.08 11.4814 46.7198 11.2181Z" fill="white"></path><path d="M51.9256 6.83326H50.3951V6.0415H54.2844V6.83326H52.7612V11.4924H51.9238V6.83326H51.9256Z" fill="white"></path><path d="M56.8736 6.0415H57.8628L60.3295 10.046H60.3752L60.3295 8.99459V6.0415H61.1597V11.4924H60.2911L57.7037 7.28308H57.658L57.7037 8.33449V11.4942H56.8736V6.0415Z" fill="white"></path><path d="M62.5457 6.0415H65.8499V6.83326H63.3832V8.37106H65.6067V9.16281H63.3832V10.7006H65.8499V11.4924H62.5457V6.0415Z" fill="white"></path><path d="M67.0201 6.0415H68.7627C69.3259 6.0415 69.8178 6.15487 70.2365 6.38344C70.6553 6.61201 70.9771 6.932 71.2038 7.34708C71.4306 7.76033 71.5421 8.23392 71.5421 8.76602C71.5421 9.29812 71.4287 9.77172 71.2038 10.185C70.9771 10.5982 70.6553 10.92 70.2365 11.1486C69.8178 11.3772 69.3277 11.4905 68.7627 11.4905H67.0201V6.0415ZM68.7408 10.7006C69.3607 10.7006 69.8416 10.5287 70.1835 10.1868C70.5254 9.84486 70.6973 9.37127 70.6973 8.76785C70.6973 8.16443 70.5254 7.69084 70.1835 7.34891C69.8416 7.00697 69.3607 6.83509 68.7408 6.83509H67.8576V10.7024H68.7408V10.7006Z" fill="white"></path><path d="M74.2758 6.0415H76.1482C76.4737 6.0415 76.7717 6.11282 77.0423 6.25544C77.313 6.39807 77.5287 6.59555 77.6896 6.84972C77.8487 7.10388 77.9292 7.39096 77.9292 7.70913C77.9292 8.02912 77.8487 8.3162 77.6896 8.56854C77.5287 8.82271 77.3148 9.02019 77.0423 9.16281C76.7699 9.30544 76.4718 9.37675 76.1482 9.37675H75.1132V11.4924H74.2758V6.0415ZM76.1701 8.58317C76.4499 8.58317 76.673 8.4954 76.843 8.31986C77.0131 8.14432 77.0972 7.94135 77.0972 7.7073C77.0972 7.47325 77.0131 7.27028 76.843 7.09474C76.673 6.9192 76.4481 6.83143 76.1701 6.83143H75.1114V8.58317H76.1701Z" fill="white"></path><path d="M83.0601 11.4924H82.1458L81.6356 10.0917H79.4194L78.9166 11.4924H77.995L79.9205 6.38525C79.829 6.3048 79.7595 6.20788 79.712 6.09634C79.6645 5.9848 79.6389 5.86595 79.6389 5.73795C79.6389 5.48927 79.723 5.28082 79.893 5.11076C80.0631 4.94071 80.2715 4.85477 80.5202 4.85477C80.7634 4.85477 80.9737 4.94071 81.1474 5.11442C81.3229 5.2863 81.4107 5.49475 81.4107 5.73795C81.4107 5.99212 81.3175 6.20788 81.1291 6.38525L83.0601 11.4924ZM81.3613 9.31456L80.7598 7.64694L80.5476 7.02341H80.5019L80.2971 7.64694L79.6955 9.31456H81.3613ZM80.3044 5.51304C80.2441 5.57704 80.213 5.65201 80.213 5.73795C80.213 5.82389 80.2441 5.89886 80.3044 5.96286C80.3648 6.02686 80.4398 6.05794 80.5257 6.05794C80.6116 6.05794 80.6866 6.02686 80.7506 5.96286C80.8146 5.89886 80.8457 5.82389 80.8457 5.73795C80.8457 5.65201 80.8146 5.57704 80.7506 5.51304C80.6866 5.44904 80.6116 5.41796 80.5257 5.41796C80.4379 5.41796 80.3648 5.44904 80.3044 5.51304Z" fill="white"></path></g></g><defs><clipPath id="clip0_1389_2408"><rect width="118.123" height="35" fill="white" transform="translate(0.125)"></rect></clipPath></defs></svg></a></div></div></div><img alt="Finansavisen app on mobile phone" class="hidden f5:inline-block" src="https://prod-zephr-components.finansavisen.no/static/PhoneApp-BQVyk1GH.png"></div></div></div><div class="text-xs font-medium text-white">Børsdata levert av Millistream. Nikkei 225 ©Nikkei Inc. TradingView Lightweight Charts™ og TradingView Advanced Charts™ er levert av TradingView, Inc. <a href="https://www.finansavisen.no/fa-partnered-with-TradingView" class="text-blue-200 hover:text-blue-400">Les mer</a>.</div></div></footer></div>
+
+<script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['footer'] = {
+    featureLabel: 'Footer',
+    outcomeId: 'transformation/1',
+    outcomeLabel: 'PROD Footer'
+  };
+</script>
+<script>
+    window.websocketToken = 'GRodEhNQe3JFCxcJVkoOVxtIQTdcCVdESHtUCFZDWWtPAElZUQ9oaho&#61;';
+</script><script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['page-with-websocket-components'] = {
+    featureLabel: 'Page with websocket components',
+    outcomeId: 'transformation/1',
+    outcomeLabel: 'Websocket token'
+  };
+</script>
+<div class="container-get-mws-token"><div id="get-mws-token"></div></div><script>window.app.componentData['get-mws-token'] = {"nodeName":"MwsToken","id":"get-mws-token"};</script></div>
+    
+<script src="//files.zummy.io/script/connect.min.js" type="text/javascript" async="" defer="" id="zummy" data-zummy="hegnar"></script>
+
+    
+<script type="text/javascript">
+  var axel = Math.random() + '';
+  var a = axel * 10000000000000;
+  document.write('<img src="https://pubads.g.doubleclick.net/activity;dc_iu=//DFPAudiencePixel;ord=' + a + ';dc_seg=?" width=1 height=1 border=0/>');
+</script><img src="https://pubads.g.doubleclick.net/activity;dc_iu=//DFPAudiencePixel;ord=8535454207308.426;dc_seg=?" width="1" height="1" border="0/">
+<noscript>
+  <img src="https://pubads.g.doubleclick.net/activity;dc_iu=//DFPAudiencePixel;ord=1;dc_seg=?" width="1" height="1" border="0/">
+</noscript>
+
+    <script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['hegnar-subscription-success-modal'] = {
+    featureLabel: 'Hegnar Subscription Success Modal',
+    outcomeId: 'graph/2#2',
+    outcomeLabel: 'Show Hegnar Subscription Success Modal'
+  };
+</script>
+
+      <script>
+  !function(e,o,n,i){if(!e){e=e||{},window.permutive=e,e.q=[];var t=function(){return([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,function(e){return(e^(window.crypto||window.msCrypto).getRandomValues(new Uint8Array(1))[0]&15>>e/4).toString(16)})};e.config=i||{},e.config.apiKey=o,e.config.workspaceId=n,e.config.environment=e.config.environment||"production",(window.crypto||window.msCrypto)&&(e.config.viewId=t());for(var g=["addon","identify","track","trigger","query","segment","segments","ready","on","once","user","consent"],r=0;r<g.length;r++){var w=g[r];e[w]=function(o){return function(){var n=Array.prototype.slice.call(arguments,0);e.q.push({functionName:o,arguments:n})}}(w)}}}(window.permutive,"f68cc315-35e3-4200-a913-3749294b939c","8407f8b3-0d62-44be-92ef-cb3eab85e2e9",{ "consentRequired": true });
+  window.googletag=window.googletag||{},window.googletag.cmd=window.googletag.cmd||[],window.googletag.cmd.push(function(){if(0===window.googletag.pubads().getTargeting("permutive").length){var e=window.localStorage.getItem("_pdfps");window.googletag.pubads().setTargeting("permutive",e?JSON.parse(e):[]);var o=window.localStorage.getItem("permutive-id");o&&(window.googletag.pubads().setTargeting("puid",o),window.googletag.pubads().setTargeting("ptime",Date.now().toString())),window.permutive.config.viewId&&window.googletag.pubads().setTargeting("prmtvvid",window.permutive.config.viewId),window.permutive.config.workspaceId&&window.googletag.pubads().setTargeting("prmtvwid",window.permutive.config.workspaceId)}});
+  permutive.addon('web',{
+  "page": {
+    "categories": window.ZephrConfiguration?.Article?.categories || null, // ["list", "of", "strings"]
+    "sectionCategories": null,
+    "wordCount": window.ZephrConfiguration?.Article?.wordCount || null,
+    "dateOfSubscription": null, // "2021-11-09T16:20:05.063Z"
+    "user": {
+      "isLoggedIn": false, // true
+      "isPaid": false, // true
+      "isPayingSubscriber": false, // true
+      "isRegisteredUser": false, // true
+      "member": false, // true
+      "subscriptionStatus": "" // "text"
+    },
+    "isSubscriber": false, // true
+    "keywords": window.ZephrConfiguration?.Article?.keywords || null, // ["list", "of", "strings"]
+    "paymentMethod": null, // "text"
+    "publishedTimestamp": window.ZephrConfiguration?.Article?.publishedTimestamp || null, // "text"
+    "title": window.ZephrConfiguration?.Article?.title || null, // "text"
+    "typeOfSubscription": "", // "text"
+    "author": window.ZephrConfiguration?.Article?.authors?.[0] || null, // "text"
+    "tags": window.ZephrConfiguration?.Article?.tags || null // ["list", "of", "strings"]
+  }
+});
+  </script>
+ <script async="" src="https://8407f8b3-0d62-44be-92ef-cb3eab85e2e9.edge.permutive.app/8407f8b3-0d62-44be-92ef-cb3eab85e2e9-web.js"></script>
+<script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  if (!window.Zephr.outcomes) window.Zephr.outcomes = {};
+  window.Zephr.outcomes['permutive-tracking'] = {
+    featureLabel: 'Permutive tracking',
+    outcomeId: 'transformation/1',
+    outcomeLabel: 'Anonymous'
+  };
+</script>
+
+    
+  <script>
+    window.__tcfapi('addEventListener', 2, (tcData, success) => {
+      if (success && tcData?.eventStatus === 'tcloaded') {
+        permutive.consent({"opt_in": true, "token": tcData.tcString});
+      }
+    });
+  </script>
+
+
+  <script defer="" type="text/javascript" src="//log.medietall.no/analytics.js"></script>
+
+<script type="text/javascript" src="https://cls.k5a.io/60ba0d8b5e8f2224b83d43c2.js" async=""></script>
+
+
+  
+<script>
+  window.__tcfapi('addEventListener', 2, (tcData, success) => {
+    if (success && tcData ?. eventStatus === 'tcloaded') {
+      const container = document.getElementById('container-readpeak-widget');
+      if (container) {
+        const scriptElement = document.createElement('script');
+        scriptElement.type = 'text/javascript';
+        scriptElement.text = `
+          var settings = {
+            id: 'fe3e8ec145642b6c',
+            width: '1500',
+            height: '500',
+            gdpr_consent: '${
+          tcData.tcString
+        }',
+            cats: [],
+            tags: [],
+            numberOfAds: 3
+          };
+          var element = document.currentScript || document.querySelectorAll('script')[document.querySelectorAll('script').length - 1];
+          window.__rpplc = window.__rpplc || [];
+          window.__rpplc.push(settings, element);
+      `;
+        container.appendChild(scriptElement);
+      }
+    }
+  });
+</script>
+
+
+
+  <script async="">
+  window.addEventListener('HegLogMetaEnabled', (e) => {
+    const params = new Proxy(new URLSearchParams(window.location.search), {
+      get: (searchParams, prop) => searchParams.get(prop),
+    });
+    const hegLogMeta = window.HegLogMeta;
+
+    if (params.operatingSystem && params.readId) {
+      hegLogMeta.info({
+        url: window.location.href,
+        operatingSystem: params.operatingSystem,
+        readId: params.readId,
+        zephrActiveProducts: window.Zephr.accessDetails.activeProducts,
+        zephrIsAuthenticated: window.Zephr.accessDetails.isAuthenticated,
+        zephrArticlePaywall: window.Zephr.outcomes["finansavisen-general-paywall"],
+      });
+    }
+  });
+</script>
+
+<script type="text/javascript">
+  window.Zephr = window.Zephr || {};
+  window.Zephr.includeOutcomes = false;
+  window.Zephr.outcomesAsEvents = false;
+  window.Zephr.groupFields = true;
+(function() {
+    var xhr = new(XMLHttpRequest || ActiveXObject)('MSXML2.XMLHTTP.3.0');
+    xhr.open('GET', '/blaize/datalayer', true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            var response;
+            try {
+                response = JSON.parse(xhr.response);
+            } catch (e) {
+                response = xhr.response;
+            }
+            if (xhr.status === 200) {
+                for (var dataLayerFieldName in response) {
+                    if (!(dataLayerFieldName in window)) window[dataLayerFieldName] = [];
+
+                    var pageView = response[dataLayerFieldName];
+                    var events = [];
+
+                    if (window.Zephr && window.Zephr.includeOutcomes && window.Zephr.outcomes) {
+                        pageView.zephrOutcomes = window.Zephr.outcomes;
+
+                        if (window.Zephr.outcomesAsEvents) {
+                            Object.keys(window.Zephr.outcomes || []).forEach(function(outcomeKey) {
+                                var outcomeEvent = {
+                                    event: "zephr-outcome-" + outcomeKey,
+                                    featureId: outcomeKey,
+                                    featureLabel: window.Zephr.outcomes[outcomeKey].featureLabel,
+                                    outcomeId: window.Zephr.outcomes[outcomeKey].outcomeId,
+                                    outcomeLabel: window.Zephr.outcomes[outcomeKey].outcomeLabel,
+                                };
+                                events.push(outcomeEvent);
+                            });
+                        }
+                    }
+                    if (window.Zephr && window.Zephr.accessDetails) {
+                        Object.keys((window.Zephr.accessDetails.trials || {})).forEach(function(trialId){
+                            var trial = window.Zephr.accessDetails.trials[trialId]
+                            if(trial.reportInDataLayer){
+                                var usedCredits = trial.totalCredits - trial.remainingCredits
+                                if (window.Zephr.groupFields && !pageView.zephrTrials) pageView.zephrTrials = {};
+                                var target = window.Zephr.groupFields ? pageView.zephrTrials : pageView
+                                if (trial.dataLayerCreditsUsedKey) {
+                                   target[trial.dataLayerCreditsUsedKey] = usedCredits;
+                                }
+                                if (trial.dataLayerCreditsRemainingKey) {
+                                   target[trial.dataLayerCreditsRemainingKey] = trial.remainingCredits;
+                                }
+                            }
+                        });
+                        (window.Zephr.accessDetails.trialTrackingDetails || []).forEach(function(details) {
+                            var type = details.entitlementType === 'credits' ? 'credits' : 'meters';
+                            var trial = (window.Zephr.accessDetails[type] || {})[details.entitlementId];
+                            if (!trial) return;
+                            if (window.Zephr.groupFields && !pageView.zephrTrials) pageView.zephrTrials = {};
+                            if (details.creditsRemainingKey) {
+                                if (window.Zephr.groupFields) {
+                                    pageView.zephrTrials[details.creditsRemainingKey] = trial.remainingCredits;
+                                } else {
+                                    pageView[details.creditsRemainingKey] = trial.remainingCredits;
+                                }
+                            }
+                            if (details.creditsUsedKey) {
+                                if (window.Zephr.groupFields) {
+                                    pageView.zephrTrials[details.creditsUsedKey] = trial.totalCredits - trial.remainingCredits;
+                                } else {
+                                    pageView[details.creditsUsedKey] = trial.totalCredits - trial.remainingCredits;
+                                }
+                            }
+                        });
+                        try {
+                          (Object.keys(window.Zephr.accessDetails.timeTrials || {})).forEach(function(timeTrialId) {
+                               var timeTrial = window.Zephr.accessDetails.timeTrials[timeTrialId]
+                               if(timeTrial.reportInDataLayer){
+                                   if (window.Zephr.groupFields && !pageView.zephrTrials) pageView.zephrTrials = {};
+                                   var target = window.Zephr.groupFields ? pageView.zephrTrials : pageView
+
+                                   if (timeTrial.dataLayerTrialDurationKey) {
+                                    target[timeTrial.dataLayerTrialDurationKey] = timeTrial.trialDuration;
+                                   }
+                                   if (timeTrial.dataLayerTrialDurationUnitsKey) {
+                                    target[timeTrial.dataLayerTrialDurationUnitsKey] = timeTrial.trialDurationUnits;
+                                   }
+                                   if (timeTrial.dataLayerTrackerEntryTimeKey) {
+                                    target[timeTrial.dataLayerTrackerEntryTimeKey] = timeTrial.entryTime;
+                                   }
+                                   if (timeTrial.dataLayerTrackerHitsKey) {
+                                    target[timeTrial.dataLayerTrackerHitsKey] = timeTrial.trackerHits;
+                                   }
+                                   if (timeTrial.dataLayerTrialTimeRemainingKey) {
+                                    target[timeTrial.dataLayerTrialTimeRemainingKey] = timeTrial.timeRemainingInTrial;
+                                   }
+                               }
+                          });
+                        } catch (err) {
+                          console.error("Error aggregating Zephr time trials", err);
+                        }
+                    }
+                    if (Object.keys(pageView).length) {
+                        pageView.event = "zephr-pageview";
+                        events.unshift(pageView);
+                    }
+                    if (!events.length) continue;
+
+                    events.forEach(function(event) {
+                        window[dataLayerFieldName].push(event);
+                    });
+                }
+                var readyEvent = document.createEvent('Event');
+                readyEvent.initEvent('zephr.dataLayerReady', true, true);
+                document.dispatchEvent(readyEvent);
+            }
+        }
+    }
+    xhr.send({});
+})();
+</script>
+<script type="text/javascript">
+  if (!window.Zephr) window.Zephr = {};
+  window.Zephr.accessDetails = {"isAuthenticated":false,"accessDecisions":{"CyBjaVoRmrBjL5s77HfiTiUDNr5TKZUj":false},"entitlements":{},"credits":{},"meters":{},"trials":{"qCSTmF":{"isUsedInDecision":false},"IkuOtn":{"isUsedInDecision":false}},"timeTrials":{},"trialTrackingDetails":[],"testGroups":{"214e2092-5b3b-4687-bb2c-f362d351732b":"A","69a3f271-58cb-49b1-bcf9-3e2f14091a80":"B","ec585497-42c1-47a9-a5f2-be8812f388fa":"A","d9ce4750-957c-4dca-aed6-a2e08023a432":"C","75782097-7509-4314-bd78-f928f8ddea60":"A","58b6a61d-97a3-4db0-96b7-f972834c772b":"D"},"activeProducts":[]};
+</script>
+
+
+  
+
+  
+  
+
+
+<iframe name="__tcfapiLocator" style="display: none;"></iframe><img src="https://ad-delivery.net/px.gif?ch=2" style="display: none !important; width: 1px !important; height: 1px !important;"><img src="https://ad.doubleclick.net/favicon.ico?ad=300x250&amp;ad_box_=1&amp;adnet=1&amp;showad=1&amp;size=250x250" style="display: none !important; width: 1px !important; height: 1px !important;"><img src="https://ad-delivery.net/px.gif?ch=1&amp;e=0.3239673906970616" style="display: none !important; width: 1px !important; height: 1px !important;"><script id="" text="" charset="" type="text/javascript" src="https://500009943.collect.igodigital.com/collect.js"></script><img style="display: none" src="https://inviso.rampanel.com/ram/Inviso?i=17574&amp;c=53386&amp;n=hno&amp;t=6&amp;cg=0&amp;r=1&amp;rdir=1"><script id="" text="" charset="" type="text/javascript" src="https://cdn.spinnaker-js.com/rc/11197/scripts/s.js"></script><script type="text/javascript" id="" charset="">!function(b,a,c,d){b[d]=b[d]||function(){(b[d].q=b[d].q||[]).push(arguments)};var e="script";c=a.createElement(e);a=a.getElementsByTagName(e)[0];c.async=1;c.src="https://c.bannerflow.net/scripts/conversion/1.0.41/conversion.min.js";_bf("o",!0);_bf("t","https://c.bannerflow.net/tr/v2/pixel/613a0995cb78547990ab685b?data\x3d");a.parentNode.insertBefore(c,a)}(window,document,0,"_bf");_bf("id","61e5475a42370b20c9e9396f");_bf("b","613a0995cb78547990ab685b");_bf("a","hegnar");_bf("event","conversion");_bf("send");</script><script type="text/javascript" id="" charset="">(function(a,e,b,f,g,c,d){a[b]=a[b]||function(){(a[b].q=a[b].q||[]).push(arguments)};c=e.createElement(f);c.async=1;c.src="https://www.clarity.ms/tag/"+g+"?ref\x3dgtm2";d=e.getElementsByTagName(f)[0];d.parentNode.insertBefore(c,d)})(window,document,"clarity","script","bq3qzqmpss");</script><script type="text/javascript" id="" charset="">function setConvertingArticle(){var a=google_tag_manager["rm"]["11280863"](47),b=google_tag_manager["rm"]["11280863"](48),c=google_tag_manager["rm"]["11280863"](49),d=google_tag_manager["rm"]["11280863"](50);a==="article"&&(localStorage.setItem("convertingArticle",b),localStorage.setItem("convertingArticlePagePath",c),localStorage.setItem("convertingArticleURL",d))}setConvertingArticle();</script><div><div class="grecaptcha-badge" data-style="bottomright" style="width: 256px; height: 60px; display: block; transition: right 0.3s; position: fixed; bottom: 14px; right: -186px; box-shadow: gray 0px 0px 5px; border-radius: 2px; overflow: hidden;"><div class="grecaptcha-logo"><iframe title="reCAPTCHA" width="256" height="60" role="presentation" name="a-bwqjec254j66" frameborder="0" scrolling="no" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-top-navigation allow-modals allow-popups-to-escape-sandbox allow-storage-access-by-user-activation" src="https://www.google.com/recaptcha/api2/anchor?ar=1&amp;k=6LfJpXEnAAAAAIH-9bfLH1C1DpiQab7u4xchWNIE&amp;co=aHR0cHM6Ly93d3cuZmluYW5zYXZpc2VuLm5vOjQ0Mw..&amp;hl=en&amp;v=07cvpCr3Xe3g2ttJNUkC6W0J&amp;size=invisible&amp;anchor-ms=20000&amp;execute-ms=15000&amp;cb=jgvewuafi34o"></iframe></div><div class="grecaptcha-error"></div><textarea id="g-recaptcha-response-100000" name="g-recaptcha-response" class="g-recaptcha-response" style="width: 250px; height: 40px; border: 1px solid rgb(193, 193, 193); margin: 10px 25px; padding: 0px; resize: none; display: none;"></textarea></div><iframe style="display: none;"></iframe></div>
+<script type="text/javascript" id="" charset="">var articleTypeName=google_tag_manager["rm"]["11280863"](15),articleName=google_tag_manager["rm"]["11280863"](17),articleCategories=google_tag_manager["rm"]["11280863"](18),articleTags=google_tag_manager["rm"]["11280863"](19),articleAuthor=google_tag_manager["rm"]["11280863"](20),articleHasVideo=google_tag_manager["rm"]["11280863"](21),articleView=google_tag_manager["rm"]["11280863"](22);articleView=articleView=="Abonnent"?"Plussartikkel":articleView;var articleURL=google_tag_manager["rm"]["11280863"](23);articleURL=String(articleURL);
+var articleId=google_tag_manager["rm"]["11280863"](24),articlePublishedTimestamp=google_tag_manager["rm"]["11280863"](25),uniqueId=google_tag_manager["rm"]["11280863"](26),sfmcId=google_tag_manager["rm"]["11280863"](27);sfmcId!=void 0&&(sfmcId=sfmcId.replace("?redirect",""));function setCookie(d,c,b){var a=new Date;a.setTime(a.getTime()+b*24*60*60*1E3);b="expires\x3d"+a.toUTCString();document.cookie=d+"\x3d"+c+";"+b+";path\x3d/"}
+function getCookie(d){d+="\x3d";var c=decodeURIComponent(document.cookie);c=c.split(";");for(var b=0;b<c.length;b++){for(var a=c[b];a.charAt(0)==" ";)a=a.substring(1);if(a.indexOf(d)==0)return a.substring(d.length,a.length)}return null}function deleteCookie(){document.cookie="sfmc_id\x3d; expires\x3dThu, 01 Jan 1970 00:00:00 UTC; path\x3d/;"}var sfmc_id_Cookie=getCookie("sfmc_id");uniqueId==null&&sfmcId!=void 0&&(deleteCookie(),setCookie("sfmc_id",sfmcId,30));
+uniqueId!=null&&(deleteCookie(),setCookie("sfmc_id",uniqueId,30));var sfmcCookie=getCookie("sfmc_id");
+if(articleCategories!=void 0)var categoryArray=articleCategories.split(","),articleCategory1=categoryArray[0]==void 0||categoryArray[0]=="Nyheter"||categoryArray[0]=="B\u00f8rs"?"":String(categoryArray[0]),articleCategory2=categoryArray[1]==void 0||categoryArray[1]=="Nyheter"||categoryArray[1]=="B\u00f8rs"?"":String(categoryArray[1]),articleCategory3=categoryArray[2]==void 0||categoryArray[2]=="Nyheter"||categoryArray[2]=="B\u00f8rs"?"":String(categoryArray[2]),articleCategory4=categoryArray[3]==
+void 0||categoryArray[3]=="Nyheter"||categoryArray[3]=="B\u00f8rs"?"":String(categoryArray[3]),articleCategory5=categoryArray[4]==void 0||categoryArray[4]=="Nyheter"||categoryArray[4]=="B\u00f8rs"?"":String(categoryArray[4]);
+console.log("TEST SFMC SCRIPT | \n articleTypeName: "+articleTypeName+"\n articleName: "+articleName+"\n articleCategories: "+articleCategories+"\n articleTags: "+articleTags+"\n articleAuthor: "+articleAuthor+"\n articleHasVideo: "+articleHasVideo+"\n articleView: "+articleView+"\n uniqueId: "+uniqueId+"\n articleCategory1: "+articleCategory1+"\n articleCategory2: "+articleCategory2+"\n articleCategory3: "+articleCategory3+"\n articleCategory4: "+articleCategory4+"\n articleCategory5: "+articleCategory5+
+"\n articleURL: "+articleURL+"\n articleId: "+articleId+"\n articlePublishedTimestamp: "+articlePublishedTimestamp+"\n sfmc_id: "+google_tag_manager["rm"]["11280863"](28)+"\n sfmc_id_Cookie: "+sfmc_id_Cookie);_etmc.push(["setOrgId","500009943"]);uniqueId!=null&&uniqueId!=void 0&&uniqueId!=""?_etmc.push(["setUserInfo",{email:uniqueId}]):sfmcCookie!=null&&_etmc.push(["setUserInfo",{email:sfmcCookie}]);
+articleTypeName!=void 0&&articleId!=null&&articleId!=void 0&&articleId!=""&&(_etmc.push(["updateItem",{item_type:"content",item:articleId,url:articleURL,available:"true",name:articleName,author:articleAuthor,release_date:articlePublishedTimestamp,ArticleType:articleTypeName,ArticleHasVideo:articleHasVideo,ArticleView:articleView,ArticleCategory1:articleCategory1,ArticleCategory2:articleCategory2,ArticleCategory3:articleCategory3,ArticleCategory4:articleCategory4,ArticleCategory5:articleCategory5,
+ArticleTags:articleTags}]),_etmc.push(["trackPageView",{item:articleId}]));_etmc.push(["trackPageView"]);</script>  
+<div id="sp_message_container_1036478" aria-modal="true" aria-labelledby="sp_message_iframe_1036478" role="dialog" style="display: block;"><iframe src="https://cdn.privacy-mgmt.com/index.html?hasCsp=true&amp;message_id=1036478&amp;consentUUID=4db6654c-f4c9-419b-9387-a565d4cb2f94&amp;consent_origin=https%3A%2F%2Fcdn.privacy-mgmt.com%2Fconsent%2Ftcfv2&amp;preload_message=true&amp;concatenatedUUID=4db6654c-f4c9-419b-9387-a565d4cb2f94~~~&amp;version=v1" id="sp_message_iframe_1036478" title="SP Consent Message"></iframe></div></body></html>
