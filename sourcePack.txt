@@ -52,11 +52,8 @@ SMTP_FROM_ADDRESS="your-email@gmail.com"
 SMTP_FROM_NAME="Wealth Events Bot"
 
 # --- Email Recipients ---
-# Comma-separated list of emails
-HEADLINE_RECIPIENTS="recipient1@example.com,recipient2@example.com"
-SUPERVISOR_EMAIL="supervisor@example.com"
-# Set to false to disable sending to supervisor if the email is the default placeholder
-SEND_TO_DEFAULT_SUPERVISOR=true
+# All user and supervisor email recipients are now managed in ./src/config/users.js
+# No environment variables are needed for recipients.
 
     
 
@@ -99,10 +96,10 @@ on:
     # IMPORTANT: GitHub schedules run on UTC time.
     # 10:00 Copenhagen (CEST, UTC+2) is 08:00 UTC
     # 16:30 Copenhagen (CEST, UTC+2) is 14:30 UTC
-    - cron: '20 20 * * *'
-    - cron: '20 21 * * *'
-    - cron: '15 08 * * *'
-    - cron: '15 12 * * *'
+    - cron: '25 11 * * *'
+    - cron: '25 12 * * *'
+    - cron: '25 13 * * *'
+    - cron: '25 16 * * *'
 
 jobs:
   run-on-fly:
@@ -125,19 +122,25 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           # 'flyctl' can now be called directly.
-          flyctl machine run . --region lhr --memory 2048
+          # MODIFIED: Replaced --autodestroy with --rm, the original and more compatible flag.
+          # This ensures the machine is automatically destroyed server-side upon completion.
+          flyctl machine run . --region lhr --memory 2048 --rm
           
           echo "The machine has completed its run and has been destroyed."
 
 # File: .gitignore
 /node_modules
 /.pnpm
+/debug
 .pnp.*
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+# data only
+papers.json
+/scripts
 # misc
 .DS_Store
 *.pem
@@ -154,6 +157,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
 
 # File: .nvmrc
 20.15.1
@@ -249,30 +253,30 @@ CMD [ "node", "app.js" ]
 
 # File: app-logic.js
 // app-logic.js (version 2.0)
-import { connectDatabase } from './src/database.js'; // REMOVED disconnectDatabase from import
+import mongoose from 'mongoose';
+import { connectDatabase } from './src/database.js';
 import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
-import { filterFreshArticles, prepareArticlesForPipeline, updateArticlesWithFullData } from './src/modules/mongoStore/index.js';
+import { filterFreshArticles, savePipelineResults } from './src/modules/mongoStore/index.js';
 import { assessHeadlinesInBatches, assessArticleContent, performAiSanityCheck, checkModelPermissions } from './src/modules/ai/index.js';
 import { clusterArticlesIntoEvents, synthesizeEvent } from './src/modules/ai/eventProcessing.js';
 import { findSimilarArticles } from './src/modules/ai/rag.js';
-import Article from './models/Article.js';
 import SynthesizedEvent from './models/SynthesizedEvent.js';
 import { logger } from './src/utils/logger.js';
 import { logFinalReport } from './src/utils/pipelineLogger.js'; 
 import { ARTICLES_RELEVANCE_THRESHOLD, HEADLINES_RELEVANCE_THRESHOLD, LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES } from './src/config/index.js';
 import { sendWealthEventsEmail, sendSupervisorReportEmail } from './src/modules/email/index.js';
-import { truncateString } from './src/utils/helpers.js';
+import { generateEmbedding } from './src/utils/vectorUtils.js';
 
 export async function runPipeline(isRefreshMode = false) {
     const runStartTime = Date.now();
-    logger.info('🚀 STARTING SYNTHESIS PIPELINE...');
+    logger.info('🚀 STARTING SYNTHESIS PIPELINE (Transactional Mode)...');
     const runStats = {
         headlinesScraped: 0,
         scraperHealth: [],
         freshHeadlinesFound: 0,
         headlinesAssessed: 0,
         relevantHeadlines: 0,
-        enrichmentOutcomes: [], // To track what happens to each relevant headline
+        enrichmentOutcomes: [],
         articlesEnriched: 0,
         relevantArticles: 0, 
         enrichedBySource: {},
@@ -284,6 +288,8 @@ export async function runPipeline(isRefreshMode = false) {
     };
 
     let dbConnected = false;
+    let assessedCandidates = []; // Hold all processed articles here
+    let synthesizedEventsToSave = []; // Hold all synthesized events
 
     try {
         // --- STEP 1: PRE-FLIGHT CHECKS & DB CONNECTION ---
@@ -295,7 +301,7 @@ export async function runPipeline(isRefreshMode = false) {
         await connectDatabase();
         dbConnected = true;
 
-        // --- STEP 2: SCRAPE & PREPARE ARTICLES ---
+        // --- STEP 2: SCRAPE & FILTER ARTICLES ---
         const { allArticles: scrapedHeadlines, scraperHealth } = await scrapeAllHeadlines();
         runStats.scraperHealth = scraperHealth;
         runStats.headlinesScraped = scrapedHeadlines.length;
@@ -308,14 +314,21 @@ export async function runPipeline(isRefreshMode = false) {
             return;
         }
         
-        const articlesForPipeline = await prepareArticlesForPipeline(articlesToProcess, isRefreshMode);
-        if (articlesForPipeline.length === 0) {
-            logger.info('No articles were successfully prepared for the pipeline. Ending run.');
-            return;
+        // --- STEP 3: PREPARE ARTICLES IN-MEMORY ---
+        const articlesForPipeline = [];
+        for (const article of articlesToProcess) {
+            const embedding = await generateEmbedding(article.headline);
+            articlesForPipeline.push({
+                ...article,
+                _id: new mongoose.Types.ObjectId(),
+                embedding,
+                relevance_headline: 0,
+                assessment_headline: 'Awaiting assessment',
+            });
         }
-
-        // --- STEP 3: HEADLINE ASSESSMENT ---
-        const assessedCandidates = await assessHeadlinesInBatches(articlesForPipeline);
+        
+        // --- STEP 4: HEADLINE ASSESSMENT ---
+        assessedCandidates = await assessHeadlinesInBatches(articlesForPipeline);
         runStats.headlinesAssessed = assessedCandidates.length;
 
         const relevantCandidates = assessedCandidates.filter(a => a.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD);
@@ -323,16 +336,16 @@ export async function runPipeline(isRefreshMode = false) {
 
         if (relevantCandidates.length === 0) {
             logger.info('No headlines met the relevance threshold for event synthesis.');
-            return;
+            // Go to 'finally' block to save the non-relevant headlines
+            return; 
         }
         logger.info(`Found ${relevantCandidates.length} relevant headlines. Proceeding to enrichment...`);
         
-        // --- STEP 4: ENRICHMENT & ARTICLE ASSESSMENT ---
+        // --- STEP 5: ENRICHMENT & ARTICLE ASSESSMENT ---
         const enrichedArticles = [];
         for (const article of relevantCandidates) {
             const enriched = await scrapeArticleContent(article);
             
-            // --- MODIFIED: Capture even more detail for the supervisor email ---
             if (enriched.articleContent && enriched.articleContent.contents.join('').length > 150) {
                 const finalAssessment = await assessArticleContent(enriched);
                 const contentSnippet = (finalAssessment.articleContent?.contents || []).join(' ').substring(0, 300);
@@ -342,47 +355,28 @@ export async function runPipeline(isRefreshMode = false) {
                     runStats.articlesEnriched++;
                     runStats.enrichedBySource[article.source] = (runStats.enrichedBySource[article.source] || 0) + 1;
                     runStats.enrichmentOutcomes.push({
-                        headline: article.headline,
-                        link: article.link,
-                        newspaper: article.newspaper, // Capture newspaper for reporting
-                        outcome: 'Success',
-                        headlineScore: article.relevance_headline,
-                        assessment_headline: article.assessment_headline,
-                        finalScore: finalAssessment.relevance_article,
-                        assessment_article: finalAssessment.assessment_article,
+                        headline: article.headline, link: article.link, newspaper: article.newspaper, outcome: 'Success',
+                        headlineScore: article.relevance_headline, assessment_headline: article.assessment_headline,
+                        finalScore: finalAssessment.relevance_article, assessment_article: finalAssessment.assessment_article,
                         content_snippet: contentSnippet,
                     });
                 } else {
-                    // Dropped due to low content score
                     runStats.enrichmentOutcomes.push({
-                        headline: article.headline,
-                        link: article.link,
-                        newspaper: article.newspaper, // Capture newspaper for reporting
-                        outcome: 'Dropped',
-                        headlineScore: article.relevance_headline,
-                        assessment_headline: article.assessment_headline,
-                        finalScore: finalAssessment.relevance_article,
-                        assessment_article: `Score was below threshold [${ARTICLES_RELEVANCE_THRESHOLD}]. AI Reason: ${finalAssessment.assessment_article}`,
+                        headline: article.headline, link: article.link, newspaper: article.newspaper, outcome: 'Dropped',
+                        headlineScore: article.relevance_headline, assessment_headline: article.assessment_headline,
+                        finalScore: finalAssessment.relevance_article, assessment_article: `Score was below threshold [${ARTICLES_RELEVANCE_THRESHOLD}]. AI Reason: ${finalAssessment.assessment_article}`,
                         content_snippet: contentSnippet,
                     });
                 }
             } else {
-                // Dropped due to scraper failure or short content
                 runStats.enrichmentOutcomes.push({
-                    headline: article.headline,
-                    link: article.link,
-                    newspaper: article.newspaper, // Capture newspaper for reporting
-                    outcome: 'Dropped',
-                    headlineScore: article.relevance_headline,
-                    assessment_headline: article.assessment_headline,
-                    finalScore: null,
-                    assessment_article: `Enrichment Failed. Reason: ${enriched.enrichment_error || 'Scraped content was too short (< 150 chars)'}`,
+                    headline: article.headline, link: article.link, newspaper: article.newspaper, outcome: 'Dropped',
+                    headlineScore: article.relevance_headline, assessment_headline: article.assessment_headline,
+                    finalScore: null, assessment_article: `Enrichment Failed. Reason: ${enriched.enrichment_error || 'Scraped content was too short (< 150 chars)'}`,
                     content_snippet: 'Could not retrieve article content.',
                 });
             }
-            // --- END MODIFICATION ---
         }
-        await updateArticlesWithFullData(enrichedArticles);
         runStats.relevantArticles = enrichedArticles.length;
         logger.info(`Enriched and assessed ${enrichedArticles.length} full articles meeting the relevance threshold.`);
 
@@ -391,7 +385,7 @@ export async function runPipeline(isRefreshMode = false) {
             return;
         }
 
-        // --- STEP 5: CLUSTERING ---
+        // --- STEP 6: CLUSTERING & SYNTHESIS ---
         const eventClusters = await clusterArticlesIntoEvents(enrichedArticles);
         runStats.eventsClustered = eventClusters.length;
         if (eventClusters.length === 0) {
@@ -400,8 +394,6 @@ export async function runPipeline(isRefreshMode = false) {
         }
         logger.info(`Clustered ${enrichedArticles.length} articles into ${eventClusters.length} unique events.`);
 
-        // --- STEP 6: SYNTHESIS ---
-        const synthesizedEventsToSave = [];
         for (const cluster of eventClusters) {
             const articlesInCluster = enrichedArticles.filter(a => cluster.article_ids.includes(a._id.toString()));
             if (articlesInCluster.length === 0) continue;
@@ -411,9 +403,7 @@ export async function runPipeline(isRefreshMode = false) {
 
             if (synthesizedEvent && !synthesizedEvent.error) {
                 runStats.eventsSynthesized++;
-                const highestScoringArticle = articlesInCluster.reduce((max, current) => 
-                    (current.relevance_article > max.relevance_article) ? current : max, articlesInCluster[0]
-                );
+                const highestScoringArticle = articlesInCluster.reduce((max, current) => (current.relevance_article > max.relevance_article) ? current : max, articlesInCluster[0]);
                 const aggregatedIndividuals = articlesInCluster.flatMap(a => a.key_individuals || []);
                 const uniqueIndividuals = Array.from(new Map(aggregatedIndividuals.map(p => [p.name, p])).values());
 
@@ -424,34 +414,42 @@ export async function runPipeline(isRefreshMode = false) {
                     ai_assessment_reason: highestScoringArticle.assessment_article || highestScoringArticle.assessment_headline,
                     highest_relevance_score: Math.max(...articlesInCluster.map(a => a.relevance_article)),
                     key_individuals: uniqueIndividuals,
-                    source_articles: articlesInCluster.map(a => ({ article_id: a._id, headline: a.headline, link: a.link, newspaper: a.newspaper })),
+                    source_articles: articlesInCluster.map(a => ({ headline: a.headline, link: a.link, newspaper: a.newspaper })),
                 });
                 synthesizedEventsToSave.push(eventToSave);
                 runStats.synthesizedEventsForReport.push({ synthesized_headline: eventToSave.synthesized_headline, highest_relevance_score: eventToSave.highest_relevance_score });
             }
         }
-
-        if (synthesizedEventsToSave.length > 0) {
-            await SynthesizedEvent.bulkWrite(
-                synthesizedEventsToSave.map(e => ({ updateOne: { filter: { event_key: e.event_key }, update: { $set: e }, upsert: true } }))
-            );
-            logger.info(`Successfully saved/updated ${synthesizedEventsToSave.length} synthesized events.`);
-        }
         
-        // --- STEP 7: SEND EMAIL ---
-        const emailResult = await sendWealthEventsEmail();
-        runStats.eventsEmailed = emailResult.eventsSentCount;
-
     } catch (error) {
-        logger.fatal({ err: error }, 'A critical error occurred in the main pipeline');
+        logger.fatal({ err: error }, 'A critical error occurred in the main pipeline. No data will be committed.');
         runStats.errors.push(`CRITICAL: ${error.message}`);
+        // Clear the arrays to prevent partial data save in 'finally' block
+        assessedCandidates = [];
+        synthesizedEventsToSave = [];
     } finally {
+        // --- FINAL STEP: COMMIT & REPORT ---
         const runEndTime = Date.now();
-        const duration = ((runEndTime - runStartTime) / 1000).toFixed(2);
+        const duration = ((runEndTime / 1000) - (runStartTime / 1000)).toFixed(2);
         
-        if (dbConnected) {
-             await sendSupervisorReportEmail(runStats);
-             // REMOVED: await disconnectDatabase();
+        if (dbConnected && runStats.errors.length === 0) {
+            // Only commit if the pipeline ran without critical errors.
+            // The list of articles to save is now `assessedCandidates`, which includes ALL fresh articles from this run.
+            if (assessedCandidates.length > 0) {
+                const success = await savePipelineResults(assessedCandidates, synthesizedEventsToSave);
+                if (success) {
+                    logger.info(`Successfully committed ${assessedCandidates.length} articles and ${synthesizedEventsToSave.length} events to the database.`);
+                    // Now that data is saved, trigger email.
+                    const emailResult = await sendWealthEventsEmail();
+                    runStats.eventsEmailed = emailResult.eventsSentCount;
+                } else {
+                     runStats.errors.push("CRITICAL: Failed to commit pipeline results to the database.");
+                }
+            }
+            await sendSupervisorReportEmail(runStats);
+        } else if (dbConnected) {
+            // If there were errors, still send a supervisor report but don't commit data.
+            await sendSupervisorReportEmail(runStats);
         } else {
              logger.warn('Pipeline halted before DB connection. No supervisor report or final stats will be generated.');
         }
@@ -627,241 +625,6 @@ start();
     ]
   }
 ]
-
-# File: debug/Algemeen_Dagblad__ad_nl_.html
-<!DOCTYPE html><html lang="nl"><head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <link href="https://myprivacy-static.dpgmedia.net" rel="preconnect">
-
-    <script async="" src="https://www.googletagmanager.com/gtm.js?id=GTM-NT4WR7C"></script><script type="text/javascript">
-        window._privacy = window._privacy || [];
-        window.cmpProperties = {
-            baseUrl: 'https://www.ad.nl',
-            language: 'nl',
-            siteUrl: 'https://www.ad.nl/privacy-gate/accept-tcf2?redirectUri=%2Feconomie%2F&authId=a317194f-7ac7-4534-b3a4-400968066c3e',
-            darkModeEnabled: 'false',
-        }
-
-        function redirect() {
-            document.getElementById('message').style.visibility = 'visible';
-            window.location.href = 'https://www.ad.nl/privacy-gate/accept-tcf2?redirectUri=%2Feconomie%2F&authId=a317194f-7ac7-4534-b3a4-400968066c3e';
-        }
-
-        function handleError(error) {
-            console.error('privacy-gate error: ' + error)
-            redirect();
-        }
-
-        window._privacy.push(['functional', redirect]);
-        window._privacy.push(['error', handleError]);
-    </script>
-    <script type="text/javascript" src="https://myprivacy-static.dpgmedia.net/consent.js"></script>
-    <style>
-
-        h2 {
-            font-family: "Trebuchet MS", Arial, sans-serif;
-            font-size: 26px;
-            text-transform: uppercase;
-        }
-
-        body {
-            margin: 0;
-            font-family: "Trebuchet MS", Arial, sans-serif;
-            font-size: 16px;
-        }
-
-        .container {
-            /*noinspection CssUnknownTarget*/
-            background-image: url("https://myprivacy-static.dpgmedia.net/consent/resources/backgrounds/ad.webp");
-            width: 100vw;
-            height: 100vh;
-            background-position: top center;
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-color: #f5f5f5;
-        }
-
-        @media only screen and (max-width: 768px) {
-            .container {
-                /*noinspection CssUnknownTarget*/
-                background-image: url("https://myprivacy-static.dpgmedia.net/consent/resources/backgrounds/medium/ad.webp");
-            }
-        }
-
-        @media only screen and (max-width: 600px) {
-            .container {
-                /*noinspection CssUnknownTarget*/
-                background-image: url("https://myprivacy-static.dpgmedia.net/consent/resources/backgrounds/small/ad.webp");
-            }
-        }
-
-        .modal {
-            position: fixed;
-            background-color: #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            text-align: center;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            height: 74vh;
-            z-index: 999;
-            pointer-events: auto;
-            transition: all 0.5s;
-            visibility: hidden;
-            box-shadow: 0 5px 15px rgba(25, 25, 25, 0.5);
-            max-width: 640px;
-            margin: 13vh auto;
-        }
-
-        .modal__header {
-            flex: 0 10%;
-            width: 100%;
-            display: flex;
-            flex-flow: row nowrap;
-            justify-content: center;
-            align-items: center;
-            border-bottom: #b4b4b4 solid 1px;
-            min-height: 40px;
-            horiz-align: center;
-        }
-
-        .modal__header__logo > img {
-            height: 35px;
-        }
-
-        .modal__body {
-            flex: 0 85%;
-            display: flex;
-            flex-flow: column wrap;
-            justify-content: space-evenly;
-            align-items: center;
-        }
-
-        .modal__body__text {
-            flex: 0 60%
-        }
-
-        .dpg-loader {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 72px;
-        }
-
-        .inline-block {
-            display: inline-block;
-        }
-
-        .h-auto {
-            height: auto;
-        }
-
-        .w-full {
-            width: 100%;
-        }
-
-        @keyframes schrinky {
-
-            0% {
-                transform: scaleY(1);
-            }
-
-            100% {
-                transform: scaleY(0.4);
-            }
-        }
-
-        .animate-schrinky {
-            animation: schrinky 600ms alternate infinite cubic-bezier(0.59, -0.1, 0.29, 1.1);
-        }
-
-        .animation-delay-150ms {
-            animation-delay: 150ms;
-        }
-
-        .animation-delay-300ms {
-            animation-delay: 300ms;
-        }
-
-        .animation-delay-450ms {
-            animation-delay: 450ms;
-        }
-
-        @media (max-width: 960px) {
-            .modal {
-                height: 100vh;
-                width: 100vw;
-                margin: 0;
-                max-width: none;
-            }
-
-            .modal__body {
-                padding: 0 10vw;
-            }
-        }
-    </style>
-    <title>DPG Media Privacy Gate</title>
-
-    <!-- Google Tag Manager -->
-    <script>(function (w, d, s, l, i) {
-        w[l] = w[l] || []
-        w[l].push({
-            'gtm.start':
-                new Date().getTime(), event: 'gtm.js'
-        });
-        var f = d.getElementsByTagName(s)[0],
-            j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
-        j.async = true;
-        j.src =
-            'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-        f.parentNode.insertBefore(j, f);
-    })(window, document, 'script', 'dataLayer', 'GTM-NT4WR7C');</script>
-    <!-- End Google Tag Manager -->
-
-</head>
-<body>
-
-<!-- Google Tag Manager (noscript) -->
-<noscript>
-    <iframe title="gtm" src="https://www.googletagmanager.com/ns.html?id=GTM-NT4WR7C"
-            height="0" width="0" style="display:none;visibility:hidden"></iframe>
-</noscript>
-<!-- End Google Tag Manager (noscript) -->
-
-<div class="container">
-    <div id="message" class="modal">
-        <div class="modal__header">
-            <div class="modal__header__logo">
-                <img src="https://myprivacy-static.dpgmedia.net/consent/resources/logos/logo-dpgmedia.svg" alt="dpg media logo">
-            </div>
-        </div>
-        <div class="modal__body">
-            <div class="modal__body__text">
-                <div class="dpg-loader">
-                    <div aria-busy="true" class="wrapper inline-block" data-testid="dpg-loader">
-                        <svg class="w-full h-auto" width="255px" height="211px" viewBox="0 0 255 211" version="1.1" xmlns="http://www.w3.org/2000/svg">
-                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                                <rect class="animate-schrinky" fill="#783C96" fill-rule="nonzero" x="0" y="112" width="43" height="70" style="transform-origin: 0px 147px;"></rect>
-                                <rect class="animate-schrinky animation-delay-150ms" fill="#D23278" fill-rule="nonzero" x="70.322" y="58" width="43" height="152" style="transform-origin: 0px 134px;"></rect>
-                                <rect class="animate-schrinky animation-delay-300ms" fill="#E6463C" fill-rule="nonzero" x="140.697" y="0" width="43" height="184" style="transform-origin: 0px 92px;"></rect>
-                                <rect class="animate-schrinky animation-delay-450ms" fill="#FABB22" fill-rule="nonzero" x="210.997" y="58" width="43" height="76" style="transform-origin: 0px 96px;"></rect>
-                            </g>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<div id="pg-host-shadow-root"></div><iframe name="__tcfapiLocator" style="display: none;"></iframe></body></html>
 
 # File: docker-compose.yml
 # docker-compose.yml (version 1.03)
@@ -1120,13 +883,13 @@ main();
 
 import 'dotenv/config';
 import pLimit from 'p-limit';
-import { SITES_CONFIG } from './src/config/sources.js';
-import { scrapeSite, scrapeArticleContent } from './src/modules/scraper/index.js'; // NOTE: scrapeSite must be exported
+// MODIFIED: Import the new country-based config
+import { COUNTRIES_CONFIG } from './src/config/sources.js';
+import { scrapeSite, scrapeArticleContent } from './src/modules/scraper/index.js';
 import { CONCURRENCY_LIMIT } from './src/config/index.js';
 import { logger } from './src/utils/logger.js';
 
 // --- Configuration ---
-// Temporarily set logger to 'info' to suppress verbose debug messages during the test run.
 logger.level = 'info';
 
 // --- Console Colors for Readability ---
@@ -1143,14 +906,13 @@ const log = (msg) => console.log(msg);
 
 /**
  * Runs a diagnostic test on a single site configuration.
- * @param {object} site The site configuration from SITES_CONFIG.
+ * @param {object} site The site configuration from COUNTRIES_CONFIG.
  * @returns {Promise<{success: boolean, message: string}>} The result of the test.
  */
 async function testSite(site) {
     const statusLine = [`${colors.cyan}${site.name.padEnd(25)}${colors.reset}`];
 
     try {
-        // Step 1: Scrape headlines for this site only.
         const { articles, success: headlineSuccess } = await scrapeSite(site);
         const headlineCount = articles.length;
         
@@ -1162,19 +924,17 @@ async function testSite(site) {
         
         statusLine.push(`${colors.green}${String(headlineCount).padStart(3)} headlines scraped${colors.reset}`);
 
-        // Step 2: Test content scraping on the very first article.
         const firstArticle = articles[0];
         const articleWithContent = await scrapeArticleContent(firstArticle);
 
         const content = articleWithContent.articleContent?.contents?.join('') || '';
         const contentLength = content.length;
 
-        if (contentLength > 150) { // Using 150 as a "good enough" threshold
+        if (contentLength > 150) {
             statusLine.push(`${colors.green}First article OK (${contentLength} chars)${colors.reset}`);
             return { success: true, message: statusLine.join(' > ') };
         } else {
             const reason = articleWithContent.enrichment_error || `Content too short (< 150 chars)`;
-            // MODIFIED: Add the failed URL to the error message for easy debugging.
             const failedLink = `(Link: ${firstArticle.link})`;
             statusLine.push(`${colors.red}Content FAILED: ${reason}${colors.reset} ${colors.grey}${failedLink}${colors.reset}`);
             return { success: false, message: statusLine.join(' > ') };
@@ -1190,15 +950,21 @@ async function testSite(site) {
  */
 async function main() {
     const siteKey = process.argv[2];
-    let sitesToTest = Object.values(SITES_CONFIG);
+    
+    // MODIFIED: Flatten the new structure to get a list of all sites.
+    const allSites = COUNTRIES_CONFIG.flatMap(country => country.sites);
+    let sitesToTest = allSites;
+
     const limit = pLimit(CONCURRENCY_LIMIT);
 
     if (siteKey) {
-        if (SITES_CONFIG[siteKey]) {
-            sitesToTest = [SITES_CONFIG[siteKey]];
+        // MODIFIED: Find the specific site by its key in the flattened list.
+        const targetSite = allSites.find(site => site.key === siteKey);
+        if (targetSite) {
+            sitesToTest = [targetSite];
             log(`${colors.yellow}🚀 Starting targeted diagnostic scrape for: ${siteKey}${colors.reset}`);
         } else {
-            log(`${colors.red}Error: Site key "${siteKey}" not found in SITES_CONFIG.${colors.reset}`);
+            log(`${colors.red}Error: Site key "${siteKey}" not found in COUNTRIES_CONFIG.${colors.reset}`);
             return;
         }
     } else {
@@ -1232,1444 +998,6 @@ main().catch(err => {
     console.error(`${colors.red}A critical, unhandled error occurred in the scrape script:${colors.reset}`, err);
     process.exit(1);
 });
-
-# File: scripts/chat.js
-// scripts/chat.js (version 2.1)
-import 'dotenv/config';
-import readline from 'readline';
-import client from '../src/modules/ai/client.js'; // Use the new centralized client
-import { connectDatabase, disconnectDatabase } from '../src/database.js';
-import Article from '../models/Article.js';
-import { generateEmbedding, cosineSimilarity } from '../src/utils/vectorUtils.js';
-import { logger } from '../src/utils/logger.js';
-import { LLM_MODEL_HEADLINES } from '../src/config/index.js';
-
-// --- Configuration ---
-const TOP_K_RESULTS = 7;
-const CANDIDATE_POOL_SIZE = 250;
-const DUPLICATE_THRESHOLD = 0.95;
-
-// --- UI Colors ---
-const colors = { reset: "\x1b[0m", cyan: "\x1b[36m", green: "\x1b[32m", yellow: "\x1b[33m" };
-const USER_PROMPT = `${colors.cyan}You > ${colors.reset}`;
-const AI_PROMPT = `${colors.green}Bot >${colors.reset} `;
-
-/** Embeds and stores a structured fact. */
-async function embedAndStoreFact(structuredFact) {
-    const newArticle = new Article({
-        headline: structuredFact.headline,
-        link: `https://user.facts/fact-entry-${Date.now()}`,
-        newspaper: "User-Provided Fact", source: "Conversational Input",
-        relevance_headline: 100, assessment_headline: "Fact provided by user.",
-        relevance_article: 100, assessment_article: "Fact provided by user.",
-        articleContent: { contents: [structuredFact.summary] },
-        key_individuals: [{ name: structuredFact.key_subject, role_in_event: "Subject of Fact" }],
-        emailed: true,
-    });
-    const textToEmbed = `${newArticle.headline}\n${newArticle.articleContent.contents.join(' ')}`;
-    newArticle.embedding = await generateEmbedding(textToEmbed);
-    await newArticle.save();
-}
-
-/** Main function to run the interactive chat loop. */
-async function main() {
-    console.log('Connecting to database...');
-    await connectDatabase();
-    console.log('Database connected. Wealth Analyst Assistant is ready.\n');
-
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const chatHistory = [];
-    let state = { type: 'idle' };
-
-    async function handleUserInput(userInput) {
-        if (state.type === 'waiting_for_confirmation') {
-            const affirmativeRegex = /^(y|yes|yeah|yep|ok|sure|correct)/i;
-            if (affirmativeRegex.test(userInput)) {
-                await embedAndStoreFact(state.factToStore);
-                console.log(`${AI_PROMPT}Got it. I'll remember that.`);
-                chatHistory.push({ role: 'user', content: userInput });
-                chatHistory.push({ role: 'assistant', content: `Acknowledged. Stored fact: ${state.factToStore.summary}` });
-            } else {
-                console.log(`${AI_PROMPT}${colors.yellow}Okay, I won't store that.${colors.reset}`);
-            }
-            state = { type: 'idle' };
-            rl.setPrompt(USER_PROMPT);
-            rl.prompt();
-            return;
-        }
-
-        // --- 1. CONTEXT GATHERING ---
-        const queryEmbedding = await generateEmbedding(userInput);
-        const candidateArticles = await Article.find({ embedding: { $exists: true, $ne: null } }).sort({ createdAt: -1 }).limit(CANDIDATE_POOL_SIZE).lean();
-        let dbContext = "The database contains no relevant information on this topic.";
-        if (candidateArticles.length > 0) {
-            const scoredArticles = candidateArticles.map(article => ({ ...article, score: cosineSimilarity(queryEmbedding, article.embedding) }));
-            scoredArticles.sort((a, b) => b.score - a.score);
-            const retrievedArticles = scoredArticles.slice(0, TOP_K_RESULTS);
-            if (retrievedArticles.length > 0 && retrievedArticles[0].score > 0.4) {
-                dbContext = "### Database Context:\n" + retrievedArticles.map(article => `- ${article.headline}: ${article.articleContent.contents.join(' ')}`).join('\n');
-            }
-        }
-        const conversationContext = "### Conversation History:\n" + chatHistory.slice(-8).map(h => `${h.role}: ${h.content}`).join('\n');
-
-        // --- 2. THE UNIFIED "THINKING" PROMPT ---
-        const systemPrompt = `You are an elite intelligence analyst for a wealth management firm. Your goal is to be a concise, intelligent conversational partner. Analyze the user's LATEST input in the context of the full conversation and database.
-
-        **Your Mandate & Hierarchy of Truth:**
-        1.  **Synthesize All Known Information:** Formulate a concise, direct answer by synthesizing facts from BOTH the "Database Context" AND the "Conversation History". Treat the conversation history as a primary source of truth to avoid amnesia.
-        2.  **Deduce and Infer:** Act like an analyst. Make logical deductions. If someone founded a major company, you can deduce they are wealthy. If you know X advises Y, you can answer questions about Y's advisor.
-        3.  **Use General Knowledge Fluidly:** If the answer is not in your known information, state this clearly and then seamlessly provide the answer from your general knowledge (e.g., "The database doesn't have details on his company, but from my general knowledge, Stig Holledig is the founder of Holledig Capital..."). Do NOT ask for permission.
-        4.  **Handle Corrections Gracefully:** If the user corrects you ("No, that's wrong..."), accept the correction immediately and prioritize their new information as the truth.
-        5.  **Identify New, Valuable Facts:** If the user provides a genuinely new, valuable, non-contradictory fact, identify it for storage. Check if it's a duplicate of existing knowledge first.
-
-        **Your JSON Output:**
-        Respond ONLY with a valid JSON object:
-        {
-          "thought": "Your brief, one-sentence thought process. Example: 'The user is correcting me about John Blem. I will acknowledge the correction and propose storing the new fact.'",
-          "responseText": "The natural, conversational text to display to the user. This is your primary output. Keep it concise.",
-          "action": "One of: 'answer', 'confirm_fact', 'clarify'",
-          "factToConfirm": {
-            "headline": "Structured headline for the new fact",
-            "summary": "Structured summary for the new fact",
-            "key_subject": "Primary person/company"
-          } OR null
-        }`;
-
-        const userPrompt = `${dbContext}\n\n${conversationContext}\n\n### User's Latest Input:\n"${userInput}"`;
-        const messages = [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }];
-
-        // --- 3. EXECUTE AND ACT ---
-        let plan;
-        try {
-            const response = await client.chat.completions.create({ model: LLM_MODEL_HEADLINES, messages, response_format: { type: 'json_object' } });
-            plan = JSON.parse(response.choices[0].message.content);
-        } catch (e) {
-            console.log(`${AI_PROMPT}${colors.yellow}I'm having a little trouble processing that. Could you please rephrase?${colors.reset}`);
-            rl.prompt(); return;
-        }
-
-        chatHistory.push({ role: 'user', content: userInput });
-        if (plan.responseText) {
-            console.log(`${AI_PROMPT}${plan.responseText}`);
-            chatHistory.push({ role: 'assistant', content: plan.responseText });
-        }
-
-        if (plan.action === 'confirm_fact' && plan.factToConfirm) {
-            const factSummary = plan.factToConfirm.summary;
-            const factEmbedding = await generateEmbedding(factSummary);
-            const similarities = candidateArticles.map(art => cosineSimilarity(factEmbedding, art.embedding || []));
-            if (similarities.length > 0 && Math.max(...similarities) > DUPLICATE_THRESHOLD) {
-                // It's a duplicate, do nothing further.
-            } else {
-                state = { type: 'waiting_for_confirmation', factToStore: plan.factToConfirm };
-                rl.setPrompt('');
-                rl.question(`${AI_PROMPT}${colors.yellow}Should I remember that? (y/n) > ${colors.reset}`, (answer) => {
-                    handleUserInput(answer);
-                });
-                return;
-            }
-        }
-        rl.prompt();
-    }
-
-    rl.setPrompt(USER_PROMPT);
-    rl.prompt();
-    rl.on('line', (line) => {
-        const trimmedLine = line.trim();
-        if (trimmedLine.toLowerCase() === 'exit' || trimmedLine.toLowerCase() === 'quit') rl.close();
-        else if (trimmedLine) handleUserInput(trimmedLine);
-        else rl.prompt();
-    });
-
-    rl.on('close', async () => {
-        console.log('\nExiting. Goodbye!');
-        await disconnectDatabase();
-        process.exit(0);
-    });
-}
-
-main().catch(err => {
-    logger.fatal({ err }, 'Chatbot encountered a fatal error.');
-    process.exit(1);
-});
-
-# File: scripts/embedPastArticles.js
-// scripts/embedPastArticles.js
-import 'dotenv/config';
-import mongoose from 'mongoose';
-import { connectDatabase, disconnectDatabase } from '../src/database.js';
-import Article from '../models/Article.js';
-import { generateEmbedding } from '../src/utils/vectorUtils.js';
-import { logger } from '../src/utils/logger.js';
-
-async function embedPastArticles() {
-    logger.info('Starting backfill process for article embeddings...');
-    await connectDatabase();
-
-    const articlesToProcess = await Article.find({ embedding: { $exists: false } }).lean();
-
-    if (articlesToProcess.length === 0) {
-        logger.info('No articles found without embeddings. Process complete.');
-        await disconnectDatabase();
-        return;
-    }
-
-    logger.info(`Found ${articlesToProcess.length} articles to embed. This may take some time...`);
-    
-    let processedCount = 0;
-    const operations = [];
-
-    for (const article of articlesToProcess) {
-        try {
-            const textToEmbed = `${article.headline}\n${article.assessment_headline || ''}`;
-            const embedding = await generateEmbedding(textToEmbed);
-
-            operations.push({
-                updateOne: {
-                    filter: { _id: article._id },
-                    update: { $set: { embedding: embedding } }
-                }
-            });
-            
-            processedCount++;
-            logger.info(`(${processedCount}/${articlesToProcess.length}) Embedded: "${article.headline}"`);
-
-        } catch (error) {
-            logger.error({ err: error, articleId: article._id }, `Failed to process article.`);
-        }
-    }
-
-    if (operations.length > 0) {
-        logger.info(`Bulk writing ${operations.length} updates to the database...`);
-        await Article.bulkWrite(operations, { ordered: false });
-        logger.info('✅ Bulk write complete.');
-    }
-
-    logger.info('Embedding backfill process finished.');
-    await disconnectDatabase();
-}
-
-embedPastArticles().catch(err => {
-    logger.fatal({ err }, 'An unhandled error occurred during the embedding backfill process.');
-    process.exit(1);
-});
-
-# File: scripts/find-selectors.js
-// scripts/find-selectors.js (version 10.0 - Intelligent HTML Analysis)
-import 'dotenv/config';
-import fs from 'fs/promises';
-import path from 'path';
-import * as cheerio from 'cheerio';
-import readline from 'readline';
-import playwright from 'playwright';
-import client from '../src/modules/ai/client.js';
-import { LLM_MODEL } from '../src/config/index.js';
-import { logger } from '../src/utils/logger.js';
-
-// --- Configuration ---
-const PAPERS_CONFIG_PATH = path.join(process.cwd(), 'src', 'config', 'papers.json');
-const DEBUG_DIR = path.join(process.cwd(), 'debug');
-const MIN_HEADLINES_THRESHOLD = 8;
-const MIN_ARTICLE_LENGTH_THRESHOLD = 500;
-const SAVE_HTML_FLAG = process.argv.includes('--save-html') || true; // Always save for debugging
-const NO_HEADLESS_FLAG = process.argv.includes('--no-headless');
-
-const colors = { reset: "\x1b[0m", red: "\x1b[31m", green: "\x1b[32m", yellow: "\x1b[33m", cyan: "\x1b[36m", grey: "\x1b[90m" };
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-
-// --- Helper & Utility Functions ---
-function pause() { return new Promise(resolve => rl.question(`\n${colors.yellow}Press Enter to continue...${colors.reset}`, () => resolve())); }
-
-async function saveDebugHtml(filename, html) {
-    if (!SAVE_HTML_FLAG) return;
-    try {
-        await fs.mkdir(DEBUG_DIR, { recursive: true });
-        const filePath = path.join(DEBUG_DIR, filename);
-        await fs.writeFile(filePath, html);
-        logger.info(`${colors.grey}Saved HTML snapshot to ${filePath}${colors.reset}`);
-    } catch (error) { logger.error(`Failed to save debug HTML: ${error.message}`); }
-}
-
-function sanitizeUrl(url, baseUrl) {
-    if (!url || typeof url !== 'string') return null;
-    
-    const lastHttp = url.lastIndexOf('http');
-    if (lastHttp > 0) {
-        const potentialUrl = url.substring(lastHttp);
-        try {
-            const corrected = new URL(potentialUrl).href;
-            logger.info(`${colors.grey}  -> URL sanitizer recovered malformed URL: "${corrected}"${colors.reset}`);
-            return corrected;
-        } catch (e) { return null; }
-    }
-    
-    try {
-        return new URL(url, baseUrl).href;
-    } catch (e) {
-        return null;
-    }
-}
-
-// --- Agentic Browser & AI Functions ---
-async function findAndClickConsentButton(page, country) {
-    logger.info(`> AI Task: Identifying consent button...`);
-    const buttons = await page.evaluate(() => 
-        Array.from(document.querySelectorAll('button, a[role="button"]'))
-             .map(el => el.innerText.trim())
-             .filter(text => text.length > 2 && text.length < 30)
-    );
-    
-    if (buttons.length === 0) {
-        logger.info(`${colors.grey}  -> No buttons found to analyze for consent.${colors.reset}`);
-        return false;
-    }
-    
-    const sysPrompt = `You are a web automation expert. From this JSON array of button texts from a website in ${country}, identify the SINGLE button text that accepts cookies, privacy, or consent. Prioritize clear "accept" actions (like 'Accept', 'Agree', 'OK') over ambiguous "settings" links. Respond ONLY with a valid JSON object: { "text_to_click": "The exact text of the button to click" } OR { "text_to_click": null }`;
-    
-    try {
-        const res = await client.chat.completions.create({
-            model: LLM_MODEL,
-            messages: [
-                { role: 'system', content: sysPrompt },
-                { role: 'user', content: JSON.stringify(buttons) }
-            ],
-            response_format: { type: 'json_object' }
-        });
-        
-        const { text_to_click } = JSON.parse(res.choices[0].message.content);
-        if (text_to_click) {
-            logger.info(`  -> AI advised clicking button: "${text_to_click}"`);
-            await page.getByRole('button', { name: text_to_click, exact: true }).first().click({ timeout: 5000 });
-            logger.info(`${colors.green}  -> Successfully clicked consent button.${colors.reset}`);
-            return true;
-        }
-    } catch (e) {
-        logger.error(`  -> AI consent analysis failed: ${e.message}`);
-    }
-    
-    logger.info(`${colors.grey}  -> No consent button identified.${colors.reset}`);
-    return false;
-}
-
-async function getPageHtmlWithPlaywright(url, outletName, country) {
-    logger.info(`> Deploying browser agent to: ${colors.cyan}${url}${colors.reset}`);
-    const browser = await playwright.chromium.launch({ headless: !NO_HEADLESS_FLAG });
-    const context = await browser.newContext({ userAgent: 'Mozilla/5.0' });
-    const page = await context.newPage();
-    let consentButtonClicked = false;
-    
-    try {
-        const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        if (response && !response.ok() && response.status() === 404) {
-            return { html: null, status: 404, consentButtonClicked: false };
-        }
-        
-        consentButtonClicked = await findAndClickConsentButton(page, country);
-        if (consentButtonClicked) await page.waitForLoadState('networkidle', { timeout: 10000 });
-        
-        const html = await page.content();
-        await saveDebugHtml(`${outletName.replace(/[^a-z0-9]/gi, '_')}.html`, html);
-        return { html, status: response?.status() || 200, consentButtonClicked };
-    } catch (error) {
-        logger.error(`  -> Browser agent failed: ${error.message.split('\n')[0]}`);
-        return { html: null, status: null, consentButtonClicked };
-    } finally {
-        await browser.close();
-    }
-}
-
-// --- Intelligent HTML Analysis Functions ---
-function analyzeHtmlStructure(html) {
-    logger.info(`> Performing intelligent HTML structure analysis...`);
-    const $ = cheerio.load(html);
-    
-    // First, let's see what we're working with
-    const totalLinks = $('a[href]').length;
-    const totalElements = $('*').length;
-    logger.info(`  -> HTML contains ${totalElements} total elements, ${totalLinks} links with href`);
-    
-    // Remove noise elements that aren't content
-    const beforeCleanup = $('*').length;
-    $('nav, footer, header .search, .cookie-banner, .advertisement, .ads, script, style, noscript').remove();
-    const afterCleanup = $('*').length;
-    logger.info(`  -> Cleaned HTML: removed ${beforeCleanup - afterCleanup} elements, ${afterCleanup} remain`);
-    
-    const cleanedLinks = $('a[href]').length;
-    logger.info(`  -> After cleanup: ${cleanedLinks} links remaining`);
-    
-    const linkAnalysis = [];
-    let processedLinks = 0;
-    let skippedLinks = 0;
-    
-    $('a[href]').each((index, element) => {
-        const $el = $(element);
-        const href = $el.attr('href');
-        
-        // Log first few links for debugging
-        if (index < 10) {
-            logger.info(`${colors.grey}    Link ${index + 1}: href="${href}", text="${$el.text().trim().substring(0, 50)}..."${colors.reset}`);
-        }
-        
-        // Skip non-content links
-        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) {
-            skippedLinks++;
-            if (index < 5) logger.info(`${colors.grey}      -> Skipped: invalid href${colors.reset}`);
-            return;
-        }
-        
-        processedLinks++;
-        
-        // Get all text content and structural information
-        const allText = $el.text().trim().replace(/\s+/g, ' ');
-        const directText = $el.clone().children().remove().end().text().trim().replace(/\s+/g, ' ');
-        
-        // Debug text extraction for first few links
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> All text: "${allText.substring(0, 100)}..."${colors.reset}`);
-            logger.info(`${colors.grey}      -> Direct text: "${directText.substring(0, 100)}..."${colors.reset}`);
-        }
-        
-        // Analyze nested structure
-        const hasImage = $el.find('img, picture').length > 0;
-        const hasVideo = $el.find('video').length > 0;
-        const headingElements = $el.find('h1, h2, h3, h4, h5, h6');
-        const strongElements = $el.find('strong, b, .title, .headline');
-        
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> Structure: img=${hasImage}, video=${hasVideo}, headings=${headingElements.length}, strong=${strongElements.length}${colors.reset}`);
-        }
-        
-        // Get the most prominent text (usually the headline)
-        let prominentText = '';
-        if (headingElements.length > 0) {
-            prominentText = headingElements.first().text().trim().replace(/\s+/g, ' ');
-            if (index < 5) logger.info(`${colors.grey}      -> Using heading text: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-        } else if (strongElements.length > 0) {
-            prominentText = strongElements.first().text().trim().replace(/\s+/g, ' ');
-            if (index < 5) logger.info(`${colors.grey}      -> Using strong text: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-        } else {
-            // Look for the largest text block
-            const textElements = $el.find('*').filter(function() {
-                const text = $(this).clone().children().remove().end().text().trim();
-                return text.length > 20;
-            });
-            if (textElements.length > 0) {
-                prominentText = textElements.first().text().trim().replace(/\s+/g, ' ');
-                if (index < 5) logger.info(`${colors.grey}      -> Using largest text block: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-            } else {
-                prominentText = allText;
-                if (index < 5) logger.info(`${colors.grey}      -> Using all text: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-            }
-        }
-        
-        // Clean up common prefixes
-        const originalText = prominentText;
-        prominentText = prominentText.replace(/^(premium artikel:|artikel:|nieuws:|breaking:|live:|video:|foto:|premium:)/i, '').trim();
-        if (originalText !== prominentText && index < 5) {
-            logger.info(`${colors.grey}      -> Text after cleanup: "${prominentText.substring(0, 50)}..."${colors.reset}`);
-        }
-        
-        // Analyze context and positioning
-        const parentClasses = $el.parent().attr('class') || '';
-        const parentTag = $el.parent().prop('tagName')?.toLowerCase() || '';
-        const elementClasses = $el.attr('class') || '';
-        const elementId = $el.attr('id') || '';
-        
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> Context: parent=${parentTag}.${parentClasses}, element=${elementClasses}${colors.reset}`);
-        }
-        
-        // Check if it's in a content area vs navigation
-        const isInNav = $el.closest('nav, .navigation, .menu, .sidebar, footer, header .user-actions').length > 0;
-        const isInMain = $el.closest('main, .main, .content, .articles, .news').length > 0;
-        
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> Location: inNav=${isInNav}, inMain=${isInMain}${colors.reset}`);
-        }
-        
-        // Calculate positioning metrics
-        const position = index;
-        const depth = $el.parents().length;
-        
-        // Analyze siblings to detect listing patterns
-        const siblings = $el.parent().children('a').length;
-        const siblingIndex = $el.parent().children('a').index($el);
-        
-        if (index < 5) {
-            logger.info(`${colors.grey}      -> Metrics: position=${position}, depth=${depth}, siblings=${siblings}, siblingIndex=${siblingIndex}${colors.reset}`);
-        }
-        
-        // Apply filtering criteria with detailed logging
-        const textLengthOk = prominentText.length >= 15 && prominentText.length <= 200;
-        const notInNav = !isInNav;
-        
-        if (index < 10) {
-            logger.info(`${colors.grey}      -> Filters: textLength(${prominentText.length})=${textLengthOk}, notInNav=${notInNav}${colors.reset}`);
-        }
-        
-        if (textLengthOk && notInNav) {
-            const linkData = {
-                text: prominentText,
-                href,
-                allText,
-                directText,
-                hasImage,
-                hasVideo,
-                headingElements: headingElements.length,
-                strongElements: strongElements.length,
-                parentClasses,
-                parentTag,
-                elementClasses,
-                elementId,
-                isInMain,
-                position,
-                depth,
-                siblings,
-                siblingIndex,
-                textLength: prominentText.length,
-                selector: generateOptimalSelector($, $el)
-            };
-            
-            linkAnalysis.push(linkData);
-            
-            if (index < 5) {
-                logger.info(`${colors.green}      -> ✅ ADDED to analysis: "${prominentText.substring(0, 40)}..."${colors.reset}`);
-            }
-        } else {
-            if (index < 10) {
-                logger.info(`${colors.grey}      -> ❌ FILTERED OUT${colors.reset}`);
-            }
-        }
-    });
-    
-    logger.info(`  -> Link processing complete:`);
-    logger.info(`     - Total links processed: ${processedLinks}`);
-    logger.info(`     - Links skipped (invalid href): ${skippedLinks}`);
-    logger.info(`     - Links passing filters: ${linkAnalysis.length}`);
-    
-    if (linkAnalysis.length > 0) {
-        logger.info(`  -> Sample of filtered links:`);
-        linkAnalysis.slice(0, 5).forEach((link, i) => {
-            logger.info(`     ${i + 1}. "${link.text.substring(0, 60)}..." (${link.href.substring(0, 50)}...)`);
-        });
-    } else {
-        logger.warn(`${colors.yellow}  -> No links passed the filtering criteria!${colors.reset}`);
-        logger.info(`  -> Debugging: Let's check what links exist without filters...`);
-        
-        let debugCount = 0;
-        $('a[href]').each((index, element) => {
-            if (debugCount >= 10) return;
-            const $el = $(element);
-            const href = $el.attr('href');
-            const text = $el.text().trim().replace(/\s+/g, ' ');
-            
-            if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.startsWith('mailto:')) {
-                logger.info(`       Debug Link ${debugCount + 1}: "${text.substring(0, 50)}..." -> ${href.substring(0, 50)}...`);
-                logger.info(`         - Text length: ${text.length}`);
-                logger.info(`         - In nav: ${$el.closest('nav, .navigation, .menu, .sidebar, footer, header .user-actions').length > 0}`);
-                debugCount++;
-            }
-        });
-    }
-    
-    logger.info(`  -> Analysis complete: ${linkAnalysis.length} potential headline links identified`);
-    return linkAnalysis;
-}
-
-function generateOptimalSelector($, element) {
-    const $el = $(element);
-    const classes = $el.attr('class');
-    const id = $el.attr('id');
-    const tag = $el.prop('tagName')?.toLowerCase();
-    
-    // Priority: ID > specific class > data attributes > tag + class
-    if (id) return `#${id}`;
-    
-    if (classes) {
-        const classList = classes.split(' ');
-        // Look for semantic class names
-        const semanticClasses = classList.filter(cls => 
-            cls.includes('headline') || cls.includes('title') || cls.includes('link') || 
-            cls.includes('teaser') || cls.includes('story') || cls.includes('article')
-        );
-        if (semanticClasses.length > 0) {
-            return `.${semanticClasses[0]}`;
-        }
-    }
-    
-    // Check for data attributes
-    const dataAttrs = Object.keys($el[0].attribs || {}).filter(attr => attr.startsWith('data-'));
-    if (dataAttrs.length > 0) {
-        const semanticData = dataAttrs.find(attr => 
-            attr.includes('category') || attr.includes('type') || attr.includes('content')
-        );
-        if (semanticData) {
-            return `${tag}[${semanticData}="${$el.attr(semanticData)}"]`;
-        }
-    }
-    
-    // Fallback to tag + first class
-    if (classes) {
-        const firstClass = classes.split(' ')[0];
-        return `${tag}.${firstClass}`;
-    }
-    
-    return tag;
-}
-
-async function identifyHeadlinesWithAI(linkAnalysis, baseUrl, country) {
-    logger.info(`> AI Task: Analyzing ${linkAnalysis.length} links to identify headlines...`);
-    
-    if (linkAnalysis.length === 0) return { headlines: [], method: 'No links found', selector: null };
-    
-    // Prepare data for AI analysis - include key metrics but limit size
-    const analysisData = linkAnalysis.slice(0, 100).map(link => ({
-        text: link.text,
-        href: link.href,
-        hasImage: link.hasImage,
-        hasVideo: link.hasVideo,
-        headingElements: link.headingElements,
-        strongElements: link.strongElements,
-        isInMain: link.isInMain,
-        siblings: link.siblings,
-        textLength: link.textLength,
-        position: link.position,
-        elementClasses: link.elementClasses,
-        parentClasses: link.parentClasses,
-        selector: link.selector
-    }));
-    
-    const sysPrompt = `You are an expert web scraping analyst. Analyze this JSON array of links from a news website in ${country}. Your task is to identify which links are most likely to be NEWS HEADLINES (not navigation, ads, or utility links).
-
-Consider these factors:
-- Headlines are usually 20-150 characters long
-- They often have images associated with them
-- They're typically in main content areas
-- They often appear in groups (siblings)
-- They may use semantic HTML (headings, strong text)
-- Class names might indicate content type
-- Position matters (earlier links often more important)
-
-Respond with a JSON object containing:
-{
-  "headline_links": [
-    {
-      "text": "The headline text",
-      "href": "the-url",
-      "reasoning": "Why this is likely a headline",
-      "confidence": 0.95
-    }
-  ],
-  "pattern_analysis": "Description of the common pattern you identified",
-  "recommended_selector": "CSS selector that would capture these headlines"
-}
-
-Select the TOP 15-25 most likely headlines, prioritizing quality over quantity.`;
-
-    try {
-        const res = await client.chat.completions.create({
-            model: LLM_MODEL,
-            messages: [
-                { role: 'system', content: sysPrompt },
-                { role: 'user', content: JSON.stringify(analysisData) }
-            ],
-            response_format: { type: 'json_object' }
-        });
-        
-        const analysis = JSON.parse(res.choices[0].message.content);
-        
-        logger.info(`${colors.green}  -> AI identified ${analysis.headline_links?.length || 0} headlines${colors.reset}`);
-        logger.info(`${colors.grey}     Pattern: ${analysis.pattern_analysis}${colors.reset}`);
-        logger.info(`${colors.grey}     Recommended selector: ${analysis.recommended_selector}${colors.reset}`);
-        
-        if (analysis.headline_links && analysis.headline_links.length > 0) {
-            // Convert to expected format and sanitize URLs
-            const headlines = analysis.headline_links.map(link => ({
-                headline: link.text,
-                link: sanitizeUrl(link.href, baseUrl)
-            })).filter(h => h.link);
-            
-            return {
-                headlines,
-                method: 'AI Structural Analysis',
-                selector: analysis.recommended_selector || 'AI-identified pattern',
-                aiAnalysis: {
-                    pattern: analysis.pattern_analysis,
-                    confidence: analysis.headline_links.map(h => h.confidence).reduce((a, b) => a + b, 0) / analysis.headline_links.length
-                }
-            };
-        }
-    } catch (e) {
-        logger.error(`  -> AI analysis failed: ${e.message}`);
-    }
-    
-    return null;
-}
-
-// --- JSON-LD Analysis (Golden Path) ---
-async function tryJsonLdExtraction(html, baseUrl) {
-    logger.info(`  -> Trying golden path (JSON-LD structured data)...`);
-    const $ = cheerio.load(html);
-    let ldJsonHeadlines = [];
-    
-    $('script[type="application/ld+json"]').each((_, el) => {
-        try {
-            const jsonString = $(el).html();
-            if (!jsonString) return;
-            
-            const data = JSON.parse(jsonString);
-            const items = data.itemListElement || 
-                         (data['@graph'] && data['@graph'].find(item => item.itemListElement)?.itemListElement) || 
-                         (Array.isArray(data) && data.find(i => i.itemListElement)?.itemListElement);
-            
-            if (items && Array.isArray(items)) {
-                items.forEach(item => {
-                    const headline = item.name || item.item?.name;
-                    const url = item.url || item.item?.url;
-                    if (headline && url) {
-                        const finalUrl = sanitizeUrl(url, baseUrl);
-                        if (finalUrl) {
-                            ldJsonHeadlines.push({ headline: headline.replace(/\s+/g, ' ').trim(), link: finalUrl });
-                        }
-                    }
-                });
-            }
-        } catch(e) { 
-            logger.warn(`${colors.yellow}  -> Warning: Failed to parse JSON-LD block${colors.reset}`);
-        }
-    });
-    
-    if (ldJsonHeadlines.length >= MIN_HEADLINES_THRESHOLD) {
-        logger.info(`${colors.green}  -> Golden path SUCCESS! Found ${ldJsonHeadlines.length} headlines in JSON-LD${colors.reset}`);
-        return { headlines: ldJsonHeadlines, method: 'JSON-LD', selector: 'script[type="application/ld+json"]' };
-    }
-    
-    return null;
-}
-
-// --- Main Analysis Pipeline ---
-async function getHeadlineData(html, baseUrl, country) {
-    logger.info(`> Stage 2: Intelligent headline detection...`);
-    
-    // Try golden path first
-    const jsonLdResult = await tryJsonLdExtraction(html, baseUrl);
-    if (jsonLdResult) return jsonLdResult;
-    
-    logger.info(`${colors.yellow}  -> Golden path failed. Analyzing HTML structure...${colors.reset}`);
-    
-    // Intelligent structure analysis
-    const linkAnalysis = analyzeHtmlStructure(html);
-    
-    if (linkAnalysis.length === 0) {
-        logger.error(`  -> No analyzable links found in HTML`);
-        return null;
-    }
-    
-    // AI-powered headline identification
-    const aiResult = await identifyHeadlinesWithAI(linkAnalysis, baseUrl, country);
-    
-    if (aiResult && aiResult.headlines.length >= MIN_HEADLINES_THRESHOLD) {
-        logger.info(`${colors.green}  -> AI analysis SUCCESS!${colors.reset}`);
-        return aiResult;
-    } else if (aiResult && aiResult.headlines.length > 0) {
-        logger.warn(`${colors.yellow}  -> AI found ${aiResult.headlines.length} headlines (below threshold of ${MIN_HEADLINES_THRESHOLD})${colors.reset}`);
-        // Still return it - might be a smaller page
-        return aiResult;
-    }
-    
-    logger.error(`  -> All headline detection methods failed`);
-    return null;
-}
-
-async function getArticleData(url, outletName, country, learnedSelectors) {
-    logger.info(`> Stage 3: Analyzing article content...`);
-    const { html } = await getPageHtmlWithPlaywright(url, `${outletName}_article`, country);
-    if (!html) return null;
-    
-    const $ = cheerio.load(html);
-    
-    // Intelligent content analysis
-    logger.info(`  -> Performing intelligent content analysis...`);
-    
-    const contentAnalysis = [];
-    
-    // Analyze different potential content containers
-    const potentialSelectors = [
-        'article p', 'main p', '.content p', '.article-body p', '.post-content p',
-        'div[class*="content"] p', 'div[class*="body"] p', 'div[class*="text"] p',
-        '.story-body p', '.article-text p', 'meta[name="description"]'
-    ];
-    
-    // Add learned selectors
-    if (learnedSelectors && learnedSelectors.length > 0) {
-        potentialSelectors.unshift(...learnedSelectors);
-    }
-    
-    for (const selector of potentialSelectors) {
-        try {
-            let text = '';
-            if (selector.startsWith('meta')) {
-                text = $(selector).attr('content') || '';
-            } else {
-                text = $(selector).map((_, el) => $(el).text().trim()).get().join(' ').replace(/\s+/g, ' ');
-            }
-            
-            if (text.length > 0) {
-                contentAnalysis.push({
-                    selector,
-                    text,
-                    length: text.length,
-                    paragraphs: selector.includes('meta') ? 1 : $(selector).length
-                });
-            }
-        } catch (e) {
-            // Skip invalid selectors
-        }
-    }
-    
-    // Sort by length and find the best content
-    contentAnalysis.sort((a, b) => b.length - a.length);
-    
-    if (contentAnalysis.length > 0 && contentAnalysis[0].length >= MIN_ARTICLE_LENGTH_THRESHOLD) {
-        logger.info(`${colors.green}  -> Found article content (${contentAnalysis[0].length} chars)${colors.reset}`);
-        return {
-            selector: contentAnalysis[0].selector,
-            text: contentAnalysis[0].text,
-            method: 'Intelligent Content Analysis'
-        };
-    }
-    
-    // Fallback: full page text extraction
-    logger.warn(`  -> Using fallback full-page text extraction...`);
-    $('nav, header, footer, aside, .sidebar, .comments, .ads, script, style, noscript').remove();
-    const bodyText = $('body').text().replace(/\s+/g, ' ').trim();
-    
-    if (bodyText.length >= MIN_ARTICLE_LENGTH_THRESHOLD) {
-        return {
-            selector: 'body.cleaned',
-            text: bodyText,
-            method: 'Full-Page Text Extraction'
-        };
-    }
-    
-    return null;
-}
-
-async function findBusinessUrlWithAI(html, baseUrl, country) {
-    logger.info(`> AI Task: Finding business/news section URL...`);
-    const $ = cheerio.load(html);
-    const links = [];
-    
-    $('nav a, header a').each((_, el) => {
-        const text = $(el).text().trim();
-        const href = $(el).attr('href');
-        if (text && href) {
-            try {
-                links.push({ text, url: new URL(href, baseUrl).href });
-            } catch(e) {}
-        }
-    });
-    
-    if (links.length === 0) {
-        logger.warn(`  -> No navigation links found`);
-        return null;
-    }
-    
-    logger.info(`  -> Analyzing ${links.length} navigation links`);
-    
-    const sysPrompt = `You are a multilingual media analyst. From this JSON of navigation links from a news website in ${country}, identify the single URL that most likely leads to the main "News", "Latest News", "Business", or "Economy" section. Respond ONLY with a valid JSON object: { "best_url": "the-full-url", "reasoning": "Your brief reasoning." }`;
-    
-    try {
-        const res = await client.chat.completions.create({
-            model: LLM_MODEL,
-            messages: [
-                { role: 'system', content: sysPrompt },
-                { role: 'user', content: JSON.stringify(links) }
-            ],
-            response_format: { type: 'json_object' }
-        });
-        
-        const { best_url, reasoning } = JSON.parse(res.choices[0].message.content);
-        logger.info(`${colors.green}  -> AI identified: ${best_url}${colors.reset}`);
-        logger.info(`${colors.grey}     Reasoning: ${reasoning}${colors.reset}`);
-        return best_url;
-    } catch (e) {
-        logger.error(`  -> AI navigation analysis failed: ${e.message}`);
-        return null;
-    }
-}
-
-// --- Main Outlet Analysis ---
-async function analyzeOutlet(outlet, learnedSelectors) {
-    console.log(`\n\n======================================================================`);
-    console.log(`${colors.yellow}🔍 ANALYZING: ${outlet.name} (${outlet.country})${colors.reset}`);
-    console.log(`======================================================================`);
-    
-    logger.info(`> Stage 1: Locating content page...`);
-    let finalUrl = outlet.url;
-    let urlDiscoveryMethod = 'initial';
-    let { html, status, consentButtonClicked } = await getPageHtmlWithPlaywright(finalUrl, outlet.name, outlet.country);
-
-    if (status === 404) {
-        logger.warn(`  -> Initial URL returned 404. Attempting root domain analysis...`);
-        urlDiscoveryMethod = 'AI-discovered';
-        const rootUrl = new URL(finalUrl).origin;
-        const rootResult = await getPageHtmlWithPlaywright(rootUrl, `${outlet.name}_root`, outlet.country);
-        
-        if (rootResult.html) {
-            const correctedUrl = await findBusinessUrlWithAI(rootResult.html, rootUrl, outlet.country);
-            if (correctedUrl) {
-                finalUrl = correctedUrl;
-                ({ html, consentButtonClicked } = await getPageHtmlWithPlaywright(finalUrl, outlet.name, outlet.country));
-            } else {
-                html = null;
-            }
-        } else {
-            html = null;
-        }
-    }
-
-    if (!html) {
-        console.log(`\n${colors.red}❌ ANALYSIS FAILED: Could not retrieve valid page content${colors.reset}`);
-        return null;
-    }
-
-    const headlineData = await getHeadlineData(html, finalUrl, outlet.country);
-    if (!headlineData) {
-        console.log(`\n${colors.red}❌ ANALYSIS FAILED: Could not identify headline pattern${colors.reset}`);
-        return null;
-    }
-
-    const firstArticleUrl = headlineData.headlines[0]?.link;
-    if (!firstArticleUrl) {
-        logger.error(`❌ No valid article URLs found in headlines`);
-        return null;
-    }
-
-    const articleData = await getArticleData(firstArticleUrl, outlet.name, outlet.country, learnedSelectors.articles);
-
-    const analysisResult = {
-        urlDiscoveryMethod,
-        finalUrl,
-        technology: 'playwright + AI',
-        headlineSelectorMethod: headlineData.method,
-        headlineSelector: headlineData.selector,
-        headlinesFound: headlineData.headlines.length,
-        articleContentSelector: articleData ? articleData.selector : null,
-        sampleArticleLength: articleData ? articleData.text.length : 0,
-        aiInsights: headlineData.aiAnalysis || null,
-        notes: consentButtonClicked ? 'Consent button clicked by agent.' : 'No interaction required.'
-    };
-
-    console.log(`\n--- ✅ CONFIGURATION DISCOVERED FOR: ${outlet.name} ---`);
-    console.log(JSON.stringify(analysisResult, null, 2));
-    console.log(`-----------------------------------------------------------\n`);
-
-    return analysisResult;
-}
-
-// --- Main Execution Logic ---
-async function main() {
-    logger.info(`🚀 Starting Intelligent Source Configuration Agent (v10.0)...`);
-    
-    let allPapersData;
-    try {
-        const fileContent = await fs.readFile(PAPERS_CONFIG_PATH, 'utf-8');
-        allPapersData = JSON.parse(fileContent);
-    } catch (e) {
-        logger.fatal(`${colors.red}Could not read papers.json: ${e.message}${colors.reset}`);
-        return;
-    }
-
-    const learnedSelectors = generateLearnedSelectors(allPapersData);
-    const outletsToProcess = getOutletsToProcess(allPapersData);
-    
-    if (!outletsToProcess || outletsToProcess.length === 0) {
-        logger.info('✅ All outlets analyzed. No new outlets to process.');
-        rl.close();
-        return;
-    }
-
-    for (const outlet of outletsToProcess) {
-        const analysisResult = await analyzeOutlet(outlet, learnedSelectors);
-        
-        if (analysisResult) {
-            const countryIndex = allPapersData.findIndex(c => `${c.flag_emoji} ${c.country}` === outlet.country);
-            const outletIndex = allPapersData[countryIndex].outlets.findIndex(o => o.name === outlet.name);
-            
-            allPapersData[countryIndex].outlets[outletIndex] = {
-                ...allPapersData[countryIndex].outlets[outletIndex],
-                labCheckPerformed: true,
-                url: analysisResult.finalUrl,
-                analysis: analysisResult
-            };
-
-            try {
-                await fs.writeFile(PAPERS_CONFIG_PATH, JSON.stringify(allPapersData, null, 2));
-                logger.info(`${colors.green}✅ Saved configuration for ${outlet.name}${colors.reset}`);
-            } catch (error) {
-                logger.fatal(`${colors.red}CRITICAL: Failed to save papers.json! ${error.message}${colors.reset}`);
-            }
-        } else {
-            logger.warn(`${colors.yellow}⚠️  Analysis unsuccessful for ${outlet.name} - will retry next run${colors.reset}`);
-        }
-
-        await pause();
-    }
-
-    logger.info('🎉 Analysis complete for all targeted outlets.');
-    rl.close();
-}
-
-function generateLearnedSelectors(allPapersData) {
-    const headlines = new Set();
-    const articles = new Set();
-    
-    allPapersData.forEach(country => {
-        country.outlets.forEach(outlet => {
-            if (outlet.labCheckPerformed && outlet.analysis) {
-                if (outlet.analysis.headlineSelector && !outlet.analysis.headlineSelector.includes('script')) {
-                    headlines.add(outlet.analysis.headlineSelector);
-                }
-                if (outlet.analysis.articleContentSelector) {
-                    articles.add(outlet.analysis.articleContentSelector);
-                }
-            }
-        });
-    });
-
-    const learned = { headlines: Array.from(headlines), articles: Array.from(articles) };
-    logger.info(`> Learning Phase: ${learned.headlines.length} headline + ${learned.articles.length} article selectors loaded`);
-    return learned;
-}
-
-function getOutletsToProcess(allPapersData) {
-    const args = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
-    let allOutlets = allPapersData.flatMap(c => 
-        c.outlets.map(o => ({...o, country: `${c.flag_emoji} ${c.country}`}))
-    );
-
-    if (args[0]) allOutlets = allOutlets.filter(o => o.country.toLowerCase().includes(args[0].toLowerCase()));
-    if (args[1]) allOutlets = allOutlets.filter(o => o.name.toLowerCase().includes(args[1].toLowerCase()));
-
-    const unprocessedOutlets = allOutlets.filter(o => 
-        !o.labCheckPerformed || 
-        !o.analysis?.articleContentSelector || 
-        o.analysis?.sampleArticleLength < MIN_ARTICLE_LENGTH_THRESHOLD
-    );
-
-    if (unprocessedOutlets.length === 0 && allOutlets.length > 0) {
-        logger.info(`Found ${allOutlets.length} matching outlet(s), but all analyzed. To re-run, set "labCheckPerformed" to false.`);
-        return [];
-    }
-
-    logger.info(`Found ${unprocessedOutlets.length} unprocessed outlet(s) to analyze.`);
-    return unprocessedOutlets;
-}
-
-main().catch(e => { 
-    logger.fatal('Critical error occurred:', e); 
-    rl.close(); 
-    process.exit(1); 
-});
-
-# File: scripts/list.js
-// scripts/showHighRelevance.js
-// A script to connect to the database and list all articles with a high relevance score.
-// Usage:
-//   node scripts/showHighRelevance.js       (uses default threshold of 10)
-//   node scripts/showHighRelevance.js 50    (uses a threshold of 50)
-
-import 'dotenv/config';
-import { connectDatabase, disconnectDatabase } from '../src/database.js';
-import Article from '../models/Article.js';
-import { logger } from '../src/utils/logger.js';
-
-// --- Console Colors for Readability ---
-const colors = {
-    reset: "\x1b[0m",
-    red: "\x1b[31m",
-    green: "\x1b[32m",
-    yellow: "\x1b[33m",
-    cyan: "\x1b[36m",
-    grey: "\x1b[90m",
-};
-
-/**
- * Main function to fetch and display high-relevance articles.
- * @param {number} threshold The minimum relevance score to display.
- */
-async function showHighRelevanceArticles(threshold) {
-    logger.info(`Connecting to the database to find articles with relevance > ${threshold}...`);
-    await connectDatabase();
-
-    try {
-        // Find articles where either the article score OR the headline score is > threshold.
-        const articles = await Article.find({
-            $or: [
-                { relevance_article: { $gt: threshold } },
-                { relevance_headline: { $gt: threshold } }
-            ]
-        })
-        .sort({ relevance_article: -1, relevance_headline: -1 }) // Sort by highest score first
-        .limit(200) // Limit to a reasonable number of results
-        .lean(); // Use .lean() for faster, read-only queries
-
-        if (articles.length === 0) {
-            logger.warn(`No articles found with a relevance score greater than ${threshold}.`);
-            return;
-        }
-
-        logger.info(`✅ Found ${articles.length} articles with a relevance score > ${threshold}. Displaying now:\n`);
-
-        console.log(`${colors.cyan}--- HIGH RELEVANCE ARTICLES (Threshold: ${threshold}) ---${colors.reset}`);
-        articles.forEach(article => {
-            const primaryScore = article.relevance_article ?? article.relevance_headline;
-            const scoreDisplay = String(primaryScore).padStart(3);
-            const scoreColor = primaryScore >= 80 ? colors.green : primaryScore >= 50 ? colors.yellow : colors.reset;
-            
-            console.log(`${scoreColor}[${scoreDisplay}]${colors.reset} "${article.headline}" (${article.newspaper})`);
-            console.log(`  -> ${colors.grey}Scores (Article/Headline): ${article.relevance_article ?? 'N/A'} / ${article.relevance_headline}${colors.reset}`);
-            console.log(`  -> ${colors.grey}Link: ${article.link}${colors.reset}`);
-            
-            const reason = article.assessment_article || article.assessment_headline;
-            if (reason) {
-                console.log(`  -> ${colors.grey}AI Reason: ${reason}${colors.reset}`);
-            }
-            console.log('---------------------------------');
-        });
-
-    } catch (error) {
-        logger.error({ err: error }, 'An error occurred while fetching articles.');
-    } finally {
-        await disconnectDatabase();
-    }
-}
-
-// --- Parse Command-Line Argument and Execute Script ---
-
-// process.argv contains command-line arguments:
-// [0] is the node executable path
-// [1] is the script file path
-// [2] is the first user-provided argument
-const thresholdArg = process.argv[2];
-let threshold = 10; // Default threshold
-
-if (thresholdArg) {
-    const parsedThreshold = parseInt(thresholdArg, 10);
-    if (!isNaN(parsedThreshold) && parsedThreshold >= 0) {
-        threshold = parsedThreshold;
-    } else {
-        logger.error(`Invalid threshold provided: "${thresholdArg}". Please provide a non-negative number.`);
-        process.exit(1);
-    }
-}
-
-showHighRelevanceArticles(threshold).catch(err => {
-    logger.fatal({ err }, 'The script encountered a fatal error.');
-    process.exit(1);
-});
-
-# File: scripts/reDeploy.sh
-#!/bin/bash
-# redeploy.sh
-# A script to completely destroy, re-create, set secrets, and then redeploy the Fly.io app.
-# This ensures a clean slate, removing any old machines or volumes.
-
-# --- Configuration ---
-# Colors for better logging
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0;33[0m' # No Color
-
-# --- Pre-flight Checks ---
-echo -e "${YELLOW}--- Running Pre-flight Checks ---${NC}"
-
-if ! command -v fly &> /dev/null; then
-    echo -e "${RED}Error: 'fly' command-line tool not found.${NC}"
-    exit 1
-fi
-
-if [ ! -f "fly.toml" ]; then
-    echo -e "${RED}Error: No fly.toml file found in this directory.${NC}"
-    exit 1
-fi
-
-if [ ! -f "scripts/setFlySecrets.sh" ]; then
-    echo -e "${RED}Error: The secrets script is missing at 'scripts/setFlySecrets.sh'.${NC}"
-    exit 1
-fi
-
-APP_NAME=$(grep '^app = ' fly.toml | cut -d "'" -f 2)
-
-if [ -z "$APP_NAME" ]; then
-    echo -e "${RED}Error: Could not determine app name from fly.toml.${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}Checks passed. App name is '${APP_NAME}'.${NC}"
-echo ""
-
-# --- Step 1: Destroy the App (with confirmation and error handling) ---
-echo -e "${YELLOW}--- Step 1: Destroying the App ---${NC}"
-echo -e "${RED}WARNING: This is a destructive action. It will permanently delete the app '${APP_NAME}' if it exists.${NC}"
-read -p "Are you absolutely sure you want to proceed with the full redeploy? (y/N) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Operation cancelled by user."
-    exit 1
-fi
-
-echo "Attempting to destroy '${APP_NAME}'..."
-DESTROY_OUTPUT=$(fly apps destroy "$APP_NAME" --yes 2>&1)
-DESTROY_STATUS=$?
-
-if [ $DESTROY_STATUS -eq 0 ]; then
-    echo -e "${GREEN}App '${APP_NAME}' destroyed successfully.${NC}"
-elif echo "$DESTROY_OUTPUT" | grep -q "Could not find App"; then
-    echo -e "${YELLOW}Warning: App '${APP_NAME}' did not exist. Continuing to the create step.${NC}"
-else
-    echo -e "${RED}An error occurred while trying to destroy the app:${NC}"
-    echo "$DESTROY_OUTPUT"
-    exit 1
-fi
-echo ""
-
-
-# --- Step 2: Create the App ---
-echo -e "${YELLOW}--- Step 2: Creating the App ---${NC}"
-echo "Registering a new, empty app shell on Fly.io for '${APP_NAME}'..."
-
-fly apps create "$APP_NAME" --org personal
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}An error occurred while creating the app. Please check the output above.${NC}"
-    exit 1
-fi
-echo -e "${GREEN}Empty app shell for '${APP_NAME}' created successfully.${NC}"
-echo ""
-
-
-# --- Step 3: Set Secrets ---
-echo -e "${YELLOW}--- Step 3: Setting Secrets ---${NC}"
-echo "Running the setFlySecrets.sh script to populate environment variables..."
-
-# Automatically answer 'y' to the confirmation prompt within setFlySecrets.sh
-# to avoid being prompted twice.
-echo 'y' | bash ./scripts/setFlySecrets.sh
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}An error occurred while setting secrets. Please check the output above.${NC}"
-    exit 1
-fi
-echo -e "${GREEN}Secrets set successfully.${NC}"
-echo ""
-
-
-# --- Step 4: Deploy the App ---
-echo -e "${YELLOW}--- Step 4: Deploying the App ---${NC}"
-echo "Deploying the project to the new instance of '${APP_NAME}'..."
-echo "This will create a new release and 1 stopped machine with 2048MB of memory."
-
-# MODIFIED: Use explicit flags to force the machine size during the initial deploy.
-# This is the definitive way to set the size for this type of worker app.
-fly deploy --vm-cpus 1 --vm-memory 2048
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Successfully deployed '${APP_NAME}'. The initial machine has been configured with 2048MB of memory.${NC}"
-else
-    echo -e "${RED}❌ An error occurred during deployment. Please check the output above.${NC}"
-    exit 1
-fi
-
-# File: scripts/seedFacts.js
-// scripts/seedFacts.js
-// A script to read a JSON file of factual data and upload it to the 'articles' collection,
-// treating each fact as a highly relevant, pre-assessed article.
-//
-// Usage:
-//   node scripts/seedFacts.js <path_to_json_file>
-// Example:
-//   node scripts/seedFacts.js ./data/facts.json
-
-import 'dotenv/config';
-import fs from 'fs/promises';
-import { connectDatabase, disconnectDatabase } from '../src/database.js';
-import Article from '../models/Article.js';
-import { generateEmbedding } from '../src/utils/vectorUtils.js';
-import { logger } from '../src/utils/logger.js';
-
-/**
- * Main function to read, process, and upload facts from a given file path.
- * @param {string} filePath The path to the JSON file containing the facts.
- */
-async function seedFacts(filePath) {
-    logger.info(`Starting fact seeding process from ${filePath}...`);
-    await connectDatabase();
-
-    try {
-        const data = await fs.readFile(filePath, 'utf-8');
-        const facts = JSON.parse(data);
-
-        if (!Array.isArray(facts) || facts.length === 0) {
-            logger.warn('No facts found in the JSON file. Exiting.');
-            return;
-        }
-
-        logger.info(`Found ${facts.length} facts to process and embed.`);
-        const operations = [];
-
-        for (const fact of facts) {
-            // 1. Create a cohesive text block for embedding
-            const textToEmbed = `${fact.headline}\n${(fact.articleContent?.contents || []).join(' ')}`;
-            
-            // 2. Generate the vector embedding
-            const embedding = await generateEmbedding(textToEmbed);
-            
-            // 3. Prepare the final payload for the database
-            const articlePayload = {
-                ...fact,
-                embedding: embedding,
-                emailed: true, // Mark as already "processed" to prevent emailing
-                createdAt: new Date(), // Set creation date to now
-            };
-            
-            // 4. Create an upsert operation to avoid duplicates on re-runs
-            operations.push({
-                updateOne: {
-                    filter: { link: fact.link }, // Use the unique link as the key
-                    update: { $set: articlePayload },
-                    upsert: true
-                }
-            });
-            logger.info(`Prepared and embedded: "${fact.headline}"`);
-        }
-
-        if (operations.length > 0) {
-            logger.info(`Bulk writing ${operations.length} facts to the database...`);
-            const result = await Article.bulkWrite(operations, { ordered: false });
-            logger.info(`✅ Fact seeding complete. Upserted: ${result.upsertedCount}, Modified: ${result.modifiedCount}.`);
-        }
-
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            logger.error(`Error: The file was not found at the specified path: ${filePath}`);
-        } else if (error instanceof SyntaxError) {
-            logger.error(`Error: The file at ${filePath} contains invalid JSON. Please check the file for syntax errors.`);
-        } else {
-            logger.error({ err: error }, 'An unexpected error occurred during the fact seeding process.');
-        }
-    } finally {
-        await disconnectDatabase();
-    }
-}
-
-// --- Parse Command-Line Argument and Execute Script ---
-
-// process.argv[2] is the first user-provided command-line argument.
-const factsFilePath = process.argv[2];
-
-if (!factsFilePath) {
-    logger.error('Error: Missing required file path argument.');
-    logger.error('Usage: node scripts/seedFacts.js <path_to_json_file>');
-    process.exit(1);
-}
-
-seedFacts(factsFilePath).catch(err => {
-    logger.fatal({ err }, 'The fact seeding script encountered a fatal error.');
-    process.exit(1);
-});
-
-# File: scripts/setFlySecrets.sh
-#!/bin/bash
-# scripts/setFlySecrets.sh (version 1.0)
-
-# A script to read a .env file and set the variables as Fly.io secrets.
-# It builds a single command to set all secrets at once for efficiency.
-
-# --- Configuration ---
-ENV_FILE=".env"
-
-# --- Pre-flight Checks ---
-
-# Check for .env file
-if [ ! -f "$ENV_FILE" ]; then
-    echo "Error: .env file not found in the current directory."
-    exit 1
-fi
-
-# Check for flyctl command
-if ! command -v fly &> /dev/null
-then
-    echo "Error: 'fly' command-line tool not found."
-    exit 1
-fi
-
-if [ ! -f "fly.toml" ]; then
-    echo "Error: No fly.toml file found in this directory."
-    echo "Please run 'fly launch' first."
-    exit 1
-fi
-
-APP_NAME=$(grep '^app = ' fly.toml | cut -d "'" -f 2)
-if [ -z "$APP_NAME" ]; then
-    echo "Error: Could not determine app name from fly.toml."
-    exit 1
-fi
-
-echo "Reading secrets from '$ENV_FILE' for app '$APP_NAME'..."
-
-# --- Main Logic ---
-secrets_args=()
-while IFS= read -r line || [ -n "$line" ]; do
-    # Skip comments and empty lines
-    if [[ "$line" =~ ^#.* ]] || [[ -z "$line" ]]; then
-        continue
-    fi
-    # Handle carriage return for Windows-edited .env files
-    line=$(echo "$line" | tr -d '\r')
-    key=$(echo "$line" | cut -d '=' -f 1)
-    # Correctly extract value, even if it contains '='
-    value=$(echo "$line" | sed -e "s/^$key=//")
-    if [ -z "$key" ]; then
-        continue
-    fi
-    # Use printf for robust quoting to handle special characters
-    secrets_args+=("$(printf "%s=%s" "$key" "$value")")
-    echo "  - Found secret: $key"
-done < "$ENV_FILE"
-
-if [ ${#secrets_args[@]} -eq 0 ]; then
-    echo "No secrets to set were found in '$ENV_FILE'."
-    exit 0
-fi
-
-echo ""
-echo "The following secrets will be set for the app '$APP_NAME':"
-for arg in "${secrets_args[@]}"; do
-    key=$(echo "$arg" | cut -d '=' -f 1)
-    echo "  - $key"
-done
-echo ""
-
-read -p "Are you sure you want to proceed? (y/N) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]
-then
-    echo "Operation cancelled by user."
-    exit 1
-fi
-
-echo "Setting secrets on Fly.io..."
-fly secrets set --stage "${secrets_args[@]}"
-
-if [ $? -eq 0 ]; then
-    echo "✅ Successfully set ${#secrets_args[@]} secrets. A new release is being created."
-else
-    echo "❌ An error occurred while setting secrets."
-    exit 1
-fi
 
 # File: src/config/index.js
 // src/config/index.js (version 2.2)
@@ -2718,8 +1046,8 @@ export const SCRAPER_PROXY_URL = getCleanStringEnv('SCRAPER_PROXY_URL') || null;
 
 
 // --- Thresholds ---
-export const HEADLINES_RELEVANCE_THRESHOLD = 20; // MODIFIED: Changed from 10 to 20
-export const ARTICLES_RELEVANCE_THRESHOLD = 50; // MODIFIED: Changed from 30 to 50
+export const HEADLINES_RELEVANCE_THRESHOLD = 20;
+export const ARTICLES_RELEVANCE_THRESHOLD = 50;
 export const MIN_ARTICLE_CHARS = 150;
 export const MAX_ARTICLE_CHARS = 100000;
 export const MIN_HEADLINE_CHARS = 5;
@@ -2739,22 +1067,18 @@ export const SMTP_CONFIG = {
     fromName: getCleanStringEnv('SMTP_FROM_NAME', 'Headlines Bot'),
 };
 
-export const HEADLINE_RECIPIENTS_STR = getCleanStringEnv('HEADLINE_RECIPIENTS');
-export const SUPERVISOR_EMAIL_ENV = getCleanStringEnv('SUPERVISOR_EMAIL', 'your-supervisor-default@example.com');
-export const SEND_TO_DEFAULT_SUPERVISOR_ENV = process.env.SEND_TO_DEFAULT_SUPERVISOR === 'true';
+// REMOVED: All recipient logic is now handled by the email module via src/config/users.js.
+// export const HEADLINE_RECIPIENTS_STR = getCleanStringEnv('HEADLINE_RECIPIENTS');
+// export const HEADLINE_RECIPIENTS = HEADLINE_RECIPIENTS_STR.split(',').map(e => e.trim()).filter(Boolean);
 
-// Derived Email Config
-export const HEADLINE_RECIPIENTS = HEADLINE_RECIPIENTS_STR.split(',').map(e => e.trim()).filter(Boolean);
-export const SUPERVISOR_EMAIL = SUPERVISOR_EMAIL_ENV;
-export const SEND_TO_DEFAULT_SUPERVISOR = SEND_TO_DEFAULT_SUPERVISOR_ENV;
 
 // --- Email Template Config ---
 export const EMAIL_CONFIG = {
   templateName: 'wealthEvents',
-  subject: '🇩🇰 🇳🇴 New Nordic Banking Opportunities Detected',
+  subject: 'New Nordic Banking Opportunities Detected', // This will be customized per user
   language: 'en',
-  brandName: 'Nordic Wealth Watch',
-  companyAddress: 'Wealth Watch Inc., Copenhagen, Denmark',
+  brandName: 'Your Wealth Watch',
+  companyAddress: 'Wealth Watch Inc., Paris, France',
   unsubscribeUrl: '#',
 };
 
@@ -2765,1643 +1089,76 @@ export const SUPERVISOR_EMAIL_CONFIG = {
   brandName: 'Headlines Processing Bot',
 };
 
-# File: src/config/papers.json
-[
-  {
-    "country": "Netherlands",
-    "flag_emoji": "🇳🇱",
-    "outlets": [
-      {
-        "name": "Het Financieele Dagblad (FD.nl)",
-        "url": "https://fd.nl/",
-        "commentary": "Most respected financial daily; think of it as Dutch FT. Focus on markets, economics, business, and finance. Paywall, but key for headlines and summaries.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://fd.nl/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 39,
-          "firstArticleUrl": "https://fd.nl/politiek/1564910/nieuwe-heffing-vs-op-chips-maar-voor-wie-precies-en-hoeveel-blijft-gissen",
-          "articleContentSelector": "div[class*=\"content\"] p",
-          "sampleArticleLength": 716,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇳🇱 Netherlands"
-      },
-      {
-        "name": "De Telegraaf – DFT",
-        "url": "https://www.telegraaf.nl/financieel",
-        "commentary": "Mass-market, but strong finance section (De Financiële Telegraaf). Accessible articles on stocks, housing, and personal finance.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.telegraaf.nl/financieel",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 58,
-          "firstArticleUrl": "https://www.telegraaf.nl/financieel/live-matige-dag-voor-wall-street-mooie-winst-voor-aex/82258019.html",
-          "articleContentSelector": "div[class*=\"content\"] p",
-          "sampleArticleLength": 1169,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇳🇱 Netherlands"
-      },
-      {
-        "name": "Business Insider Nederland",
-        "url": "https://www.businessinsider.nl/category/finance/",
-        "commentary": "Covers global and Dutch finance news in a more digestible tone. Hits trending wealth topics.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.businessinsider.nl/category/finance/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 14,
-          "firstArticleUrl": "https://www.businessinsider.nl/goud-stijgt-in-status-tweede-plek-als-wereldwijde-reserveactiva/",
-          "articleContentSelector": "div[class*=\"content\"] p",
-          "sampleArticleLength": 2148,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇳🇱 Netherlands"
-      },
-      {
-        "name": "Quote.nl",
-        "url": "https://www.quotenet.nl/financien/",
-        "commentary": "Covers the ultra-wealthy, family business dynasties, private equity, etc. Highly relevant for Dutch HNW individuals and family offices.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.quotenet.nl/financien/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "JSON-LD",
-          "headlineSelector": "script[type=\"application/ld+json\"]",
-          "headlinesFound": 56,
-          "firstArticleUrl": "https://www.quotenet.nl/financien/a65611245/succesvolle-nederlandse-doorbraak-voor-fintech-airwallex/",
-          "articleContentSelector": "main p",
-          "sampleArticleLength": 3214,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇳🇱 Netherlands"
-      },
-      {
-        "name": "IEX.nl",
-        "url": "https://www.iex.nl/nieuws/default.aspx",
-        "commentary": "Focused on investing, markets, and equity analysis. Useful for scraping market sentiment.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.iex.nl/nieuws/default.aspx",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "h3 a",
-          "headlinesFound": 83,
-          "firstArticleUrl": "https://www.iex.nl/Nieuws/829030/Consumentenkrediet-VS-gestegen.aspx",
-          "articleContentSelector": "div[class*=\"content\"] p",
-          "sampleArticleLength": 1715,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇳🇱 Netherlands"
-      },
-      {
-        "name": "NRC Handelsblad",
-        "url": "https://www.nrc.nl/nieuws/",
-        "commentary": "Serious journalism with economic depth. Paywall, but often covers themes like pensions, tax reform, ESG.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.nrc.nl/nieuws/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "div[class*=\"teaser\"] a",
-          "headlinesFound": 40,
-          "firstArticleUrl": "https://www.nrc.nl/nieuws/2025/08/08/salsa-pionier-palmieri-was-eerste-latino-die-grammy-won-a4902452",
-          "articleContentSelector": "main p",
-          "sampleArticleLength": 2387,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇳🇱 Netherlands"
-      },
-      {
-        "name": "De Volkskrant",
-        "url": "https://www.volkskrant.nl/economie/",
-        "commentary": "Center-left, good on inequality, societal shifts, and consumer finance.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.volkskrant.nl/economie/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "JSON-LD",
-          "headlineSelector": "script[type=\"application/ld+json\"]",
-          "headlinesFound": 99,
-          "articleContentSelector": "body.cleaned",
-          "sampleArticleLength": 3905,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "Trouw.nl",
-        "url": "https://www.trouw.nl/economie/",
-        "commentary": "Christian-democratic paper, occasionally touches on ethical investing, sustainability, and legacy wealth.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.trouw.nl/economie/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "JSON-LD",
-          "headlineSelector": "script[type=\"application/ld+json\"]",
-          "headlinesFound": 99,
-          "articleContentSelector": "body.cleaned",
-          "sampleArticleLength": 5954,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "Algemeen Dagblad (ad.nl)",
-        "url": "https://www.ad.nl/economie/",
-        "commentary": "Mass market but includes accessible finance news and regional real estate trends."
-      },
-      {
-        "name": "Sprout.nl",
-        "url": "https://www.sprout.nl",
-        "commentary": "Startups and entrepreneurship. Useful for tracking new wealth formation."
-      },
-      {
-        "name": "MT/Sprout",
-        "url": "https://mtsprout.nl",
-        "commentary": "Management and leadership insights; includes family office content."
-      },
-      {
-        "name": "Follow the Money (ftm.nl)",
-        "url": "https://www.ftm.nl",
-        "commentary": "Investigative journalism around corporate power, fraud, and wealth influence. Slow output but sharp.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.ftm.nl",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 15,
-          "firstArticleUrl": "https://www.ftm.nl/dossier/de-nieuwe-woningnood",
-          "articleContentSelector": "main p",
-          "sampleArticleLength": 1101,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇳🇱 Netherlands"
-      },
-      {
-        "name": "Pensioen Pro",
-        "url": "https://pensioenpro.nl",
-        "commentary": "Niche but critical if your crawler includes pension funds or institutional wealth flows.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://pensioenpro.nl",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "div[class*=\"teaser\"] a",
-          "headlinesFound": 42,
-          "articleContentSelector": null,
-          "sampleArticleLength": 0,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "Vastgoedmarkt.nl",
-        "url": "https://www.vastgoedmarkt.nl/nieuws",
-        "commentary": "Real estate trends and big money flows in Dutch property. Great for wealth tracking.",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "AI-discovered",
-          "finalUrl": "https://www.vastgoedmarkt.nl/nieuws",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "a h2",
-          "headlinesFound": 15,
-          "articleContentSelector": null,
-          "sampleArticleLength": 0,
-          "notes": "No special interaction needed."
-        }
-      }
-    ]
-  },
-  {
-    "country": "Spain",
-    "flag_emoji": "🇪🇸",
-    "outlets": [
-      {
-        "name": "Cinco Días",
-        "url": "https://cincodias.elpais.com",
-        "commentary": "",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://cincodias.elpais.com",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 138,
-          "articleContentSelector": null,
-          "sampleArticleLength": 0,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "Expansión",
-        "url": "https://www.expansion.com/economia.html",
-        "commentary": "",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.expansion.com/economia.html",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 70,
-          "firstArticleUrl": "https://www.expansion.com/economia/2025/08/07/68939d55468aeb19278b4598.html",
-          "articleContentSelector": "main p",
-          "sampleArticleLength": 5465,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇪🇸 Spain"
-      },
-      {
-        "name": "El Economista",
-        "url": "https://www.eleconomista.es/economia/",
-        "commentary": "",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.eleconomista.es/economia/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "h2 a",
-          "headlinesFound": 10,
-          "firstArticleUrl": "https://www.eleconomista.es/economia/noticias/13496446/08/25/la-industria-alemana-borra-toda-esperanza-de-un-posible-repunte-ciclico-de-la-economia-para-este-ano.html",
-          "articleContentSelector": "div[class*=\"content\"] p",
-          "sampleArticleLength": 7042,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇪🇸 Spain"
-      },
-      {
-        "name": "La Información",
-        "url": "https://www.lainformacion.com/economia/",
-        "commentary": ""
-      },
-      {
-        "name": "El Confidencial",
-        "url": "https://www.elconfidencial.com/economia/",
-        "commentary": "",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.elconfidencial.com/economia/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "div[class*=\"title\"] a",
-          "headlinesFound": 39,
-          "firstArticleUrl": "https://www.elconfidencial.com/economia/2025-08-07/trump-asesor-economico-puesto-clave-banco-central-eeuu_4187975/",
-          "articleContentSelector": "div[class*=\"content\"] p",
-          "sampleArticleLength": 1522,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇪🇸 Spain"
-      },
-      {
-        "name": "ABC",
-        "url": "https://www.abc.es/economia/",
-        "commentary": "",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.abc.es/economia/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 49,
-          "articleContentSelector": null,
-          "sampleArticleLength": 0,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "El País",
-        "url": "https://elpais.com/economia/",
-        "commentary": "",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://elpais.com/economia/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 81,
-          "articleContentSelector": null,
-          "sampleArticleLength": 0,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "La Vanguardia",
-        "url": "https://www.lavanguardia.com/economia",
-        "commentary": "",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.lavanguardia.com/economia",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 55,
-          "firstArticleUrl": "https://www.lavanguardia.com/economia/20250807/10957172/belicosos-aranceles-trump-entran-vigor-forma-masiva-cerca-100-paises.html",
-          "articleContentSelector": "main p",
-          "sampleArticleLength": 6668,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇪🇸 Spain"
-      },
-      {
-        "name": "Vozpópuli",
-        "url": "https://www.vozpopuli.com/economia-y-finanzas/",
-        "commentary": "",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.vozpopuli.com/economia-y-finanzas/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 93,
-          "firstArticleUrl": "https://www.vozpopuli.com/espana/politica/el-pp-disocia-el-veto-en-jumilla-a-las-fiestas-musulmanas-de-cualquier-tipo-de-persecucion-al-credo-religioso.html",
-          "articleContentSelector": "main p",
-          "sampleArticleLength": 3010,
-          "notes": "No special interaction needed."
-        },
-        "country": "🇪🇸 Spain"
-      },
-      {
-        "name": "Invertia",
-        "url": "https://www.invertia.com",
-        "commentary": "",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.invertia.com",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Heuristic)",
-          "headlineSelector": "h2 a",
-          "headlinesFound": 68,
-          "articleContentSelector": null,
-          "sampleArticleLength": 0,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "Capital.es",
-        "url": "https://www.capital.es",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "France",
-    "flag_emoji": "🇫🇷",
-    "outlets": [
-      {
-        "name": "Les Echos",
-        "url": "https://www.lesechos.fr/economie",
-        "commentary": ""
-      },
-      {
-        "name": "Le Figaro",
-        "url": "https://www.lefigaro.fr/economie",
-        "commentary": "",
-        "country": "🇫🇷 France",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.lefigaro.fr/economie",
-          "technology": "playwright",
-          "headlineSelectorMethod": "JSON-LD",
-          "headlineSelector": "script[type=\"application/ld+json\"]",
-          "headlinesFound": 106,
-          "firstArticleUrl": "https://www.lefigaro.fr/secteur/high-tech/moteur-de-recherche-correcteur-traducteur-trois-ans-apres-l-arrivee-de-chatgpt-quatre-francais-sur-dix-utilisent-l-ia-chaque-jour-20250807",
-          "articleContentSelector": "div[class*=\"content\"] p",
-          "sampleArticleLength": 3264,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "La Tribune",
-        "url": "https://www.latribune.fr/actualites/economie/economie.html",
-        "commentary": "",
-        "country": "🇫🇷 France",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "AI-discovered",
-          "finalUrl": "https://www.latribune.fr/actualites/economie/economie.html",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "div[class*=\"title\"] a",
-          "headlinesFound": 64,
-          "firstArticleUrl": "https://www.latribune.fr/actualites/economie/economie.html",
-          "articleContentSelector": "body.cleaned",
-          "sampleArticleLength": 8317,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "Capital",
-        "url": "https://www.capital.fr/economie-politique",
-        "commentary": ""
-      },
-      {
-        "name": "BFM Business",
-        "url": "https://www.bfmtv.com/economie/",
-        "commentary": "",
-        "country": "🇫🇷 France",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.bfmtv.com/economie/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 147,
-          "firstArticleUrl": "https://www.bfmtv.com/economie/international/entreprises-consommateurs-qui-va-vraiment-payer-la-facture-des-droits-de-douane-de-trump_AD-202508070280.html",
-          "articleContentSelector": "main p",
-          "sampleArticleLength": 4304,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "Challenges",
-        "url": "https://www.challenges.fr/economie/",
-        "commentary": ""
-      },
-      {
-        "name": "Le Monde",
-        "url": "https://www.lemonde.fr/economie/",
-        "commentary": "",
-        "country": "🇫🇷 France",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.lemonde.fr/economie/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 120,
-          "firstArticleUrl": "https://www.lemonde.fr/economie/",
-          "articleContentSelector": "div[class*=\"content\"] p",
-          "sampleArticleLength": 32223,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "France Info",
-        "url": "https://www.francetvinfo.fr/economie/",
-        "commentary": "",
-        "country": "🇫🇷 France",
-        "labCheckPerformed": true,
-        "analysis": {
-          "urlDiscoveryMethod": "initial",
-          "finalUrl": "https://www.francetvinfo.fr/economie/",
-          "technology": "playwright",
-          "headlineSelectorMethod": "CSS Selector (Learned)",
-          "headlineSelector": "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-          "headlinesFound": 37,
-          "firstArticleUrl": "https://www.francetvinfo.fr/economie/tourisme/le-lac-leman-rebaptise-lac-de-geneve-sur-l-application-plans-des-appareils-de-marque-apple_7423513.html",
-          "articleContentSelector": "div[class*=\"content\"] p",
-          "sampleArticleLength": 2055,
-          "notes": "No special interaction needed."
-        }
-      },
-      {
-        "name": "L'Opinion",
-        "url": "https://www.lopinion.fr/economie",
-        "commentary": ""
-      },
-      {
-        "name": "L'Indépendant",
-        "url": "https://www.lindependant.fr/economie/",
-        "commentary": ""
-      },
-      {
-        "name": "L'Usine Nouvelle",
-        "url": "https://www.usinenouvelle.com/economie/",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Finland",
-    "flag_emoji": "🇫🇮",
-    "outlets": [
-      {
-        "name": "Talouselämä",
-        "url": "https://www.talouselama.fi",
-        "commentary": "Main Finnish business weekly."
-      },
-      {
-        "name": "Kauppalehti",
-        "url": "https://www.kauppalehti.fi/uutiset/talous",
-        "commentary": "Major financial daily."
-      },
-      {
-        "name": "Helsingin Sanomat",
-        "url": "https://www.hs.fi/talous/",
-        "commentary": "Business section of the main national newspaper."
-      },
-      {
-        "name": "Iltalehti",
-        "url": "https://www.iltalehti.fi/talous/",
-        "commentary": "Mass-market but includes finance news."
-      },
-      {
-        "name": "Taloussanomat (Ilta-Sanomat)",
-        "url": "https://www.is.fi/taloussanomat/",
-        "commentary": "Ilta-Sanomat’s business outlet."
-      },
-      {
-        "name": "Yle",
-        "url": "https://yle.fi/uutiset/18-190125",
-        "commentary": "National broadcaster’s economy news."
-      },
-      {
-        "name": "MTV Uutiset",
-        "url": "https://www.mtvuutiset.fi/aihe/talous",
-        "commentary": "Private broadcaster's economy news."
-      }
-    ]
-  },
-  {
-    "country": "Norway",
-    "flag_emoji": "🇳🇴",
-    "outlets": [
-      {
-        "name": "E24",
-        "url": "https://e24.no",
-        "commentary": "Norway’s leading business news outlet."
-      },
-      {
-        "name": "Dagens Næringsliv",
-        "url": "https://www.dn.no",
-        "commentary": "Premier financial daily."
-      },
-      {
-        "name": "NRK",
-        "url": "https://www.nrk.no/nyheter/okonomi/",
-        "commentary": "National broadcaster's economy section."
-      },
-      {
-        "name": "Aftenposten",
-        "url": "https://www.aftenposten.no/okonomi/",
-        "commentary": "Mainstream paper with solid economic reporting."
-      },
-      {
-        "name": "Finansavisen",
-        "url": "https://www.finansavisen.no",
-        "commentary": "Finance-focused daily, markets and business."
-      },
-      {
-        "name": "Nettavisen",
-        "url": "https://www.nettavisen.no/okonomi/",
-        "commentary": ""
-      },
-      {
-        "name": "TV 2",
-        "url": "https://www.tv2.no/nyheter/okonomi/",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Iceland",
-    "flag_emoji": "🇮🇸",
-    "outlets": [
-      {
-        "name": "Viðskiptablaðið",
-        "url": "https://www.vb.is",
-        "commentary": "Iceland’s main business newspaper."
-      },
-      {
-        "name": "Morgunblaðið",
-        "url": "https://www.mbl.is/vidskipti/",
-        "commentary": "Business section of a major newspaper."
-      },
-      {
-        "name": "RÚV",
-        "url": "https://www.ruv.is/frettir/efnahagur",
-        "commentary": "National broadcaster’s economy section."
-      },
-      {
-        "name": "Vísir",
-        "url": "https://www.visir.is/g/section/viðskipti",
-        "commentary": "General news with strong business coverage."
-      },
-      {
-        "name": "Kjarninn",
-        "url": "https://www.kjarninn.is/frettir/efnahagur/",
-        "commentary": "Independent outlet with an economics focus."
-      },
-      {
-        "name": "Heimildin",
-        "url": "https://heimildin.is/efnahagur/",
-        "commentary": "Investigative journalism, sometimes on wealth/policy."
-      }
-    ]
-  },
-  {
-    "country": "Belgium",
-    "flag_emoji": "🇧🇪",
-    "outlets": [
-      {
-        "name": "De Tijd",
-        "url": "https://www.tijd.be/markten-live",
-        "commentary": "Top Flemish-language financial daily."
-      },
-      {
-        "name": "L’Echo",
-        "url": "https://www.lecho.be/actualite/economie-politique",
-        "commentary": "Top French-language financial daily, counterpart to De Tijd."
-      },
-      {
-        "name": "De Standaard",
-        "url": "https://www.standaard.be/tag/economie",
-        "commentary": "General newspaper with solid economics coverage."
-      },
-      {
-        "name": "RTBF",
-        "url": "https://www.rtbf.be/article/economie",
-        "commentary": "Public broadcaster’s (French-language) economy news."
-      },
-      {
-        "name": "Business AM",
-        "url": "https://businessam.be",
-        "commentary": "Covers business, tech, and macroeconomics."
-      },
-      {
-        "name": "Trends",
-        "url": "https://trends.knack.be/economie/",
-        "commentary": "Weekly magazine focused on finance, business, and markets."
-      }
-    ]
-  },
-  {
-    "country": "Poland",
-    "flag_emoji": "🇵🇱",
-    "outlets": [
-      {
-        "name": "Parkiet",
-        "url": "https://www.parkiet.com",
-        "commentary": "Dedicated to markets, investments, and finance."
-      },
-      {
-        "name": "Puls Biznesu",
-        "url": "https://www.pb.pl",
-        "commentary": "Poland’s main business newspaper."
-      },
-      {
-        "name": "Dziennik Gazeta Prawna",
-        "url": "https://biznes.gazetaprawna.pl",
-        "commentary": "Focus on business law and the economy."
-      },
-      {
-        "name": "Interia Biznes",
-        "url": "https://biznes.interia.pl",
-        "commentary": "Broad coverage, includes markets, economy, and companies."
-      },
-      {
-        "name": "Money.pl",
-        "url": "https://www.money.pl/gospodarka/",
-        "commentary": ""
-      },
-      {
-        "name": "Business Insider Polska",
-        "url": "https://businessinsider.com.pl/finanse",
-        "commentary": ""
-      },
-      {
-        "name": "TVN24 Biznes",
-        "url": "https://tvn24.pl/biznes",
-        "commentary": "Business and economy from a major broadcaster."
-      },
-      {
-        "name": "Rzeczpospolita",
-        "url": "https://www.rp.pl/gospodarka",
-        "commentary": "Mainstream newspaper with a solid economic and financial section."
-      }
-    ]
-  },
-  {
-    "country": "Austria",
-    "flag_emoji": "🇦🇹",
-    "outlets": [
-      {
-        "name": "Die Presse",
-        "url": "https://www.diepresse.com/wirtschaft",
-        "commentary": ""
-      },
-      {
-        "name": "Der Standard",
-        "url": "https://www.derstandard.at/wirtschaft",
-        "commentary": ""
-      },
-      {
-        "name": "Kurier",
-        "url": "https://kurier.at/wirtschaft",
-        "commentary": ""
-      },
-      {
-        "name": "Wiener Zeitung",
-        "url": "https://www.wienerzeitung.at/nachrichten/wirtschaft/",
-        "commentary": ""
-      },
-      {
-        "name": "ORF",
-        "url": "https://orf.at/wirtschaft/",
-        "commentary": "National broadcaster’s economy section."
-      },
-      {
-        "name": "Trend",
-        "url": "https://www.trend.at",
-        "commentary": "Business and finance magazine."
-      }
-    ]
-  },
-  {
-    "country": "Italy",
-    "flag_emoji": "🇮🇹",
-    "outlets": [
-      {
-        "name": "Il Sole 24 Ore",
-        "url": "https://www.ilsole24ore.com",
-        "commentary": "Italy’s top financial daily."
-      },
-      {
-        "name": "Milano Finanza",
-        "url": "https://www.milanofinanza.it",
-        "commentary": "Focused on markets and finance."
-      },
-      {
-        "name": "la Repubblica",
-        "url": "https://www.repubblica.it/economia/",
-        "commentary": ""
-      },
-      {
-        "name": "Corriere della Sera",
-        "url": "https://www.corriere.it/economia/",
-        "commentary": ""
-      },
-      {
-        "name": "Il Fatto Quotidiano",
-        "url": "https://www.ilfattoquotidiano.it/economia/",
-        "commentary": ""
-      },
-      {
-        "name": "ANSA",
-        "url": "https://www.ansa.it/sito/notizie/economia/",
-        "commentary": "National news agency's economy section."
-      },
-      {
-        "name": "Rai News",
-        "url": "https://www.rainews.it/economia/",
-        "commentary": "Public broadcaster’s economic news."
-      }
-    ]
-  },
-  {
-    "country": "Ireland",
-    "flag_emoji": "🇮🇪",
-    "outlets": [
-      {
-        "name": "The Business Post",
-        "url": "https://www.businesspost.ie",
-        "commentary": "Dedicated business weekly."
-      },
-      {
-        "name": "The Irish Times",
-        "url": "https://www.irishtimes.com/business/",
-        "commentary": ""
-      },
-      {
-        "name": "Irish Independent",
-        "url": "https://www.independent.ie/business/",
-        "commentary": ""
-      },
-      {
-        "name": "RTÉ",
-        "url": "https://www.rte.ie/news/business/",
-        "commentary": "National broadcaster’s business section."
-      },
-      {
-        "name": "Irish Examiner",
-        "url": "https://www.irishexaminer.com/business/arid-40096061.html",
-        "commentary": ""
-      },
-      {
-        "name": "The Sunday Times (Ireland)",
-        "url": "https://www.thesundaytimes.co.uk/section/business/ireland",
-        "commentary": "Limited but relevant, UK-Ireland crossover."
-      }
-    ]
-  },
-  {
-    "country": "Germany",
-    "flag_emoji": "🇩🇪",
-    "outlets": [
-      {
-        "name": "Handelsblatt",
-        "url": "https://www.handelsblatt.com",
-        "commentary": "Germany’s top financial daily."
-      },
-      {
-        "name": "Frankfurter Allgemeine Zeitung (FAZ)",
-        "url": "https://www.faz.net/aktuell/wirtschaft/",
-        "commentary": "Business section of a major quality newspaper."
-      },
-      {
-        "name": "Süddeutsche Zeitung",
-        "url": "https://www.sueddeutsche.de/wirtschaft",
-        "commentary": ""
-      },
-      {
-        "name": "Der Spiegel",
-        "url": "https://www.spiegel.de/wirtschaft/",
-        "commentary": ""
-      },
-      {
-        "name": "Tagesschau",
-        "url": "https://www.tagesschau.de/wirtschaft/",
-        "commentary": "ARD public broadcaster's economy news."
-      },
-      {
-        "name": "Die Zeit",
-        "url": "https://www.zeit.de/wirtschaft/index",
-        "commentary": ""
-      },
-      {
-        "name": "Manager Magazin",
-        "url": "https://www.manager-magazin.de/",
-        "commentary": ""
-      },
-      {
-        "name": "Börse Online",
-        "url": "https://www.boerse-online.de/",
-        "commentary": "Markets-focused, valuable for finance crawling."
-      }
-    ]
-  },
-  {
-    "country": "United Kingdom",
-    "flag_emoji": "🇬🇧",
-    "outlets": [
-      {
-        "name": "Financial Times",
-        "url": "https://www.ft.com",
-        "commentary": "Premier UK and global financial news."
-      },
-      {
-        "name": "Bloomberg",
-        "url": "https://www.bloomberg.com/europe",
-        "commentary": "UK-relevant finance via Bloomberg Europe."
-      },
-      {
-        "name": "The Economist",
-        "url": "https://www.economist.com/finance-and-economics",
-        "commentary": ""
-      },
-      {
-        "name": "BBC News",
-        "url": "https://www.bbc.com/news/business",
-        "commentary": ""
-      },
-      {
-        "name": "The Guardian",
-        "url": "https://www.theguardian.com/uk/business",
-        "commentary": ""
-      },
-      {
-        "name": "The Telegraph",
-        "url": "https://www.telegraph.co.uk/business/",
-        "commentary": ""
-      },
-      {
-        "name": "The Times",
-        "url": "https://www.thetimes.co.uk/business",
-        "commentary": ""
-      },
-      {
-        "name": "City A.M.",
-        "url": "https://www.cityam.com",
-        "commentary": "City-focused business news."
-      },
-      {
-        "name": "Investors' Chronicle",
-        "url": "https://www.investorschronicle.co.uk",
-        "commentary": ""
-      },
-      {
-        "name": "This is Money",
-        "url": "https://www.thisismoney.co.uk",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Switzerland",
-    "flag_emoji": "🇨🇭",
-    "outlets": [
-      {
-        "name": "Handelszeitung",
-        "url": "https://www.handelszeitung.ch",
-        "commentary": "Switzerland’s leading business paper."
-      },
-      {
-        "name": "Finanz und Wirtschaft",
-        "url": "https://www.fuw.ch",
-        "commentary": "Focus on markets, economy, and investing."
-      },
-      {
-        "name": "Neue Zürcher Zeitung (NZZ)",
-        "url": "https://www.nzz.ch/wirtschaft/",
-        "commentary": "High-quality economic reporting."
-      },
-      {
-        "name": "Blick",
-        "url": "https://www.blick.ch/wirtschaft/",
-        "commentary": ""
-      },
-      {
-        "name": "SRF",
-        "url": "https://www.srf.ch/news/wirtschaft",
-        "commentary": "Public broadcaster’s economy section."
-      },
-      {
-        "name": "swissinfo.ch",
-        "url": "https://www.swissinfo.ch/eng/business",
-        "commentary": ""
-      },
-      {
-        "name": "20 Minuten",
-        "url": "https://www.20min.ch/wirtschaft/",
-        "commentary": ""
-      },
-      {
-        "name": "cash.ch",
-        "url": "https://www.cash.ch",
-        "commentary": "Swiss personal finance and investing portal."
-      }
-    ]
-  },
-  {
-    "country": "Serbia",
-    "flag_emoji": "🇷🇸",
-    "outlets": [
-      {
-        "name": "Blic",
-        "url": "https://www.blic.rs/biznis",
-        "commentary": ""
-      },
-      {
-        "name": "Novosti",
-        "url": "https://www.novosti.rs/vesti/biznis",
-        "commentary": ""
-      },
-      {
-        "name": "N1 Info Serbia",
-        "url": "https://rs.n1info.com/biznis/",
-        "commentary": ""
-      },
-      {
-        "name": "eKapija",
-        "url": "https://www.ekapija.com/en/news",
-        "commentary": "Business news portal with an English version."
-      },
-      {
-        "name": "Danas",
-        "url": "https://www.danas.rs/ekonomija/",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Croatia",
-    "flag_emoji": "🇭🇷",
-    "outlets": [
-      {
-        "name": "Poslovni dnevnik",
-        "url": "https://www.poslovni.hr",
-        "commentary": ""
-      },
-      {
-        "name": "Lider",
-        "url": "https://lider.media",
-        "commentary": ""
-      },
-      {
-        "name": "Večernji list",
-        "url": "https://www.vecernji.hr/biznis",
-        "commentary": ""
-      },
-      {
-        "name": "Jutarnji list",
-        "url": "https://www.jutarnji.hr/biznis",
-        "commentary": ""
-      },
-      {
-        "name": "N1 Info Croatia",
-        "url": "https://www.n1info.hr/biznis/",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Slovenia",
-    "flag_emoji": "🇸🇮",
-    "outlets": [
-      {
-        "name": "Finance",
-        "url": "https://www.finance.si",
-        "commentary": ""
-      },
-      {
-        "name": "RTV Slovenija",
-        "url": "https://www.rtvslo.si/gospodarstvo",
-        "commentary": ""
-      },
-      {
-        "name": "Dnevnik",
-        "url": "https://www.dnevnik.si/posel",
-        "commentary": ""
-      },
-      {
-        "name": "Delo",
-        "url": "https://www.delo.si/gospodarstvo/",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Bosnia and Herzegovina",
-    "flag_emoji": "🇧🇦",
-    "outlets": [
-      {
-        "name": "Klix",
-        "url": "https://www.klix.ba/biznis",
-        "commentary": ""
-      },
-      {
-        "name": "N1 Info Bosnia",
-        "url": "https://ba.n1info.com/biznis/",
-        "commentary": ""
-      },
-      {
-        "name": "BiznisInfo.ba",
-        "url": "https://www.biznisinfo.ba",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Montenegro",
-    "flag_emoji": "🇲🇪",
-    "outlets": [
-      {
-        "name": "Vijesti",
-        "url": "https://www.vijesti.me/vijesti/ekonomija",
-        "commentary": ""
-      },
-      {
-        "name": "CdM",
-        "url": "https://www.cdm.me/ekonomija/",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "North Macedonia",
-    "flag_emoji": "🇲🇰",
-    "outlets": [
-      {
-        "name": "Sloboden Pečat",
-        "url": "https://www.slobodenpecat.mk/category/ekonomija/",
-        "commentary": ""
-      },
-      {
-        "name": "Faktor",
-        "url": "https://www.faktor.mk/ekonomija",
-        "commentary": ""
-      },
-      {
-        "name": "MKD",
-        "url": "https://mkd.mk/ekonomija",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Kosovo",
-    "flag_emoji": "🇽🇰",
-    "outlets": [
-      {
-        "name": "Koha Ditore",
-        "url": "https://www.koha.net/ekonomi/",
-        "commentary": ""
-      },
-      {
-        "name": "Telegrafi",
-        "url": "https://telegrafi.com/lajme/ekonomi/",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Czech Republic",
-    "flag_emoji": "🇨🇿",
-    "outlets": [
-      {
-        "name": "Ekonom",
-        "url": "https://www.ekonom.cz",
-        "commentary": ""
-      },
-      {
-        "name": "iDNES.cz",
-        "url": "https://www.idnes.cz/ekonomika",
-        "commentary": ""
-      },
-      {
-        "name": "Hospodářské noviny (iHNed.cz)",
-        "url": "https://www.ihned.cz/ekonom",
-        "commentary": ""
-      },
-      {
-        "name": "Novinky.cz",
-        "url": "https://www.novinky.cz/ekonomika",
-        "commentary": ""
-      },
-      {
-        "name": "Seznam Zprávy",
-        "url": "https://www.seznamzpravy.cz/ekonomika",
-        "commentary": ""
-      },
-      {
-        "name": "České noviny",
-        "url": "https://www.ceskenoviny.cz/ekonomika",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Hungary",
-    "flag_emoji": "🇭🇺",
-    "outlets": [
-      {
-        "name": "Portfolio.hu",
-        "url": "https://www.portfolio.hu/en",
-        "commentary": "Includes an English section."
-      },
-      {
-        "name": "Világgazdaság (vg.hu)",
-        "url": "https://www.vg.hu/english",
-        "commentary": "Includes an English section."
-      },
-      {
-        "name": "Index",
-        "url": "https://index.hu/gazdasag/",
-        "commentary": ""
-      },
-      {
-        "name": "Napi.hu",
-        "url": "https://www.napi.hu",
-        "commentary": ""
-      },
-      {
-        "name": "G7",
-        "url": "https://g7.hu",
-        "commentary": ""
-      },
-      {
-        "name": "444.hu",
-        "url": "https://444.hu/gazdasag",
-        "commentary": ""
-      },
-      {
-        "name": "HVG",
-        "url": "https://hvg.hu/gazdasag",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Portugal",
-    "flag_emoji": "🇵🇹",
-    "outlets": [
-      {
-        "name": "Jornal de Negócios",
-        "url": "https://www.jornaldenegocios.pt",
-        "commentary": ""
-      },
-      {
-        "name": "Económico Sapo",
-        "url": "https://economico.sapo.pt",
-        "commentary": ""
-      },
-      {
-        "name": "Expresso",
-        "url": "https://expresso.pt/economia",
-        "commentary": ""
-      },
-      {
-        "name": "Público",
-        "url": "https://www.publico.pt/economia",
-        "commentary": ""
-      },
-      {
-        "name": "Observador",
-        "url": "https://observador.pt/seccao/economia/",
-        "commentary": ""
-      },
-      {
-        "name": "ECO Sapo",
-        "url": "https://eco.sapo.pt",
-        "commentary": ""
-      },
-      {
-        "name": "Dinheiro Vivo",
-        "url": "https://www.dinheirovivo.pt",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Sweden",
-    "flag_emoji": "🇸🇪",
-    "outlets": [
-      {
-        "name": "Dagens Industri",
-        "url": "https://www.di.se",
-        "commentary": "Top financial daily."
-      },
-      {
-        "name": "Svenska Dagbladet",
-        "url": "https://www.svd.se/avdelning/naringsliv",
-        "commentary": "Business section of a major newspaper."
-      },
-      {
-        "name": "Dagens Nyheter",
-        "url": "https://www.dn.se/ekonomi/",
-        "commentary": "Economy section of a major newspaper."
-      },
-      {
-        "name": "Breakit",
-        "url": "https://www.breakit.se",
-        "commentary": "Focus on startup/tech and business."
-      },
-      {
-        "name": "EFN Ekonomikanalen",
-        "url": "https://www.efn.se",
-        "commentary": "Finance-focused outlet by Handelsbanken."
-      },
-      {
-        "name": "SVT Nyheter",
-        "url": "https://www.svt.se/nyheter/ekonomi",
-        "commentary": "Public broadcaster’s economy section."
-      },
-      {
-        "name": "Affärsvärlden",
-        "url": "https://www.affarsvarlden.se",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Luxembourg",
-    "flag_emoji": "🇱🇺",
-    "outlets": [
-      {
-        "name": "Paperjam",
-        "url": "https://paperjam.lu/economie",
-        "commentary": ""
-      },
-      {
-        "name": "L'essentiel",
-        "url": "https://www.lessentiel.lu/fr/news/economie",
-        "commentary": ""
-      },
-      {
-        "name": "Delano",
-        "url": "https://delano.lu/business",
-        "commentary": ""
-      },
-      {
-        "name": "Luxembourg Times",
-        "url": "https://luxtimes.lu/luxembourg-business",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Estonia",
-    "flag_emoji": "🇪🇪",
-    "outlets": [
-      {
-        "name": "Äripäev",
-        "url": "https://www.aripaev.ee",
-        "commentary": "Main business daily."
-      },
-      {
-        "name": "ERR News",
-        "url": "https://news.err.ee/business",
-        "commentary": "Public broadcaster’s business news in English."
-      },
-      {
-        "name": "Estonian World",
-        "url": "https://estonianworld.com/business/",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Turkey",
-    "flag_emoji": "🇹🇷",
-    "outlets": [
-      {
-        "name": "Dünya",
-        "url": "https://www.dunya.com",
-        "commentary": "Turkey’s top business daily."
-      },
-      {
-        "name": "Bloomberg HT",
-        "url": "https://www.bloomberght.com",
-        "commentary": "Turkish finance and markets."
-      },
-      {
-        "name": "Hürriyet",
-        "url": "https://www.hurriyet.com.tr/ekonomi/",
-        "commentary": ""
-      },
-      {
-        "name": "Anadolu Agency",
-        "url": "https://www.aa.com.tr/en/economy",
-        "commentary": "English economics section from the state news agency."
-      },
-      {
-        "name": "Sabah",
-        "url": "https://www.sabah.com.tr/ekonomi",
-        "commentary": ""
-      }
-    ]
-  },
-  {
-    "country": "Lithuania",
-    "flag_emoji": "🇱🇹",
-    "outlets": [
-      {
-        "name": "Verslo Žinios",
-        "url": "https://www.vz.lt",
-        "commentary": "Lithuania’s main business outlet."
-      },
-      {
-        "name": "LRT",
-        "url": "https://www.lrt.lt/en/news-in-english/business",
-        "commentary": "Public broadcaster's business news in English."
-      },
-      {
-        "name": "The Lithuania Tribune",
-        "url": "https://lithuaniatribune.com/category/business/",
-        "commentary": ""
-      }
-    ]
-  }
-]
-
 # File: src/config/sources.js
 // src/config/sources.js
-// Centralized configuration for web scraping sources.
-// This separates the scraper's target configuration from its operational logic.
+// Centralized configuration for web scraping sources, now grouped by country.
 
-export const SITES_CONFIG = {
-    berlingske: { name: 'Berlingske', url: 'https://www.berlingske.dk/business', selector: 'h4.teaser__title a.teaser__title-link', extract: (el, site) => ({ headline: el.text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.name }) },
-    
-    // --- Børsen (Multi-Source Configuration) ---
-    borsen_frontpage: {
-        name: 'Børsen Frontpage',
-        newspaper: 'Børsen',
-        url: 'https://borsen.dk/',
-        useJsonLd: true
-    },
-    borsen_nyheder: {
-        name: 'Børsen Nyheder',
-        newspaper: 'Børsen',
-        url: 'https://borsen.dk/nyheder',
-        useJsonLd: true
-    },
-    borsen_finans: {
-        name: 'Børsen Finans',
-        newspaper: 'Børsen',
-        url: 'https://borsen.dk/nyheder/finans',
-        useJsonLd: true
-    },
-    borsen_virksomheder: {
-        name: 'Børsen Virksomheder',
-        newspaper: 'Børsen',
-        url: 'https://borsen.dk/nyheder/virksomheder',
-        useJsonLd: true
-    },
-    borsen_investor: {
-        name: 'Børsen Investor',
-        newspaper: 'Børsen',
-        url: 'https://borsen.dk/nyheder/investor',
-        useJsonLd: true
-    },
+export const COUNTRIES_CONFIG = [
+  {
+    countryName: 'Denmark',
+    flag: '🇩🇰',
+    sites: [
+      { key: 'berlingske', name: 'Berlingske', url: 'https://www.berlingske.dk/business', selector: 'h4.teaser__title a.teaser__title-link', extract: (el, site) => ({ headline: el.text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.name }) },
+      { key: 'borsen_frontpage', name: 'Børsen Frontpage', newspaper: 'Børsen', url: 'https://borsen.dk/', useJsonLd: true },
+      { key: 'borsen_nyheder', name: 'Børsen Nyheder', newspaper: 'Børsen', url: 'https://borsen.dk/nyheder', useJsonLd: true },
+      { key: 'borsen_finans', name: 'Børsen Finans', newspaper: 'Børsen', url: 'https://borsen.dk/nyheder/finans', useJsonLd: true },
+      { key: 'borsen_virksomheder', name: 'Børsen Virksomheder', newspaper: 'Børsen', url: 'https://borsen.dk/nyheder/virksomheder', useJsonLd: true },
+      { key: 'borsen_investor', name: 'Børsen Investor', newspaper: 'Børsen', url: 'https://borsen.dk/nyheder/investor', useJsonLd: true },
+      { key: 'politiken', name: 'Politiken', url: 'https://politiken.dk/danmark/oekonomi/', selector: 'article', extract: (el, site) => { const h = el.find('h2, h3, h4').first().text().trim(); const a = el.find('a[href*="/art"]').first().attr('href'); return h && a ? { headline: h, link: new URL(a, site.url).href, source: site.name, newspaper: site.name } : null; } },
+      { key: 'finans_dk', name: 'Finans.dk', url: 'https://finans.dk/seneste-nyt', selector: 'article a h3', extract: (el, site) => ({ headline: el.text().trim(), link: el.closest('a').attr('href'), source: site.name, newspaper: site.name }) },
+      { key: 'axcel', name: 'Axcel', url: 'https://axcel.com/news', selector: 'div.news-mask a', extract: (el, site) => ({ headline: el.find('h3').text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.name }) },
+      { key: 'polaris', name: 'Polaris', url: 'https://polarisequity.dk/news', selector: 'div.fl-post-feed-post', extract: (el, site) => { const linkEl = el.find('h3.fl-post-feed-title a'); const headline = linkEl.text().trim(); const href = linkEl.attr('href'); if (headline && href) { return { headline, link: new URL(href, site.url).href, source: site.name, newspaper: site.name }; } return null; } },
+    ]
+  },
+  {
+    countryName: 'Norway',
+    flag: '🇳🇴',
+    sites: [
+      {
+        key: 'finansavisen', name: 'Finansavisen', url: 'https://www.finansavisen.no/', newspaper: 'Finansavisen', selector: 'script',
+        extract: (el, site) => { /* ... existing extraction logic ... */ }
+      },
+      { key: 'e24', name: 'E24', url: 'https://e24.no/', newspaper: 'E24', selector: 'a._teaser_bizto_1', extract: (el, site) => { const headlineEl = el.find('h3._mainTitle_qsmm2_16').clone(); headlineEl.find('style').remove(); const headline = headlineEl.text().trim(); const href = el.attr('href'); if (headline && href) { return { headline, link: new URL(href, site.url).href, source: site.name, newspaper: site.newspaper }; } return null; } },
+      { key: 'fsn_capital', name: 'FSN Capital', url: 'https://fsncapital.com/en/news/', newspaper: 'FSN Capital', selector: 'div.newsitem', extract: (el, site) => { const linkEl = el.find('h4.title a'); return { headline: linkEl.text().trim(), link: linkEl.attr('href'), source: site.name, newspaper: site.newspaper, } } },
+      { key: 'verdane', name: 'Verdane', url: 'https://verdane.com/portfolio/', newspaper: 'Verdane', selector: 'li.wp-block-post.portfolio', extract: (el, site) => { const linkEl = el.find('a.wp-block-klingit-the-product-block-link'); const companyName = linkEl.find('h3.wp-block-post-title').text().trim(); if (companyName) { return { headline: `Verdane invests in ${companyName}`, link: linkEl.attr('href'), source: site.name, newspaper: site.newspaper, }; } return null; } },
+    ]
+  },
+  {
+    countryName: 'Pan-Nordic',
+    flag: '🇪🇺',
+    sites: [
+      { key: 'nordic_capital', name: 'Nordic Capital', url: 'https://www.nordiccapital.com/news-views/', newspaper: 'Nordic Capital', selector: 'article.masonry-card--component a', extract: (el, site) => { const headline = el.find('h3').text().trim(); const href = el.attr('href'); if (headline && href) { return { headline, link: new URL(href, site.url).href, source: site.name, newspaper: site.newspaper }; } return null; } },
+      { key: 'altor', name: 'Altor', url: 'https://www.altor.com/news/', newspaper: 'Altor', selector: 'a.g-content-card.g-news__item', extract: (el, site) => ({ headline: el.find('p.g-content-card__header').text().trim(), link: new URL(el.attr('href'), site.url).href, source: site.name, newspaper: site.newspaper, }) },
+    ]
+  }
+  // Add other countries like Finland, Netherlands, Belgium here...
+];
 
-    politiken: { name: 'Politiken', url: 'https://politiken.dk/danmark/oekonomi/', selector: 'article', extract: (el, site) => { const h = el.find('h2, h3, h4').first().text().trim(); const a = el.find('a[href*="/art"]').first().attr('href'); return h && a ? { headline: h, link: new URL(a, site.url).href, source: site.name, newspaper: site.name } : null; } },
-    finans: { name: 'Finans.dk', url: 'https://finans.dk/seneste-nyt', selector: 'article a h3', extract: (el, site) => ({ headline: el.text().trim(), link: el.closest('a').attr('href'), source: site.name, newspaper: site.name }) },
-    
-    axcel: {
-        name: 'Axcel',
-        url: 'https://axcel.com/news',
-        selector: 'div.news-mask a',
-        extract: (el, site) => ({
-            headline: el.find('h3').text().trim(),
-            link: new URL(el.attr('href'), site.url).href,
-            source: site.name,
-            newspaper: site.name
-        })
-    },
-    polaris: {
-        name: 'Polaris',
-        url: 'https://polarisequity.dk/news',
-        selector: 'div.fl-post-feed-post',
-        extract: (el, site) => {
-            const linkEl = el.find('h3.fl-post-feed-title a');
-            const headline = linkEl.text().trim();
-            const href = linkEl.attr('href');
-            if (headline && href) {
-                return { headline, link: new URL(href, site.url).href, source: site.name, newspaper: site.name };
-            }
-            return null;
-        }
-    },
-    // --- Finansavisen (NEW Unified JSON Scraper) ---
-    finansavisen: {
-        name: 'Finansavisen',
-        url: 'https://www.finansavisen.no/',
-        newspaper: 'Finansavisen', // Default newspaper
-        selector: 'script', // Target script tags to find embedded JSON data
-        extract: (el, site) => {
-            const scriptContent = el.html();
-            if (scriptContent && scriptContent.includes('window.app')) {
-                try {
-                    // Isolate the componentData JSON string from the script content
-                    const match = scriptContent.match(/componentData: '(.*)'/);
-                    if (!match || !match[1]) return null;
+// --- NEW: Create and export maps for use in the email module ---
+export const newspaperToCountryMap = new Map();
+export const countryNameToFlagMap = new Map();
 
-                    // Clean the heavily escaped string
-                    const jsonString = match[1].replace(/\\"/g, '"');
-                    const data = JSON.parse(jsonString);
-                    
-                    const articles = [];
-                    // Iterate over all components in the data to find any that contain article lists
-                    Object.values(data).forEach(component => {
-                        if (component && component.articles && Array.isArray(component.articles)) {
-                            component.articles.forEach(article => {
-                                if (article.url && article.title) {
-                                    articles.push({
-                                        headline: article.title,
-                                        link: new URL(article.url, site.url).href,
-                                        source: site.name,
-                                        // Use the article's product (e.g., Kapital) as the newspaper if available
-                                        newspaper: article.product || site.newspaper 
-                                    });
-                                }
-                            });
-                        }
-                    });
-                    return articles.length > 0 ? articles : null;
-                } catch (e) {
-                    return null; // Ignore script tags that don't contain the expected JSON
-                }
-            }
-            return null;
-        }
-    },
-    e24: {
-        name: 'E24',
-        url: 'https://e24.no/',
-        newspaper: 'E24',
-        selector: 'a._teaser_bizto_1',
-        extract: (el, site) => {
-            const headlineEl = el.find('h3._mainTitle_qsmm2_16').clone();
-            headlineEl.find('style').remove();
-            const headline = headlineEl.text().trim();
-            const href = el.attr('href');
-            if (headline && href) {
-                return { headline, link: new URL(href, site.url).href, source: site.name, newspaper: site.newspaper };
-            }
-            return null;
-        }
-    },
-    nordic_capital: {
-        name: 'Nordic Capital',
-        url: 'https://www.nordiccapital.com/news-views/',
-        newspaper: 'Nordic Capital',
-        selector: 'article.masonry-card--component a',
-        extract: (el, site) => {
-            const headline = el.find('h3').text().trim();
-            const href = el.attr('href');
-            if (headline && href) {
-                return {
-                    headline,
-                    link: new URL(href, site.url).href,
-                    source: site.name,
-                    newspaper: site.newspaper
-                };
-            }
-            return null;
-        }
-    },
-    // --- PRIVATE EQUITY FIRMS ---
-    // REMOVED: EQT is currently broken due to site changes. Will require a separate fix.
-    // eqt: {
-    //     name: 'EQT',
-    //     url: 'https://eqtgroup.com/news',
-    //     newspaper: 'EQT',
-    // },
-    fsn_capital: {
-        name: 'FSN Capital',
-        url: 'https://fsncapital.com/en/news/',
-        newspaper: 'FSN Capital',
-        selector: 'div.newsitem',
-        extract: (el, site) => {
-            const linkEl = el.find('h4.title a');
-            return {
-                headline: linkEl.text().trim(),
-                link: linkEl.attr('href'),
-                source: site.name,
-                newspaper: site.newspaper,
-            }
-        },
-    },
-    altor: {
-        name: 'Altor',
-        url: 'https://www.altor.com/news/',
-        newspaper: 'Altor',
-        selector: 'a.g-content-card.g-news__item',
-        extract: (el, site) => ({
-            headline: el.find('p.g-content-card__header').text().trim(),
-            link: new URL(el.attr('href'), site.url).href,
-            source: site.name,
-            newspaper: site.newspaper,
-        }),
-    },
-    verdane: {
-        name: 'Verdane',
-        url: 'https://verdane.com/portfolio/',
-        newspaper: 'Verdane',
-        selector: 'li.wp-block-post.portfolio',
-        extract: (el, site) => {
-            const linkEl = el.find('a.wp-block-klingit-the-product-block-link');
-            const companyName = linkEl.find('h3.wp-block-post-title').text().trim();
-            if (companyName) {
-                return {
-                    headline: `Verdane invests in ${companyName}`,
-                    link: linkEl.attr('href'),
-                    source: site.name,
-                    newspaper: site.newspaper,
-                };
-            }
-            return null;
-        },
-    },
-};
+COUNTRIES_CONFIG.forEach(country => {
+  countryNameToFlagMap.set(country.countryName, country.flag);
+  country.sites.forEach(site => {
+    // A newspaper can appear in multiple site configs (e.g., Børsen), but will map to the same country.
+    if (!newspaperToCountryMap.has(site.newspaper || site.name)) {
+      newspaperToCountryMap.set(site.newspaper || site.name, country.countryName);
+    }
+  });
+});
+
 
 export const TEXT_SELECTORS = {
   'Berlingske': '.article-body p',
-  'Børsen': [
-    '.article-content', 
-    'meta[name="description"]'
-  ],
+  'Børsen': [ '.article-content', 'meta[name="description"]' ],
   'Politiken': 'section#js-article-body .font-serif-body-20 p',
   'Finans.dk': 'p.container-text:not([class*="italic"])',
   'DN.no': '.dn-article-top .lead, .dn-content .dn-text p',
   'Axcel': 'div.article-content p',
   'Polaris': 'div.fl-module-fl-post-content p',
-  'Finansavisen': [
-      '.c-article-regular__body__preamble, .c-article-regular__body p',
-      'meta[name="description"]'
-    ],
-  'Kapital': [
-      '.c-article-regular__body__preamble, .c-article-regular__body p',
-      'meta[name="description"]'
-    ],
+  'Finansavisen': [ '.c-article-regular__body__preamble, .c-article-regular__body p', 'meta[name="description"]' ],
+  'Kapital': [ '.c-article-regular__body__preamble, .c-article-regular__body p', 'meta[name="description"]' ],
   'E24': 'article p[data-test-tag="lead-text"], article p.hyperion-css-1lemvax',
   'Nordic Capital': '.multi-column-rich-text--content-block .block-content p',
   'EQT': '.body-l-body-m p', 
@@ -4409,6 +1166,25 @@ export const TEXT_SELECTORS = {
   'Altor': 'div.g-wysiwyg p',
   'Verdane': '.entry-content p',
 };
+
+# File: src/config/users.js
+// src/config/users.js
+// This file contains the list of users and their email notification subscriptions.
+
+export const USERS = [
+  {
+    firstName: 'Alexandra',
+    email: 'christiansenalexandra@gmail.com',
+    countries: ['Denmark'],
+  },
+  {
+    firstName: 'Mark',
+    superUser: true,
+    email: 'reconozco@gmail.com',
+    countries: ['Denmark', 'Norway', 'Finland', 'Netherlands', 'Belgium', 'Pan-Nordic'],
+  },
+  // Add more users here in the future
+];
 
 # File: src/database.js
 // src/database.js (version 1.0)
@@ -4484,7 +1260,7 @@ async function generateJsonResponse(model, instructions, userContent, temperatur
         model,
         messages,
         response_format: { type: "json_object" },
-        temperature,
+        // temperature,
         // This prevents the API from truncating the JSON response when clustering many articles.
         // max_tokens: 8192, 
     }));
@@ -4785,10 +1561,10 @@ export async function findSimilarArticles(articlesInCluster) {
 // src/modules/assessments/instructionArticle.js
 export const instructionArticle = {
   whoYouAre:
-    'You are a private wealth relevance analyst specialized in Scandinavian media.',
+    'You are a private wealth relevance analyst specialized in scouring newspapers and other media.',
 
   whatYouDo:
-    'You analyze full-text articles. Your primary goal is to identify if they report a direct, substantial private wealth event (over $30 million) benefiting private Scandinavian individuals, families, their holding companies, or family offices/foundations. Additionally, you flag articles discussing significant business activities by known Scandinavian Rich List individuals.',
+    'You analyze full-text articles. Your primary goal is to identify if they report a direct, substantial private wealth event (over $30 million) benefiting private individuals, families, their holding companies, or family offices/foundations. Additionally, you flag articles discussing significant business activities by known Rich List individuals.',
 
   writingStyle:
     'Use concise, factual English. Avoid speculation. Maintain a formal tone.',
@@ -4798,20 +1574,20 @@ export const instructionArticle = {
 
 guidelines: `
 Focus on:
-1.  **Direct Wealth Events**: Articles involving direct wealth transfers (company sales, IPOs, M&A, inheritances, significant asset sales) to named Scandinavian individuals/families, their holding companies, or family offices/foundations, where the new wealth clearly exceeds $30 million. Obituaries of very wealthy individuals are also key.
+1.  **Direct Wealth Events**: Articles involving direct wealth transfers (company sales, IPOs, M&A, inheritances, significant asset sales) to named individuals/families, their holding companies, or family offices/foundations, where the new wealth clearly exceeds $30 million. Obituaries of very wealthy individuals are also key.
 
-2.  **Rich List Individual Activity**: Articles featuring prominent Scandinavian Rich List individuals (e.g., Martin Thorborg, Anders Holch Povlsen, Kirk Kristiansen family members, etc.) discussing:
+2.  **Rich List Individual Activity**: Articles featuring prominent Rich List individuals (e.g., Martin Thorborg, Anders Holch Povlsen, Kirk Kristiansen family members, etc.) discussing:
     *   Significant strategic decisions for their main businesses.
     *   Major investments or divestments, even if the article doesn't explicitly state a >$30M personal gain but the context implies substantial financial activity.
     *   Interviews where they speak at length about their company's performance or future plans that could significantly impact their wealth.
 
-3.  **High-Value Strategic Intelligence**: News concerning major strategic developments at large, publicly-listed Scandinavian companies that are central to the region's wealth creation landscape (e.g., DSV, Maersk, Novo Nordisk), especially when quoting C-level executives. While not a direct private wealth event, this is crucial context.
+3.  **High-Value Strategic Intelligence**: News concerning major strategic developments at large, publicly-listed companies that are central to the region's wealth creation landscape (e.g., DSV, Maersk, Novo Nordisk), especially when quoting C-level executives. While not a direct private wealth event, this is crucial context.
 
 Exclude any articles primarily about:
 -   A Private Equity or Venture Capital firm's own operational news, such as fundraising or closing a new fund. Focus on their *transactions*.
 -   Investment decisions made by large institutional pension funds (like ATP).
--   Companies or projects without a clearly identified private Scandinavian individual/family beneficiary (unless it's a known Rich List holding or a key company from Guideline #3).
--   Foreign or institutional beneficiaries (unless it's an acquisition *from* a Scandinavian private owner).
+-   Companies or projects without a clearly identified private individual/family beneficiary (unless it's a known Rich List holding or a key company from Guideline #3).
+-   Foreign or institutional beneficiaries (unless it's an acquisition *from* a private owner).
 -   Routine company performance reports *unless* they directly quote a Rich List owner or CEO discussing significant strategic implications.
 -   Minor news or public appearances not related to core business strategy.
 -   Philanthropy.
@@ -4833,7 +1609,7 @@ Exclude any articles primarily about:
   `,
 
   vitals:
-    `Pay extremely close attention to articles involving known Scandinavian Rich List individuals and their core business activities.
+    `Pay extremely close attention to articles involving known Rich List individuals and their core business activities.
      An interview with a founder of a large family company for example (e.g. John Blem being interviewed to tell about Milestone) should score 100.
     `,
 
@@ -4883,27 +1659,27 @@ export const instructionCluster = {
 export const instructionHeadlines = {
   whoYouAre: 'You are a wealth management analyst.',
   whatYouDo:
-    'You assess whether Scandinavian news headlines describe immediate, substantial private wealth events.',
+    'You assess whether news paper headlines describe immediate, substantial private wealth events.',
   guidelines: `
 Include only:
-- Major liquidity events for private Scandinavian individuals, families, their family offices, or family foundations (e.g., company sales, IPOs benefiting founders, substantial asset sales) generating >$50M.
-- Obituaries or similar events of ultra high net worth Scandinavian individuals leading to substantial wealth transfer/inheritance.
-- Significant transactions or capital events within privately-held/family-owned holding companies of Scandinavian rich list families that clearly indicate a substantial change in the family's private wealth (e.g., large dividend payouts from holding to family, sale of a major subsidiary by the holding company).
-- Any headlines directly indicating substantial (>$50M) wealth generation or transfer for Scandinavian rich list families or their primary business entities where the family is the clear beneficiary (e.g., "Bestseller owner Anders Holch Povlsen acquires major real estate portfolio for DKK 1 billion", "Grundfos owner foundation distributes DKK 500 million to Due Jensen family").
-- **SPECIAL ATTENTION**: News involving known Scandinavian Rich List individuals like **Martin Thorborg**, Anders Holch Povlsen, the Kirk Kristiansen family (LEGO), the Holch Povlsen family (Bestseller), the Due Jensen family (Grundfos), etc., especially related to their business or investment activities should be scored with high relevance (70-100).
+- Major liquidity events for private individuals, families, their family offices, or family foundations (e.g., company sales, IPOs benefiting founders, substantial asset sales) generating >$50M.
+- Obituaries or similar events of ultra high net worth individuals leading to substantial wealth transfer/inheritance.
+- Significant transactions or capital events within privately-held/family-owned holding companies of rich list families that clearly indicate a substantial change in the family's private wealth (e.g., large dividend payouts from holding to family, sale of a major subsidiary by the holding company).
+- Any headlines directly indicating substantial (>$50M) wealth generation or transfer for rich list families or their primary business entities where the family is the clear beneficiary (e.g., "Bestseller owner Anders Holch Povlsen acquires major real estate portfolio for DKK 1 billion", "Grundfos owner foundation distributes DKK 500 million to Due Jensen family").
+- **SPECIAL ATTENTION**: News involving known Rich List individuals like **Martin Thorborg**, Anders Holch Povlsen, the Kirk Kristiansen family (LEGO), the Holch Povlsen family (Bestseller), the Due Jensen family (Grundfos), etc., especially related to their business or investment activities should be scored with high relevance (70-100).
 
 Strictly exclude:
 - A Private Equity or Venture Capital firm's own operational news, such as fundraising, closing a new fund, or hiring partners. Focus on their *transactions* (buying/selling companies), not their internal business.
 - Investment decisions made by large institutional pension funds (like ATP), as these do not represent private family wealth.
 - General corporate news such as expansions, new product launches, operational performance (profits/losses of publicly traded companies). **EXCEPTION:** A takeover bid or M&A of a public company is RELEVANT.
-- Headlines without direct, immediate, and substantial (>$50M) wealth impact for private Scandinavian individuals/families (unless it's a Rich List individual per "SPECIAL ATTENTION" rule).
-- Foreign corporate or public institution activity, unless it's a direct acquisition/sale involving a Scandinavian private individual/family.
+- Headlines without direct, immediate, and substantial (>$50M) wealth impact for private individuals/families (unless it's a Rich List individual per "SPECIAL ATTENTION" rule).
+- Foreign corporate or public institution activity, unless it's a direct acquisition/sale involving a private individual/family.
 - Philanthropic donations by foundations or individuals (unless on the rich list)
 - Appointments to boards or executive positions.
 - General market commentary or economic trends.
 
 Relevance Scoring:
-- 91–100: Clear and substantial private wealth gain/transfer (>$50M) for Scandinavian individuals/families; news directly concerning Rich List families and significant activities of their primary businesses that clearly impact family wealth. Obituaries of UHNW individuals.
+- 91–100: Clear and substantial private wealth gain/transfer (>$50M) for individuals/families; news directly concerning Rich List families and significant activities of their primary businesses that clearly impact family wealth. Obituaries of UHNW individuals.
 - 71–90: Likely or partial substantial wealth gain (potentially >$50M, or an IPO of a significant family-owned company). News about significant investments/divestments by Rich List family holdings where the private benefit is strongly implied. For Rich List individuals (like Martin Thorborg), this score applies if the event suggests significant business involvement or strategy shift.
 - 51–70: Moderate or indirect wealth gain (typically <$50M but still a clear private wealth event).
 - 31–50: Minor or future potential gain, or wealth event of unclear substantiality.
@@ -4933,7 +1709,7 @@ Examples of Low Relevance (0–29):
 - "ATP sells its stake in Bavarian Nordic" (Pension fund activity)
 `,
   vitals: `
-  **VITAL: Headlines mentioning names from the Scandinavian Rich List (e.g., Martin Thorborg, Holch Povlsen, Kirk Kristiansen) should be considered highly relevant (score 70-100).**
+  **VITAL: Headlines mentioning names from the Rich List (e.g., Martin Thorborg, Holch Povlsen, Kirk Kristiansen) should be considered highly relevant (score 70-100).**
     But also an interview with a founder of a large family company for example (e.g. John Blem being interviewed to tell about Milestone) should score 100.
 `,
   outputFormatDescription: `
@@ -4955,7 +1731,7 @@ NEVER RETURN A PLAIN ARRAY.
 // src/modules/assessments/instructionSynthesize.js
 
 export const instructionSynthesize = {
-  whoYouAre: "You are an expert financial journalist working for an exclusive executive briefing service.",
+  whoYouAre: "You are an expert financial journalist working for an exclusive executive briefing service in English.",
   whatYouDo: "You will receive JSON data containing one or more articles about today's news event, and potentially some historical articles for context. Your task is to synthesize this information into a concise, high-value intelligence brief.",
   writingStyle: "Factual, dense, and objective, in the style of the Wall Street Journal or Financial Times. Use clear, professional English. Omit filler words and speculation.",
   guidelines: `
@@ -4971,8 +1747,8 @@ export const instructionSynthesize = {
   outputFormatDescription: `
     Respond ONLY with a valid JSON object with the following structure:
     {
-      "headline": "New, synthesized headline here.",
-      "summary": "New, synthesized summary here. It must be under 90 words and no more than 4 sentences.",
+      "headline": "New, synthesized headline here. In English.",
+      "summary": "New, synthesized summary here. In English. It must be under 90 words and no more than 4 sentences.",
       "key_individuals": [
         {
           "name": "Full Name",
@@ -5386,51 +2162,51 @@ import { logger } from '../../../utils/logger.js';
 import { EMAIL_CONFIG } from '../../../config/index.js';
 import { LOGO_URL } from '../constants.js';
 import { formatEventForEmail } from './eventFormatter.js';
+import { countryNameToFlagMap } from '../../../config/sources.js';
 
-function createEmailWrapper(bodyContent) {
+function createEmailWrapper(bodyContent, subject) {
     return `
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${EMAIL_CONFIG.subject}</title>
+        <title>${subject}</title>
     </head>
     <body style="margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background-color: #f4f4f4;">
         <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
-            <tr>
-                <td align="center">
-                    <table width="600" border="0" cellspacing="0" cellpadding="20" style="max-width: 600px; width: 100%; background-color: #ffffff; margin-top: 20px; margin-bottom: 20px;">
-                        <tr>
-                            <td>
-                                ${bodyContent}
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
+            <tr><td align="center">
+                <table width="600" border="0" cellspacing="0" cellpadding="20" style="max-width: 600px; width: 100%; background-color: #ffffff; margin-top: 20px; margin-bottom: 20px;">
+                    <tr><td>${bodyContent}</td></tr>
+                </table>
+            </td></tr>
         </table>
     </body>
     </html>`;
 }
 
-export function createEmailBody(events) {
-    if (!Array.isArray(events) || events.length === 0) {
-        logger.warn('createEmailBody: No events provided to build email body.');
+export function createPersonalizedEmailBody(user, eventsByCountry, subject) {
+    if (!user || !eventsByCountry || Object.keys(eventsByCountry).length === 0) {
+        logger.warn('createPersonalizedEmailBody: Missing user or events data.');
         return null;
     }
 
-    const formattedEventsHtml = events.map(formatEventForEmail).join('');
+    let formattedEventsHtml = '';
+    for (const [country, events] of Object.entries(eventsByCountry)) {
+        const flag = countryNameToFlagMap.get(country) || '🌍';
+        formattedEventsHtml += `<h2 style="font-size: 22px; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 40px;">${flag} ${country}</h2>`;
+        formattedEventsHtml += events.map(formatEventForEmail).join('');
+    }
 
     const mainContent = `
         <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eeeeee;">
             <img src="${LOGO_URL}" alt="${EMAIL_CONFIG.brandName} Logo" style="max-width: 150px; height: auto;">
         </div>
-        <h1 style="color: #333333; text-align: center; margin-top: 20px;">${EMAIL_CONFIG.subject}</h1>
+        <h1 style="color: #333333; text-align: center; margin-top: 20px;">${subject}</h1>
         <p style="font-size: 16px; color: #555555; text-align: left;">
-            Good morning,
+            Hi ${user.firstName},
             <br><br>
-            Here are the latest potential wealth events identified and synthesized by our AI Agent:
+            Here are the latest relevant events identified for you:
         </p>
 
         <div style="text-align: center; margin: 25px 0;">
@@ -5451,7 +2227,7 @@ export function createEmailBody(events) {
         </div>
     `;
 
-    return createEmailWrapper(mainContent);
+    return createEmailWrapper(mainContent, subject);
 }
 
 # File: src/modules/email/components/eventFormatter.js
@@ -5767,12 +2543,35 @@ export const LOGO_URL =
 # File: src/modules/email/index.js
 // src/modules/email/index.js
 import { logger } from '../../utils/logger.js';
-import { performActualEmailSend, performActualSupervisorEmailSend } from './mailer.js';
+import { sendPersonalizedEmail, performActualSupervisorEmailSend } from './mailer.js';
 import SynthesizedEvent from '../../../models/SynthesizedEvent.js';
+import { USERS } from '../../config/users.js';
+import { newspaperToCountryMap, countryNameToFlagMap } from '../../config/sources.js';
+import { createPersonalizedEmailBody } from './components/emailBodyBuilder.js';
 
 /**
- * Fetches unsent synthesized events, sends them in an email, and updates their status.
- * @returns {Promise<Object>} An object containing the count of events sent.
+ * Groups a list of events by their country of origin.
+ * @param {Array<Object>} events - A list of synthesized events.
+ * @returns {Object} An object where keys are country names and values are arrays of events.
+ */
+function groupEventsByCountry(events) {
+    const eventsByCountry = {};
+    for (const event of events) {
+        const primaryNewspaper = event.source_articles[0]?.newspaper;
+        if (primaryNewspaper) {
+            const country = newspaperToCountryMap.get(primaryNewspaper) || 'Other';
+            if (!eventsByCountry[country]) {
+                eventsByCountry[country] = [];
+            }
+            eventsByCountry[country].push(event);
+        }
+    }
+    return eventsByCountry;
+}
+
+/**
+ * Main function to send personalized wealth event emails to all configured users.
+ * @returns {Promise<Object>} An object containing the total count of events processed.
  */
 export async function sendWealthEventsEmail() {
     logger.info(`📧 Checking for new synthesized events to email...`);
@@ -5784,28 +2583,57 @@ export async function sendWealthEventsEmail() {
         return { eventsSentCount: 0 };
     }
 
-    logger.info(`Found ${eventsToSend.length} new events to include in the wealth events email.`);
+    logger.info(`Found ${eventsToSend.length} new events to process for ${USERS.length} users.`);
     
-    const sortedEvents = [...eventsToSend].sort((a, b) => b.highest_relevance_score - a.highest_relevance_score);
+    const allEventsByCountry = groupEventsByCountry(eventsToSend);
+    let anyEmailSent = false;
 
-    const emailSentSuccessfully = await performActualEmailSend(sortedEvents);
+    for (const user of USERS) {
+        const userSpecificEventsByCountry = {};
+        let eventCountForUser = 0;
 
-    if (emailSentSuccessfully) {
+        for (const country of user.countries) {
+            if (allEventsByCountry[country]) {
+                userSpecificEventsByCountry[country] = allEventsByCountry[country];
+                eventCountForUser += allEventsByCountry[country].length;
+            }
+        }
+
+        if (eventCountForUser === 0) {
+            logger.info(`No new events for ${user.firstName}'s subscribed countries. Skipping email.`);
+            continue;
+        }
+
+        const includedFlags = Object.keys(userSpecificEventsByCountry)
+            .map(country => countryNameToFlagMap.get(country) || '')
+            .join(' ');
+        
+        const subject = `${includedFlags} New Wealth Opportunities`.trim();
+        const body = createPersonalizedEmailBody(user, userSpecificEventsByCountry, subject);
+
+        if (body) {
+            const emailSentSuccessfully = await sendPersonalizedEmail({ user, subject, body });
+            if (emailSentSuccessfully) {
+                anyEmailSent = true;
+            }
+        }
+    }
+
+    // After processing all users, mark the events as emailed so they aren't sent again.
+    if (anyEmailSent) {
         const eventIds = eventsToSend.map(e => e._id);
         await SynthesizedEvent.updateMany(
             { _id: { $in: eventIds } },
             { $set: { emailed: true, email_sent_at: new Date() } }
         );
-        logger.info(`Marked ${eventsToSend.length} events as emailed.`);
-        return { eventsSentCount: eventsToSend.length };
-    } else {
-        logger.error('Wealth events email was not sent due to an error or dev mode skipping.');
-        return { eventsSentCount: 0 };
+        logger.info(`Successfully processed and marked ${eventsToSend.length} events as emailed.`);
     }
+
+    return { eventsSentCount: eventsToSend.length };
 }
 
 /**
- * Coordinates sending the supervisor report email.
+ * Coordinates sending the supervisor report email to all designated superusers.
  * @param {Object} runStats - Statistics about the current pipeline run.
  */
 export async function sendSupervisorReportEmail(runStats) {
@@ -5816,9 +2644,17 @@ export async function sendSupervisorReportEmail(runStats) {
     
     logger.info('Preparing supervisor report email...');
     
+    // Find all users with the superUser flag set to true.
+    const superUserEmails = USERS.filter(user => user.superUser === true).map(user => user.email);
+
+    if (superUserEmails.length === 0) {
+        logger.warn('No superusers found in src/config/users.js. Skipping supervisor report.');
+        return;
+    }
+    
     try {
-        await performActualSupervisorEmailSend(runStats);
-        logger.info('✅ Supervisor report email successfully sent/queued.');
+        await performActualSupervisorEmailSend(runStats, superUserEmails);
+        logger.info('✅ Supervisor report email successfully sent/queued to all superusers.');
     } catch (error) {
         logger.error({ err: error }, '💥 CRITICAL: Failed to send supervisor report email.');
     }
@@ -5830,20 +2666,14 @@ import nodemailer from 'nodemailer';
 import { logger } from '../../utils/logger.js';
 import { safeExecute } from '../../utils/helpers.js';
 import {
-  HEADLINE_RECIPIENTS,
-  SUPERVISOR_EMAIL,
-  EMAIL_CONFIG,
   SUPERVISOR_EMAIL_CONFIG,
   SMTP_CONFIG,
-  SEND_TO_DEFAULT_SUPERVISOR,
   IS_PRODUCTION,
   FORCE_EMAIL_SEND_DEV
 } from '../../config/index.js';
-import { createEmailBody } from './components/emailBodyBuilder.js';
 import { createSupervisorEmailBody } from './components/supervisorEmailBodyBuilder.js';
 
 const SMTP_UNCONFIGURED_MSG = 'SMTP authentication not fully configured.';
-const RECIPIENTS_UNCONFIGURED_MSG = 'Email recipients not configured.';
 
 async function sendEmail(mailOptions, emailType) {
     if (!IS_PRODUCTION && !FORCE_EMAIL_SEND_DEV) {
@@ -5871,40 +2701,33 @@ async function sendEmail(mailOptions, emailType) {
         return { error: `SMTP Error: ${sendResult.details}` };
     }
 
-    logger.info(`✅ [${emailType} Mailer] Email sent successfully.`);
+    logger.info(`✅ [${emailType} Mailer] Email sent successfully to ${mailOptions.to}.`);
     return { success: true };
 }
 
-export async function performActualEmailSend(eventsForEmail) {
-    if (!HEADLINE_RECIPIENTS || HEADLINE_RECIPIENTS.length === 0) {
-        logger.error(`❌ [Wealth Events Mailer] ${RECIPIENTS_UNCONFIGURED_MSG}`);
-        return false;
-    }
-
-    const emailBodyHtml = createEmailBody(eventsForEmail);
-    if (!emailBodyHtml) {
-        logger.error('❌ [Wealth Events Mailer] HTML email body generation failed.');
+export async function sendPersonalizedEmail({ user, subject, body }) {
+    if (!user || !user.email) {
+        logger.error(`❌ [Wealth Events Mailer] Invalid user object provided.`);
         return false;
     }
 
     const mailOptions = {
         from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`,
-        to: HEADLINE_RECIPIENTS.join(', '),
-        subject: EMAIL_CONFIG.subject,
-        html: emailBodyHtml,
+        to: user.email,
+        subject: subject,
+        html: body,
     };
 
     const result = await sendEmail(mailOptions, 'Wealth Events');
     return result.success || false;
 }
 
-export async function performActualSupervisorEmailSend(runStats) {
-    if (!SUPERVISOR_EMAIL || (SUPERVISOR_EMAIL.toLowerCase().includes('default') && !SEND_TO_DEFAULT_SUPERVISOR)) {
-        logger.warn('[Supervisor Mailer] Skipping: Supervisor email not configured or is default.');
+export async function performActualSupervisorEmailSend(runStats, recipients) {
+    if (!recipients || recipients.length === 0) {
+        logger.warn('[Supervisor Mailer] Skipping: No superusers configured to receive this report.');
         return;
     }
 
-    // CRITICAL FIX: The function createSupervisorEmailBody is now async, so we must 'await' it.
     const emailBodyHtml = await createSupervisorEmailBody(runStats);
     if (!emailBodyHtml) {
         logger.error('❌ [Supervisor Mailer] HTML email body generation failed.');
@@ -5913,7 +2736,7 @@ export async function performActualSupervisorEmailSend(runStats) {
 
     const mailOptions = {
         from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`,
-        to: SUPERVISOR_EMAIL,
+        to: recipients.join(', '),
         subject: SUPERVISOR_EMAIL_CONFIG.subject,
         html: emailBodyHtml,
     };
@@ -5928,37 +2751,29 @@ export async function performActualSupervisorEmailSend(runStats) {
 # File: src/modules/mongoStore/index.js
 // src/modules/mongoStore/index.js
 import Article from '../../../models/Article.js';
+import SynthesizedEvent from '../../../models/SynthesizedEvent.js';
 import { logger } from '../../utils/logger.js';
-import { truncateString } from '../../utils/helpers.js';
 import { generateEmbedding } from '../../utils/vectorUtils.js';
-// MODIFIED: IS_REFRESH_MODE is no longer needed here.
-import { MIN_HEADLINE_CHARS, MAX_HEADLINE_CHARS } from '../../config/index.js';
 
-function validateInitialArticle(article, isRefreshMode) {
-    if (!article || typeof article !== 'object') return 'Article object is invalid.';
-    // In refresh mode, an existing article from the DB is considered pre-validated.
-    if (article._id && isRefreshMode) return null;
-    
-    if (!article.headline || article.headline.length < MIN_HEADLINE_CHARS) return `Headline is too short (min ${MIN_HEADLINE_CHARS}).`;
-    if (article.headline.length > MAX_HEADLINE_CHARS) return `Headline is too long (max ${MAX_HEADLINE_CHARS}).`;
-    if (!article.link || !article.link.startsWith('http')) return 'Link is invalid.';
-    if (!article.newspaper) return 'Newspaper field is missing.';
-    return null;
-}
-
+/**
+ * Filters a list of scraped articles against the database to find which ones are new.
+ * This is the only database read operation at the start of the pipeline.
+ * In refresh mode, it pulls existing articles from the DB to be re-processed.
+ * @param {Array} articles - The array of freshly scraped articles.
+ * @param {boolean} isRefreshMode - Flag for re-processing.
+ * @returns {Promise<Array>} An array of articles to be processed in the pipeline.
+ */
 export async function filterFreshArticles(articles, isRefreshMode = false) {
     if (!articles || articles.length === 0) return [];
 
+    const scrapedLinks = articles.map(a => a.link);
+
     if (isRefreshMode) {
         logger.warn('REFRESH MODE: All scraped articles will be processed, pulling existing data from DB where available.');
-        
-        const scrapedLinks = articles.map(a => a.link);
         const existingDbArticles = await Article.find({ link: { $in: scrapedLinks } }).lean();
         const existingArticlesMap = new Map(existingDbArticles.map(a => [a.link, a]));
         
         const articlesForReprocessing = articles.map(scrapedArticle => {
-            // If the article exists in the DB, use the full DB record.
-            // Otherwise, use the freshly scraped (but minimal) article data.
             return existingArticlesMap.get(scrapedArticle.link) || scrapedArticle;
         });
 
@@ -5966,109 +2781,99 @@ export async function filterFreshArticles(articles, isRefreshMode = false) {
         return articlesForReprocessing;
     }
     
-    const links = articles.map(a => a.link);
-    const existingArticles = await Article.find({ link: { $in: links } }).select('link').lean();
+    // Standard mode: find articles that are not yet in the database.
+    const existingArticles = await Article.find({ link: { $in: scrapedLinks } }).select('link').lean();
     const existingLinks = new Set(existingArticles.map(a => a.link));
     
     const freshArticles = articles.filter(a => !existingLinks.has(a.link));
-    logger.info(`Filtering complete. Found ${existingLinks.size} existing articles, ${freshArticles.length} are fresh.`);
+    logger.info(`Filtering complete. Found ${existingLinks.size} existing articles from previous runs, ${freshArticles.length} are fresh.`);
     return freshArticles;
 }
 
-export async function prepareArticlesForPipeline(articles, isRefreshMode = false) {
-    const articlesToProcess = [];
+
+/**
+ * Saves all processed articles and synthesized events to the database in a single transactional operation.
+ * @param {Array} articlesToSave - The array of all articles processed in the run.
+ * @param {Array} eventsToSave - The array of synthesized events.
+ * @returns {Promise<boolean>} A promise that resolves to true if successful.
+ */
+export async function savePipelineResults(articlesToSave, eventsToSave) {
+    logger.info(`Committing pipeline results to database...`);
     
-    for (const article of articles) {
-        const validationError = validateInitialArticle(article, isRefreshMode);
-        if (validationError) {
-            logger.warn(`Initial validation failed for "${truncateString(article.headline, 50)}": ${validationError}`);
-            continue;
-        }
-        articlesToProcess.push(article);
-    }
-
-    if (articlesToProcess.length === 0) {
-        logger.info('No valid new or refreshed articles to prepare for the pipeline.');
-        return [];
-    }
-
-    const operations = [];
-    for (const article of articlesToProcess) {
-        // Only generate a new embedding if it's a new article. Refreshed articles already have one.
-        let embedding = article.embedding;
-        if (!embedding) {
-            const textToEmbed = article.headline;
-            embedding = await generateEmbedding(textToEmbed);
-        }
-
-        const updatePayload = {
-            ...article,
-            embedding,
-            // Reset assessment fields for a fresh run
-            relevance_headline: 0,
-            assessment_headline: 'Awaiting assessment',
-            relevance_article: null,
-            assessment_article: null,
-            key_individuals: [],
-            error: null,
-            enrichment_error: null,
-        };
-        // Remove _id from the payload to avoid immutable field errors on upsert
-        delete updatePayload._id; 
-
-        operations.push({
-            updateOne: {
-                filter: { link: article.link },
-                update: { $set: updatePayload },
-                upsert: true
+    const articleOps = [];
+    if (articlesToSave && articlesToSave.length > 0) {
+        for (const article of articlesToSave) {
+            // If the article was fully enriched and assessed, generate a new, more accurate embedding.
+            // Otherwise, its initial headline-based embedding is sufficient.
+            if (article.relevance_article && article.articleContent) {
+                const textToEmbed = `${article.headline}\n${article.assessment_article || ''}\n${(article.articleContent.contents || []).join(' ').substring(0, 500)}`;
+                article.embedding = await generateEmbedding(textToEmbed);
             }
-        });
+
+            const { _id, ...dataToSet } = article;
+            Object.keys(dataToSet).forEach(key => dataToSet[key] === undefined && delete dataToSet[key]);
+
+            articleOps.push({
+                updateOne: {
+                    filter: { link: article.link },
+                    update: { $set: dataToSet },
+                    upsert: true,
+                },
+            });
+        }
+    }
+
+    // This block only runs if articles were successfully committed first.
+    const eventOps = [];
+    if (eventsToSave && eventsToSave.length > 0 && articleOps.length > 0) {
+         // First, commit articles to ensure they have permanent _id fields.
+        await Article.bulkWrite(articleOps, { ordered: false });
+        logger.info(`Article commit complete. Upserted: ${articleOps.filter(op => op.updateOne.upsert).length}, Modified: ${articleOps.filter(op => !op.updateOne.upsert).length}.`);
+        
+        for (const event of eventsToSave) {
+            const sourceLinks = event.source_articles.map(sa => sa.link);
+            const savedArticles = await Article.find({ link: { $in: sourceLinks } }).select('_id link').lean();
+            const linkToIdMap = new Map(savedArticles.map(a => [a.link, a._id]));
+
+            event.source_articles.forEach(sa => {
+                sa.article_id = linkToIdMap.get(sa.link);
+            });
+            // Remove articles that couldn't be mapped (should not happen in this logic)
+            event.source_articles = event.source_articles.filter(sa => sa.article_id);
+
+            // Use .toObject() if it's a Mongoose model instance, otherwise just use the object
+            const eventPayload = event.toObject ? event.toObject() : event;
+
+            eventOps.push({
+                updateOne: {
+                    filter: { event_key: event.event_key },
+                    update: { $set: eventPayload },
+                    upsert: true,
+                }
+            });
+        }
+    } else if (articleOps.length > 0) {
+        // If there are only articles to save, commit them.
+        await Article.bulkWrite(articleOps, { ordered: false });
+        logger.info(`Article commit complete. Upserted: ${articleOps.filter(op => op.updateOne.upsert).length}.`);
     }
 
     try {
-        logger.info(`Preparing ${operations.length} articles in the database for processing...`);
-        const bulkResult = await Article.bulkWrite(operations);
-        logger.info(`DB Prep complete. Upserted: ${bulkResult.upsertedCount}, Modified: ${bulkResult.modifiedCount}`);
-
-        const links = articlesToProcess.map(a => a.link);
-        const finalDocs = await Article.find({ link: { $in: links } }).lean();
-        return finalDocs;
-    } catch (error) {
-        logger.error({ err: error }, 'Bulk upsert operation failed during article preparation.');
-        return [];
-    }
-}
-
-export async function updateArticlesWithFullData(articles) {
-    if (articles.length === 0) return [];
-
-    const operations = [];
-    for (const article of articles) {
-        const { _id, ...dataToSet } = article;
-        Object.keys(dataToSet).forEach(key => dataToSet[key] === undefined && delete dataToSet[key]);
-        
-        const textToEmbed = `${article.headline}\n${article.assessment_article || ''}\n${(article.articleContent?.contents || []).join(' ').substring(0, 500)}`;
-        dataToSet.embedding = await generateEmbedding(textToEmbed);
-
-        operations.push({
-            updateOne: {
-                filter: { _id: article._id },
-                update: { $set: dataToSet },
-            },
-        });
-    }
-
-    if (operations.length > 0) {
-        try {
-            logger.info(`Updating ${operations.length} articles with full data and new embeddings.`);
-            await Article.bulkWrite(operations, { ordered: false });
-            return articles.map(a => ({...a, db_operation_status: 'updated'}));
-        } catch (error) {
-            logger.error({ err: error }, 'Bulk write operation failed for final data update.');
-            return articles.map(a => ({...a, db_operation_status: 'failed', db_error_reason: 'Bulk DB op failed.' }));
+        if (eventOps.length > 0) {
+            const eventResult = await SynthesizedEvent.bulkWrite(eventOps, { ordered: false });
+            logger.info(`Event commit complete. Upserted: ${eventResult.upsertedCount}, Modified: ${eventResult.modifiedCount}.`);
+        } else if (articlesToSave.length > 0) {
+             logger.info('No new events to commit.');
+        } else {
+             logger.info('No new articles or events to commit.');
         }
+        
+        return true;
+
+    } catch (error) {
+        logger.fatal({ err: error }, 'CRITICAL: Failed to commit pipeline results to the database.');
+        return false;
     }
-    return [];
 }
 
 # File: src/modules/scraper/index.js
@@ -6078,9 +2883,10 @@ import * as cheerio from 'cheerio';
 import pLimit from 'p-limit';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { logger } from '../../utils/logger.js';
-import { safeExecute, truncateString } from '../../utils/helpers.js'; // FIX: truncateString is now imported
+import { safeExecute, truncateString } from '../../utils/helpers.js';
 import { CONCURRENCY_LIMIT, SCRAPER_PROXY_URL, MIN_ARTICLE_CHARS } from '../../config/index.js';
-import { SITES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js';
+// MODIFIED: Import the new country-based config
+import { COUNTRIES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js';
 
 const limit = pLimit(CONCURRENCY_LIMIT);
 
@@ -6124,10 +2930,6 @@ async function fetchPage(url) {
 }
 
 export async function scrapeSite(site) {
-    // This function is now used by both the main app and the scrape.js script.
-    // We avoid logging here to keep the scrape.js output clean.
-    
-    // --- SPECIAL API-BASED SCRAPING FOR EQT ---
     if (site.name === 'EQT') {
         const pageResponse = await fetchPage(site.url);
         if (!pageResponse) return { source: site.name, articles: [], success: false };
@@ -6158,7 +2960,6 @@ export async function scrapeSite(site) {
         }
     }
 
-    // --- STANDARD HTML SCRAPING FOR ALL OTHER SITES ---
     const response = await fetchPage(site.url);
     if (!response) {
         return { source: site.name, articles: [], success: false };
@@ -6174,7 +2975,6 @@ export async function scrapeSite(site) {
                 if (jsonData['@type'] === 'ItemList' && jsonData.itemListElement) {
                     jsonData.itemListElement.forEach(item => {
                         if (item.name && item.url) {
-                           // FIX: Ensure URL is absolute before pushing
                            const absoluteUrl = new URL(item.url, site.url).href;
                            articles.push({ headline: item.name, link: absoluteUrl, source: site.name, newspaper: site.newspaper || site.name });
                         }
@@ -6188,7 +2988,6 @@ export async function scrapeSite(site) {
         $(site.selector).each((_, el) => {
             const articleData = site.extract($(el), site);
             if (articleData && articleData.headline && articleData.link) {
-                // Ensure URL is absolute
                 articleData.link = new URL(articleData.link, site.url).href;
                 articleData.newspaper = site.newspaper || site.name;
                 articles.push(articleData);
@@ -6202,7 +3001,11 @@ export async function scrapeSite(site) {
 
 export async function scrapeAllHeadlines() {
     logger.info('📰 Starting headline scraping from all sources...');
-    const promises = Object.values(SITES_CONFIG).map(site => limit(() => scrapeSite(site)));
+    
+    // MODIFIED: Flatten the new country-based structure into a single list of sites to scrape.
+    const allSites = COUNTRIES_CONFIG.flatMap(country => country.sites);
+    
+    const promises = allSites.map(site => limit(() => scrapeSite(site)));
     const results = await Promise.all(promises);
     
     results.forEach(r => {
@@ -6224,7 +3027,6 @@ export async function scrapeArticleContent(article) {
         return { ...article, enrichment_error: 'Failed to fetch page' };
     }
     
-    // --- SPECIAL JSON-BASED ENRICHMENT FOR EQT ARTICLES ---
     if (article.newspaper === 'EQT') {
         const $page = cheerio.load(pageResponse.data);
         const scriptData = $page('script#__NEXT_DATA__').html();

@@ -1,3 +1,4 @@
+// src/modules/email/components/supervisorEmailBodyBuilder.js (version 2.0)
 // src/modules/email/components/supervisorEmailBodyBuilder.js
 import { SUPERVISOR_EMAIL_CONFIG, HEADLINES_RELEVANCE_THRESHOLD } from '../../../config/index.js';
 import { LOGO_URL } from '../constants.js';
@@ -8,22 +9,47 @@ import SynthesizedEvent from '../../../../models/SynthesizedEvent.js';
 function escapeHtml(unsafe) {
     if (unsafe === null || unsafe === undefined) return '';
     return String(unsafe)
-         .replace(/&/g, "&")
-         .replace(/</g, "<")
-         .replace(/>/g, ">")
-         .replace(/"/g, "'")
-         .replace(/'/g, "'");
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
 }
 
-function createSupervisorEmailWrapper(bodyContent) {
+function createSupervisorEmailWrapper(bodyContent, subject) {
     return `
     <!DOCTYPE html>
-    <html>
-    <head><title>${SUPERVISOR_EMAIL_CONFIG.subject}</title></head>
-    <body style="font-family: sans-serif; background-color: #f0f0f0; padding: 20px;">
-        <table width="95%" border="0" cellspacing="0" cellpadding="20" style="max-width: 1200px; margin: auto; background-color: #ffffff;">
-            <tr><td>${bodyContent}</td></tr>
-        </table>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+        <style>
+            body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; color: #212529; }
+            .container { max-width: 1200px; margin: 20px auto; background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+            h1, h2, h3, h4 { margin-top: 0; margin-bottom: 1rem; font-weight: 600; color: #343a40; }
+            h1 { font-size: 28px; }
+            h2 { font-size: 22px; border-bottom: 1px solid #dee2e6; padding-bottom: 10px; margin-top: 40px; }
+            p { margin-top: 0; margin-bottom: 1rem; line-height: 1.6; }
+            table { width: 100%; border-collapse: collapse; font-size: 14px; }
+            th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #dee2e6; }
+            th { background-color: #f1f3f5; font-weight: 600; }
+            tr:nth-child(even) { background-color: #f8f9fa; }
+            tr:hover { background-color: #e9ecef; }
+            a { color: #007bff; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            .alert-box { border: 1px solid; border-radius: 8px; padding: 20px; margin: 20px 0; }
+            .alert-danger { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+            .alert-danger h2 { color: #721c24; }
+            .card { border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 20px; background-color: #ffffff; }
+            .card-header { padding: 15px; border-bottom: 1px solid #dee2e6; background-color: #f8f9fa; }
+            .card-body { padding: 20px; }
+            .status-success { color: #28a745; font-weight: bold; }
+            .status-dropped { color: #dc3545; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class="container">${bodyContent}</div>
     </body>
     </html>`;
 }
@@ -38,94 +64,82 @@ function createScraperFailureAlertHtml(enrichmentOutcomes) {
     if (scraperFailures.length === 0) return '';
 
     let listItems = scraperFailures.map(item => `
-        <li style="margin-bottom: 10px;">
+        <li style="margin-bottom: 12px;">
             <strong>${escapeHtml(item.newspaper)}:</strong> 
-            <a href="${item.link}">${escapeHtml(item.headline)}</a><br/>
-            <em style="font-size:12px; color: #555;">${escapeHtml(item.assessment_article)}</em>
+            <a href="${item.link}" target="_blank">${escapeHtml(item.headline)}</a><br>
+            <em style="font-size:13px; color: #555;">${escapeHtml(item.assessment_article)}</em>
         </li>
     `).join('');
 
     return `
-    <div style="border: 2px solid #c0392b; background-color: #fbeae5; padding: 15px; margin: 20px 0; border-radius: 8px;">
-        <h2 style="color: #c0392b; margin-top: 0;">⚠️ Scraper Action Required</h2>
+    <div class="alert-box alert-danger">
+        <h2 style="margin-top:0;">⚠️ Scraper Action Required</h2>
         <p>The following relevant headlines failed the enrichment stage, likely due to an outdated or incorrect article text selector. Please review the selectors for these sources in <strong>src/config/sources.js</strong>.</p>
-        <ul style="padding-left: 20px; margin-top: 15px;">
-            ${listItems}
-        </ul>
-    </div>
-    `;
+        <ul style="padding-left: 20px; margin-top: 15px; font-size: 14px;">${listItems}</ul>
+    </div>`;
 }
 
 function createScraperHealthTable(healthStats) {
-    if (!healthStats || healthStats.length === 0) return '';
+    if (!healthStats || healthStats.length === 0) return '<h2>Scraper Health Check</h2><p>No health stats available.</p>';
 
-    let table = `<h2>Scraper Health Check</h2>
-    <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 12px;">
-        <thead style="background-color: #f8f8f8;"><tr><th>Source</th><th>Status</th><th>Articles Found</th></tr></thead><tbody>`;
-    
-    healthStats.sort((a, b) => a.source.localeCompare(b.source));
-
-    for (const stat of healthStats) {
+    let tableRows = healthStats.sort((a, b) => a.source.localeCompare(b.source)).map(stat => {
         const status = stat.success ? '✅ OK' : '❌ FAILED';
-        const statusColor = stat.success ? 'green' : 'red';
-        table += `<tr>
+        const statusColor = stat.success ? '#28a745' : '#dc3545';
+        return `
+            <tr>
                 <td>${escapeHtml(stat.source)}</td>
-                <td style="color: ${statusColor};">${status}</td>
+                <td style="color: ${statusColor}; font-weight: bold;">${status}</td>
                 <td>${stat.count}</td>
             </tr>`;
-    }
-    table += `</tbody></table>`;
-    return table;
+    }).join('');
+
+    return `
+    <h2>Scraper Health Check</h2>
+    <table>
+        <thead><tr><th>Source</th><th>Status</th><th>Articles Found</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+    </table>`;
 }
 
-
-// --- MODIFIED: This function now creates detailed cards instead of a simple table ---
 function createEnrichmentFunnelHtml(enrichmentOutcomes) {
     if (!enrichmentOutcomes || enrichmentOutcomes.length === 0) {
-        return '<h2>Enrichment Funnel</h2><p>No headlines were relevant enough for enrichment.</p>';
+        return `<h2>Enrichment Funnel</h2><p>No headlines were relevant enough for enrichment (scored &lt; ${HEADLINES_RELEVANCE_THRESHOLD}).</p>`;
     }
 
-    let cardsHtml = `<h2>Enrichment Funnel Audit Trail</h2>
-    <p>Complete lifecycle of every headline that scored ≥ ${HEADLINES_RELEVANCE_THRESHOLD}.</p>`;
-
-    // Sort to show successful items first, then by score
-    enrichmentOutcomes.sort((a, b) => {
+    const cardsHtml = enrichmentOutcomes.sort((a, b) => {
         if (a.outcome === 'Success' && b.outcome !== 'Success') return -1;
         if (a.outcome !== 'Success' && b.outcome === 'Success') return 1;
         return (b.headlineScore || 0) - (a.headlineScore || 0);
-    });
-
-    for (const item of enrichmentOutcomes) {
+    }).map(item => {
         const isSuccess = item.outcome === 'Success';
-        const statusColor = isSuccess ? '#27ae60' : '#c0392b'; // green or red
+        const statusClass = isSuccess ? 'status-success' : 'status-dropped';
         const statusIcon = isSuccess ? '✅' : '❌';
 
-        cardsHtml += `
-        <div style="border: 1px solid #ccc; border-left: 5px solid ${statusColor}; margin-bottom: 20px; padding: 15px; background-color: #f9f9f9;">
-            <h4 style="margin-top: 0; margin-bottom: 10px; font-size: 16px;">
-                <a href="${item.link}" style="color: #007bff; text-decoration:none;">${escapeHtml(item.headline)}</a>
-            </h4>
-            <p style="margin: 0 0 10px;">
-                <strong>${statusIcon} Status:</strong> <span style="font-weight: bold; color: ${statusColor};">${item.outcome}</span>
-            </p>
-            <div style="font-size: 13px; line-height: 1.5;">
-                <p style="margin: 0 0 5px;">
-                    <strong>➡️ Stage 1 (Headline):</strong> Score [${item.headlineScore}] - <i>${escapeHtml(item.assessment_headline)}</i>
+        return `
+        <div class="card">
+            <div class="card-header">
+                <h4 style="margin:0; font-size: 16px;">
+                    <a href="${item.link}" target="_blank">${escapeHtml(item.headline)}</a>
+                </h4>
+            </div>
+            <div class="card-body">
+                <p style="margin: 0 0 10px;"><strong>${statusIcon} Status:</strong> <span class="${statusClass}">${item.outcome}</span></p>
+                <p style="margin: 0 0 5px; font-size: 13px; color: #495057;">
+                    <strong>Stage 1 (Headline):</strong> Score [${item.headlineScore}] - <i>${escapeHtml(item.assessment_headline)}</i>
                 </p>
-                <p style="margin: 0 0 10px;">
-                    <strong>➡️ Stage 2 (Content):</strong> Final Score [${item.finalScore ?? 'N/A'}] - <span style="font-style: italic;">${escapeHtml(item.assessment_article)}</span>
+                <p style="margin: 0 0 10px; font-size: 13px; color: #495057;">
+                    <strong>Stage 2 (Content):</strong> Final Score [${item.finalScore ?? 'N/A'}] - <span style="font-style: italic;">${escapeHtml(item.assessment_article)}</span>
                 </p>
-                <div style="padding: 10px; background-color: #fff; border: 1px solid #eee; font-size: 11px; color: #555; max-height: 100px; overflow-y: auto;">
+                <div style="padding: 10px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; font-size: 12px; color: #495057; max-height: 100px; overflow-y: auto;">
                     <strong>Article Snippet:</strong>
-                    <p style="margin-top: 5px; margin-bottom: 0; white-space: pre-wrap; font-family: monospace;">${escapeHtml(item.content_snippet)}...</p>
+                    <p style="margin-top: 5px; margin-bottom: 0; white-space: pre-wrap; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;">${escapeHtml(item.content_snippet)}...</p>
                 </div>
             </div>
-        </div>
-        `;
-    }
-    return cardsHtml;
+        </div>`;
+    }).join('');
+
+    return `<h2>Enrichment Funnel Audit Trail (Lifecycle of ${enrichmentOutcomes.length} relevant headlines)</h2>${cardsHtml}`;
 }
-// --- END MODIFICATION ---
 
 
 async function createEventsTableHtml(runStartDate) {
@@ -135,22 +149,22 @@ async function createEventsTableHtml(runStartDate) {
                                                  .lean();
     if (recentEvents.length === 0) return `<h2>Synthesized Events from this Run</h2><p>No events were synthesized in this run.</p>`;
 
-    let table = `<h2>Synthesized Events from this Run</h2>
-    <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 12px;">
-        <thead style="background-color: #f8f8f8;"><tr><th>Synthesized Headline</th><th>Score</th><th>Sources</th><th>Key Individuals</th><th>Emailed?</th></tr></thead><tbody>`;
-    for (const event of recentEvents) {
-        const sources = event.source_articles.map(a => a.newspaper).join(', ');
-        const individuals = event.key_individuals.map(p => p.name).join(', ') || 'N/A';
-        table += `<tr>
-                <td>${truncateString(escapeHtml(event.synthesized_headline), 80)}</td>
-                <td>${event.highest_relevance_score}</td>
-                <td>${escapeHtml(sources)}</td>
-                <td>${escapeHtml(individuals)}</td>
-                <td>${event.emailed ? 'Yes' : 'No'}</td>
-            </tr>`;
-    }
-    table += `</tbody></table>`;
-    return table;
+    let tableRows = recentEvents.map(event => `
+        <tr>
+            <td>${truncateString(escapeHtml(event.synthesized_headline), 80)}</td>
+            <td>${event.highest_relevance_score}</td>
+            <td>${escapeHtml(event.source_articles.map(a => a.newspaper).join(', '))}</td>
+            <td>${escapeHtml(event.key_individuals.map(p => p.name).join(', ') || 'N/A')}</td>
+            <td>${event.emailed ? 'Yes' : 'No'}</td>
+        </tr>
+    `).join('');
+
+    return `
+    <h2>Synthesized Events (${recentEvents.length})</h2>
+    <table>
+        <thead><tr><th>Synthesized Headline</th><th>Score</th><th>Sources</th><th>Key Individuals</th><th>Emailed?</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+    </table>`;
 }
 
 async function createArticlesTableHtml(runStartDate) {
@@ -160,39 +174,44 @@ async function createArticlesTableHtml(runStartDate) {
                                          .lean();
     if (freshArticles.length === 0) return `<h2>All Fresh Articles Processed</h2><p>No new raw articles were processed.</p>`;
 
-    let table = `<h2>All Fresh Articles Processed in this Run</h2>
-    <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 12px;">
-        <thead style="background-color: #f8f8f8;"><tr><th>Headline</th><th>Source</th><th>HL Score</th><th>Status</th></tr></thead><tbody>`;
-    for (const article of freshArticles) {
+    let tableRows = freshArticles.map(article => {
         const status = article.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD ? 'Relevant for Enrichment' : 'Low Relevance';
-        table += `<tr>
-                <td><a href="${article.link}">${truncateString(escapeHtml(article.headline), 80)}</a></td>
+        return `
+            <tr>
+                <td><a href="${article.link}" target="_blank">${truncateString(escapeHtml(article.headline), 80)}</a></td>
                 <td>${escapeHtml(article.newspaper)}</td>
                 <td>${article.relevance_headline}</td>
                 <td>${status}</td>
             </tr>`;
-    }
-    table += `</tbody></table>`;
-    return table;
-}
+    }).join('');
 
+    return `
+    <h2>All Fresh Articles Processed (${freshArticles.length})</h2>
+    <table>
+        <thead><tr><th>Headline</th><th>Source</th><th>HL Score</th><th>Status</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+    </table>`;
+}
 
 export async function createSupervisorEmailBody(runStats) {
     const runTimestamp = new Date().toLocaleString('en-GB', { timeZone: 'Europe/Copenhagen' });
-    const runStartDate = new Date(Date.now() - 10 * 60 * 1000); // Widen window slightly to be safe
-    
+    const runStartDate = new Date(Date.now() - 10 * 60 * 1000);
+
     let statsHtml = `<h2>Run Statistics</h2><ul>`;
-    const statOrder = ['headlinesScraped', 'freshHeadlinesFound', 'headlinesAssessed', 'relevantHeadlines', 'articlesEnriched', 'relevantArticles', 'eventsClustered', 'eventsSynthesized', 'eventsEmailed', 'errors'];
+    const statOrder = ['headlinesScraped', 'freshHeadlinesFound', 'headlinesAssessed', 'relevantHeadlines', 'articlesEnriched', 'relevantArticles', 'eventsClustered', 'eventsSynthesized', 'eventsEmailed'];
     for (const key of statOrder) {
         if (runStats.hasOwnProperty(key)) {
             const value = runStats[key];
             const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            statsHtml += `<li><strong>${formattedKey}:</strong> ${Array.isArray(value) && value.length === 0 ? '0' : (Array.isArray(value) ? value.join(', ') : value)}</li>`;
+            statsHtml += `<li style="font-size: 15px; margin-bottom: 8px;"><strong>${formattedKey}:</strong> ${value}</li>`;
         }
+    }
+     if (runStats.errors && runStats.errors.length > 0) {
+        statsHtml += `<li style="font-size: 15px; margin-bottom: 8px; color: #721c24;"><strong>Errors:</strong> ${runStats.errors.join(', ')}</li>`;
     }
     statsHtml += `</ul>`;
 
-    const scraperFailureAlertHtml = createScraperFailureAlertHtml(runStats.enrichmentOutcomes); // NEW
+    const scraperFailureAlertHtml = createScraperFailureAlertHtml(runStats.enrichmentOutcomes);
     const scraperHealthHtml = createScraperHealthTable(runStats.scraperHealth);
     const enrichmentFunnelHtml = createEnrichmentFunnelHtml(runStats.enrichmentOutcomes);
 
@@ -202,26 +221,23 @@ export async function createSupervisorEmailBody(runStats) {
     ]);
     
     const bodyContent = `
-        <div style="text-align:center;"><img src="${LOGO_URL}" alt="Logo" style="max-width:150px;"></div>
-        <h1 style="text-align:center;">${SUPERVISOR_EMAIL_CONFIG.subject}</h1>
-        <p style="text-align:center;">Run completed: ${runTimestamp}</p>
+        <div style="text-align:center; margin-bottom: 30px;">
+            <img src="${LOGO_URL}" alt="Logo" style="max-width:50px; filter: grayscale(1);">
+            <h1>${SUPERVISOR_EMAIL_CONFIG.subject}</h1>
+            <p style="font-size: 16px; color: #6c757d;">Run completed: ${runTimestamp}</p>
+        </div>
         
-        ${scraperFailureAlertHtml} <!-- The new, prominent alert -->
-        
+        ${scraperFailureAlertHtml}
         ${statsHtml}
-        
-        ${enrichmentFunnelHtml} <!-- The new, detailed audit trail -->
-        
+        ${enrichmentFunnelHtml}
         ${eventsTableHtml}
-        
         ${articlesTableHtml}
-        
         ${scraperHealthHtml}
 
-        <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #888888;">
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; font-size: 12px; color: #6c757d;">
             <p>This is an automated report from the ${SUPERVISOR_EMAIL_CONFIG.brandName}.</p>
         </div>
     `;
 
-    return createSupervisorEmailWrapper(bodyContent);
+    return createSupervisorEmailWrapper(bodyContent, SUPERVISOR_EMAIL_CONFIG.subject);
 }

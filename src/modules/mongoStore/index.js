@@ -1,4 +1,4 @@
-// src/modules/mongoStore/index.js
+// src/modules/mongoStore/index.js (version 2.1)
 import Article from '../../../models/Article.js';
 import SynthesizedEvent from '../../../models/SynthesizedEvent.js';
 import { logger } from '../../utils/logger.js';
@@ -50,9 +50,10 @@ export async function savePipelineResults(articlesToSave, eventsToSave) {
     logger.info(`Committing pipeline results to database...`);
     
     const articleOps = [];
+
     if (articlesToSave && articlesToSave.length > 0) {
         for (const article of articlesToSave) {
-            // If the article was fully enriched and assessed, generate a new, more accurate embedding.
+            // If the article was fully enriched and assessed, generate a new, more accurate embedding based on its content.
             // Otherwise, its initial headline-based embedding is sufficient.
             if (article.relevance_article && article.articleContent) {
                 const textToEmbed = `${article.headline}\n${article.assessment_article || ''}\n${(article.articleContent.contents || []).join(' ').substring(0, 500)}`;
@@ -61,6 +62,12 @@ export async function savePipelineResults(articlesToSave, eventsToSave) {
 
             const { _id, ...dataToSet } = article;
             Object.keys(dataToSet).forEach(key => dataToSet[key] === undefined && delete dataToSet[key]);
+
+            // --- CRITICAL CHANGE: Remove full article content before saving to database ---
+            // The full text has already been used in memory for AI synthesis.
+            // Persisting it is unnecessary and the primary cause of database bloat.
+            delete dataToSet.articleContent;
+            // --- END CRITICAL CHANGE ---
 
             articleOps.push({
                 updateOne: {
@@ -72,42 +79,36 @@ export async function savePipelineResults(articlesToSave, eventsToSave) {
         }
     }
 
-    // This block only runs if articles were successfully committed first.
-    const eventOps = [];
-    if (eventsToSave && eventsToSave.length > 0 && articleOps.length > 0) {
-         // First, commit articles to ensure they have permanent _id fields.
-        await Article.bulkWrite(articleOps, { ordered: false });
-        logger.info(`Article commit complete. Upserted: ${articleOps.filter(op => op.updateOne.upsert).length}, Modified: ${articleOps.filter(op => !op.updateOne.upsert).length}.`);
-        
-        for (const event of eventsToSave) {
-            const sourceLinks = event.source_articles.map(sa => sa.link);
-            const savedArticles = await Article.find({ link: { $in: sourceLinks } }).select('_id link').lean();
-            const linkToIdMap = new Map(savedArticles.map(a => [a.link, a._id]));
-
-            event.source_articles.forEach(sa => {
-                sa.article_id = linkToIdMap.get(sa.link);
-            });
-            // Remove articles that couldn't be mapped (should not happen in this logic)
-            event.source_articles = event.source_articles.filter(sa => sa.article_id);
-
-            // Use .toObject() if it's a Mongoose model instance, otherwise just use the object
-            const eventPayload = event.toObject ? event.toObject() : event;
-
-            eventOps.push({
-                updateOne: {
-                    filter: { event_key: event.event_key },
-                    update: { $set: eventPayload },
-                    upsert: true,
-                }
-            });
-        }
-    } else if (articleOps.length > 0) {
-        // If there are only articles to save, commit them.
-        await Article.bulkWrite(articleOps, { ordered: false });
-        logger.info(`Article commit complete. Upserted: ${articleOps.filter(op => op.updateOne.upsert).length}.`);
-    }
-
     try {
+        if (articleOps.length > 0) {
+            await Article.bulkWrite(articleOps, { ordered: false });
+            logger.info(`Article commit complete. Upserted/Modified: ${articleOps.length}. (Full article content was NOT stored).`);
+        }
+
+        const eventOps = [];
+        if (eventsToSave && eventsToSave.length > 0 && articleOps.length > 0) {
+            for (const event of eventsToSave) {
+                const sourceLinks = event.source_articles.map(sa => sa.link);
+                const savedArticles = await Article.find({ link: { $in: sourceLinks } }).select('_id link').lean();
+                const linkToIdMap = new Map(savedArticles.map(a => [a.link, a._id]));
+
+                event.source_articles.forEach(sa => {
+                    sa.article_id = linkToIdMap.get(sa.link);
+                });
+                event.source_articles = event.source_articles.filter(sa => sa.article_id);
+
+                const eventPayload = event.toObject ? event.toObject() : event;
+
+                eventOps.push({
+                    updateOne: {
+                        filter: { event_key: event.event_key },
+                        update: { $set: eventPayload },
+                        upsert: true,
+                    }
+                });
+            }
+        }
+
         if (eventOps.length > 0) {
             const eventResult = await SynthesizedEvent.bulkWrite(eventOps, { ordered: false });
             logger.info(`Event commit complete. Upserted: ${eventResult.upsertedCount}, Modified: ${eventResult.modifiedCount}.`);

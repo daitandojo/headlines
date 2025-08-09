@@ -7,6 +7,9 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+# data only
+papers.json
+/scripts
 # misc
 .DS_Store
 *.pem

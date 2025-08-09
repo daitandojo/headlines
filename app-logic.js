@@ -1,4 +1,4 @@
-// app-logic.js (version 2.0)
+// app-logic.js (version 2.1)
 import mongoose from 'mongoose';
 import { connectDatabase } from './src/database.js';
 import { scrapeAllHeadlines, scrapeArticleContent } from './src/modules/scraper/index.js';
@@ -6,6 +6,7 @@ import { filterFreshArticles, savePipelineResults } from './src/modules/mongoSto
 import { assessHeadlinesInBatches, assessArticleContent, performAiSanityCheck, checkModelPermissions } from './src/modules/ai/index.js';
 import { clusterArticlesIntoEvents, synthesizeEvent } from './src/modules/ai/eventProcessing.js';
 import { findSimilarArticles } from './src/modules/ai/rag.js';
+import Article from './models/Article.js'; // <-- NEW: Import Article model
 import SynthesizedEvent from './models/SynthesizedEvent.js';
 import { logger } from './src/utils/logger.js';
 import { logFinalReport } from './src/utils/pipelineLogger.js'; 
@@ -46,6 +47,27 @@ export async function runPipeline(isRefreshMode = false) {
         }
         await connectDatabase();
         dbConnected = true;
+
+        // --- NEW: STEP 1.5: DATABASE HOUSEKEEPING ---
+        logger.info('🧹 Performing database housekeeping...');
+        try {
+            const fourteenDaysAgo = new Date();
+            fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+            const result = await Article.deleteMany({
+                createdAt: { $lt: fourteenDaysAgo },
+                relevance_headline: 0 // Target only articles explicitly scored as irrelevant
+            });
+
+            if (result.deletedCount > 0) {
+                logger.info(`Housekeeping complete. Deleted ${result.deletedCount} irrelevant articles older than 14 days.`);
+            } else {
+                logger.info('Housekeeping complete. No old, irrelevant articles found to delete.');
+            }
+        } catch (cleanupError) {
+            logger.warn({ err: cleanupError }, 'Database housekeeping step failed. The pipeline will continue, but the database may grow unnecessarily.');
+        }
+        // --- END NEW STEP ---
 
         // --- STEP 2: SCRAPE & FILTER ARTICLES ---
         const { allArticles: scrapedHeadlines, scraperHealth } = await scrapeAllHeadlines();

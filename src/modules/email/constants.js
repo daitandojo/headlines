@@ -1,5 +1,6 @@
+// src/modules/email/constants.js (version 2.0)
 // src/modules/email/constants.js
 
-// Placeholder for your logo URL (replace with actual URL to a PNG/JPG)
+// A modern, abstract logo suitable for a premium wealth-tech brand.
 export const LOGO_URL =
-  'https://static.seekingalpha.com/cdn/s3/uploads/getty_images/1493722121/image_1493722121.jpg'; // <-- REPLACE THIS
+  'https://raw.githubusercontent.com/geminioracle/images/main/headlines-logo-gold.png';
