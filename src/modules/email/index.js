@@ -65,7 +65,7 @@ export async function sendWealthEventsEmail() {
             .map(country => countryNameToFlagMap.get(country) || '')
             .join(' ');
         
-        const subject = `${includedFlags} New Wealth Opportunities Detected`.trim();
+        const subject = `${includedFlags} New Wealth Opportunities`.trim();
         const body = createPersonalizedEmailBody(user, userSpecificEventsByCountry, subject);
 
         if (body) {

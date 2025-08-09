@@ -47,7 +47,7 @@ export function createPersonalizedEmailBody(user, eventsByCountry, subject) {
         <p style="font-size: 16px; color: #555555; text-align: left;">
             Hi ${user.firstName},
             <br><br>
-            Here are the latest potential wealth events identified for your subscribed regions:
+            Here are the latest relevant events identified for you:
         </p>
 
         <div style="text-align: center; margin: 25px 0;">
