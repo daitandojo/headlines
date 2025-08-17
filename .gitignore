@@ -1,6 +1,8 @@
 /node_modules
+/contacts
 /.pnpm
 /debug
+error_run
 .pnp.*
 .yarn/*
 !.yarn/patches

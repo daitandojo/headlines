@@ -1,4 +1,4 @@
-// src/config/index.js (version 2.2)
+// src/config/index.js (version 2.3 - Pinecone Integration)
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -31,9 +31,12 @@ export const IS_REFRESH_MODE = process.env.REFRESH_MODE === 'true';
 // --- Database ---
 export const MONGO_URI = getCleanStringEnv('MONGO_URI');
 
+// --- NEW: Pinecone Configuration ---
+export const PINECONE_API_KEY = getCleanStringEnv('PINECONE_API_KEY');
+export const PINECONE_INDEX_NAME = getCleanStringEnv('PINECONE_INDEX_NAME', 'headlines');
+
 // --- LLM Configuration ---
 export const OPENAI_API_KEY = getCleanStringEnv('OPENAI_API_KEY');
-// All AI tasks are unified to use a single, powerful model as per the new strategy.
 export const LLM_MODEL = getCleanStringEnv('LLM_MODEL', 'gpt-5-mini');
 export const LLM_MODEL_TRIAGE = LLM_MODEL;
 export const LLM_MODEL_HEADLINES = LLM_MODEL;
@@ -42,6 +45,8 @@ export const LLM_MODEL_ARTICLES = LLM_MODEL;
 // --- Scraper Configuration ---
 export const SCRAPER_PROXY_URL = getCleanStringEnv('SCRAPER_PROXY_URL') || null;
 
+// --- NEW: Third-Party Service APIs ---
+export const SERPAPI_API_KEY = getCleanStringEnv('SERPAPI_API_KEY');
 
 // --- Thresholds ---
 export const HEADLINES_RELEVANCE_THRESHOLD = 20;
@@ -65,15 +70,10 @@ export const SMTP_CONFIG = {
     fromName: getCleanStringEnv('SMTP_FROM_NAME', 'Headlines Bot'),
 };
 
-// REMOVED: All recipient logic is now handled by the email module via src/config/users.js.
-// export const HEADLINE_RECIPIENTS_STR = getCleanStringEnv('HEADLINE_RECIPIENTS');
-// export const HEADLINE_RECIPIENTS = HEADLINE_RECIPIENTS_STR.split(',').map(e => e.trim()).filter(Boolean);
-
-
 // --- Email Template Config ---
 export const EMAIL_CONFIG = {
   templateName: 'wealthEvents',
-  subject: 'New Nordic Banking Opportunities Detected', // This will be customized per user
+  subject: 'New Nordic Banking Opportunities Detected',
   language: 'en',
   brandName: 'Your Wealth Watch',
   companyAddress: 'Wealth Watch Inc., Paris, France',

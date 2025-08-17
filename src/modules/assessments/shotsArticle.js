@@ -1,3 +1,4 @@
+// src/modules/assessments/shotsArticle.js (version 2.0)
 // src/modules/assessments/shotsArticle.js
 
 export const shotsInput = [
@@ -13,8 +14,9 @@ export const shotsInput = [
 ];
 
 export const shotsOutput = [
-  // REFINED: Updated to new JSON structure
+  // REFINED: Updated to new JSON structure with country
   JSON.stringify({
+    country: 'Denmark',
     topic: 'Green hydrogen plant in Esbjerg',
     relevance_article: 10,
     assessment_article: 'Infrastructure project with no direct personal wealth transfer.',
@@ -22,8 +24,9 @@ export const shotsOutput = [
     key_individuals: [],
     background: 'Public or corporate energy initiative.',
   }),
-  // REFINED: Updated to new JSON structure with email inference
+  // REFINED: Updated to new JSON structure with country and email inference
   JSON.stringify({
+    country: 'Denmark',
     topic: 'Sale of Aarstiderne',
     relevance_article: 95,
     assessment_article: 'Clear private wealth event for Scandinavian founder.',
@@ -36,8 +39,9 @@ export const shotsOutput = [
     }],
     background: 'Sale of private Scandinavian company.',
   }),
-  // REFINED: Updated to new JSON structure
+  // REFINED: Updated to new JSON structure with country
   JSON.stringify({
+    country: 'Denmark',
     topic: 'Property tax cuts for homeowners',
     relevance_article: 15,
     assessment_article: 'General tax relief is not a substantial direct wealth event.',
@@ -45,8 +49,9 @@ export const shotsOutput = [
     key_individuals: [],
     background: 'Policy affecting many, not enriching individuals.',
   }),
-  // REFINED: Updated to new JSON structure with email inference
+  // REFINED: Updated to new JSON structure with country and email inference
   JSON.stringify({
+    country: 'Denmark',
     topic: 'Sale of NaviTech',
     relevance_article: 100,
     assessment_article: 'Substantial wealth event clearly benefiting a Scandinavian family.',
@@ -59,8 +64,9 @@ export const shotsOutput = [
     }],
     background: 'Private business transaction.',
   }),
-  // NEW: Output for the Stellantis negative example
+  // NEW: Output for the Stellantis negative example with country
   JSON.stringify({
+    country: 'United States',
     topic: 'Tariff losses for Stellantis',
     relevance_article: 5,
     assessment_article: 'Irrelevant. Article describes financial losses for a foreign multinational corporation.',
@@ -68,8 +74,9 @@ export const shotsOutput = [
     key_individuals: [],
     background: 'General automotive industry news.',
   }),
-  // NEW: Output for the USTC Rich List Proximity example
+  // NEW: Output for the USTC Rich List Proximity example with country
   JSON.stringify({
+    country: 'Denmark',
     topic: 'USTC legal dispute over Nordic Waste claim',
     relevance_article: 60,
     assessment_article: 'High relevance due to the involvement of a Rich List family (Østergaard-Nielsen/USTC) in a significant financial event.',
@@ -82,8 +89,9 @@ export const shotsOutput = [
     }],
     background: 'Ongoing legal and financial issue for a major family holding company.',
   }),
-  // REFINED: Updated to new JSON structure with email inference
+  // REFINED: Updated to new JSON structure with country and email inference
   JSON.stringify({
+    country: 'Denmark',
     topic: 'Sale of Scandinavian tech firm',
     relevance_article: 95,
     assessment_article: 'Substantial wealth event for private Scandinavian individual.',
@@ -96,8 +104,9 @@ export const shotsOutput = [
     }],
     background: 'Private tech company acquisition.',
   }),
-  // REFINED: Updated to new JSON structure
+  // REFINED: Updated to new JSON structure with country
   JSON.stringify({
+    country: 'Denmark',
     topic: 'Grundfos family dividend',
     relevance_article: 95,
     assessment_article: 'Direct and substantial wealth transfer to a private Scandinavian family.',
@@ -110,8 +119,9 @@ export const shotsOutput = [
     }],
     background: 'Dividend from a family-owned holding company.',
   }),
-  // REFINED: Updated to new JSON structure
+  // REFINED: Updated to new JSON structure with country
   JSON.stringify({
+    country: 'Denmark',
     topic: 'Rockwool global expansion',
     relevance_article: 10,
     assessment_article: 'Corporate strategy of a public company, no individual wealth generation.',

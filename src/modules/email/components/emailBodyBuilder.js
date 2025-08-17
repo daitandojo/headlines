@@ -1,15 +1,15 @@
-// src/modules/email/components/emailBodyBuilder.js (version 2.0)
+// src/modules/email/components/emailBodyBuilder.js (version 2.1)
 // src/modules/email/components/emailBodyBuilder.js
-import { logger } from '../../../utils/logger.js';
-import { EMAIL_CONFIG } from '../../../config/index.js';
-import { LOGO_URL } from '../constants.js';
-import { formatEventForEmail } from './eventFormatter.js';
-import { countryNameToFlagMap } from '../../../config/sources.js';
+import { logger } from '../../../utils/logger.js'
+import { EMAIL_CONFIG } from '../../../config/index.js'
+import { LOGO_CID } from '../constants.js' // <-- MODIFIED: Import LOGO_CID
+import { formatEventForEmail } from './eventFormatter.js'
+import { countryNameToFlagMap } from '../../../config/sources.js'
 
 function createEmailWrapper(bodyContent, subject) {
-    // This is a comprehensive wrapper designed for maximum email client compatibility.
-    // It includes a <style> block for modern clients and uses inline styles for fallbacks.
-    return `
+  // This is a comprehensive wrapper designed for maximum email client compatibility.
+  // It includes a <style> block for modern clients and uses inline styles for fallbacks.
+  return `
     <!DOCTYPE html>
     <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
     <head>
@@ -68,29 +68,33 @@ function createEmailWrapper(bodyContent, subject) {
             </tr>
         </table>
     </body>
-    </html>`;
+    </html>`
 }
 
-export function createPersonalizedEmailBody(user, eventsByCountry, subject) {
-    if (!user || !eventsByCountry || Object.keys(eventsByCountry).length === 0) {
-        logger.warn('createPersonalizedEmailBody: Missing user or events data.');
-        return null;
-    }
+export async function createPersonalizedEmailBody(user, eventsByCountry, subject) {
+  if (!user || !eventsByCountry || Object.keys(eventsByCountry).length === 0) {
+    logger.warn('createPersonalizedEmailBody: Missing user or events data.')
+    return null
+  }
 
-    let formattedEventsHtml = '';
-    for (const [country, events] of Object.entries(eventsByCountry)) {
-        const flag = countryNameToFlagMap.get(country) || '🌍';
-        formattedEventsHtml += `
+  let formattedEventsHtml = ''
+  for (const [country, events] of Object.entries(eventsByCountry)) {
+    const flag = countryNameToFlagMap.get(country) || '🌍'
+    formattedEventsHtml += `
         <tr>
           <td style="padding: 30px 0 10px 0;">
             <h2 style="margin:0; font-size: 24px; font-weight: 500; color: #EAEAEA;">${flag} ${country}</h2>
           </td>
         </tr>
-      `;
-        formattedEventsHtml += events.map(event => `<tr><td>${formatEventForEmail(event)}</td></tr>`).join('');
-    }
+      `
+    const eventPromises = events.map((event) => formatEventForEmail(event))
+    const resolvedEventsHtml = await Promise.all(eventPromises)
+    formattedEventsHtml += resolvedEventsHtml
+      .map((html) => `<tr><td>${html}</td></tr>`)
+      .join('')
+  }
 
-    const mainContent = `
+  const mainContent = `
     <!--[if mso | IE]>
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="content-table" align="center">
     <tr>
@@ -101,7 +105,7 @@ export function createPersonalizedEmailBody(user, eventsByCountry, subject) {
           <!-- Header -->
           <tr>
               <td align="center" style="padding:20px 0;">
-                  <img src="${LOGO_URL}" alt="${EMAIL_CONFIG.brandName} Logo" width="60" style="height:auto;display:block;">
+                  <img src="cid:${LOGO_CID}" alt="${EMAIL_CONFIG.brandName} Logo" width="60" style="height:auto;display:block;">
                   <p style="font-size: 14px; font-weight: 500; color: #D4AF37; margin-top: 10px; margin-bottom: 0;">WEALTH INSIGHT</p>
               </td>
           </tr>
@@ -113,7 +117,7 @@ export function createPersonalizedEmailBody(user, eventsByCountry, subject) {
                           <td>
                               <h1 class="main-heading" style="margin:0 0 20px 0; font-size: 28px;">${subject}</h1>
                               <p class="paragraph" style="margin:0 0 25px 0; font-size: 16px;">Hi ${user.firstName},</p>
-                              <p class="paragraph" style="margin:0 0 25px 0; font-size: 16px;">Here are the latest relevant wealth events we have identified based on your subscribed regions.</p>
+                              <p class="paragraph" style="margin:0 0 25px 0; font-size: 16px;">Here are the latest relevant wealth events we have identified.</p>
                           </td>
                       </tr>
                       <tr>
@@ -151,7 +155,7 @@ export function createPersonalizedEmailBody(user, eventsByCountry, subject) {
     </tr>
     </table>
     <![endif]-->
-    `;
+    `
 
-    return createEmailWrapper(mainContent, subject);
+  return createEmailWrapper(mainContent, subject)
 }

@@ -10,7 +10,9 @@ import { LLM_MODEL } from '../src/config/index.js';
 import { logger } from '../src/utils/logger.js';
 
 // --- Configuration ---
-const PAPERS_CONFIG_PATH = path.join(process.cwd(), 'src', 'config', 'papers.json');
+// const PAPERS_CONFIG_PATH = path.join(process.cwd(), 'src', 'config', 'papers.json');
+const PAPERS_CONFIG_PATH = path.join(process.cwd(), 'src', 'config', 'PEFirms.json');
+
 const DEBUG_DIR = path.join(process.cwd(), 'debug');
 const STORAGE_STATE_PATH = path.join(process.cwd(), 'debug', 'state.json');
 const MIN_HEADLINES_THRESHOLD = 8;

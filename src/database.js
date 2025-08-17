@@ -9,14 +9,30 @@ export async function connectDatabase() {
         process.exit(1);
     }
 
+    // If we are already connected or connecting, don't try again.
+    if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
+        logger.info('MongoDB connection is already active.');
+        return true;
+    }
+
     try {
         logger.info('Attempting to connect to MongoDB...');
         await mongoose.connect(MONGO_URI, {
             serverSelectionTimeoutMS: 5000,
         });
-        logger.info('✅ MongoDB connection successful.');
+        
+        if (mongoose.connection.readyState === 1) {
+            logger.info('✅ MongoDB connection successful.');
+            return true;
+        } else {
+            logger.fatal('MongoDB connection attempt finished but readyState is not "connected".');
+            return false;
+        }
+
     } catch (error) {
         logger.fatal({ err: error }, '❌ CRITICAL: Failed to establish MongoDB connection.');
+        // In case of an error, Mongoose might handle the process exit.
+        // We ensure it exits if it doesn't.
         process.exit(1);
     }
 }

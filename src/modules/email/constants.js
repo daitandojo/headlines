@@ -1,6 +1,9 @@
-// src/modules/email/constants.js (version 2.0)
+// src/modules/email/constants.js (version 2.1)
 // src/modules/email/constants.js
 
-// A modern, abstract logo suitable for a premium wealth-tech brand.
-export const LOGO_URL =
-  'https://raw.githubusercontent.com/geminioracle/images/main/headlines-logo-gold.png';
+// Define the Content-ID (CID) for the embedded logo.
+// This acts as an internal URL within the email itself.
+export const LOGO_CID = 'logo@wealthevents.email';
+
+// Define the local path to the logo file.
+export const LOGO_PATH = './public/bullion.png';

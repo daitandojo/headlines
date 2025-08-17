@@ -1,0 +1,212 @@
+[
+  {
+    "country": "Global PE",
+    "flag_emoji": "🌐",
+    "outlets": [
+      {
+        "name": "Apollo",
+        "url": "https://www.apollo.com",
+        "commentary": "Global alternative asset manager.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.apollo.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.cmp-insight-column-card__item__title--link, a.cmp-teaser__title-link, a.text-link-blck, a.cmp-navigation-featuredcontent__link",
+          "headlinesFound": 21,
+          "firstArticleUrl": "https://www.apollo.com/insights-news/insights/2025/06/mid-year-outlook-at-the-crossroads-of-stagflation-whats-next",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 8513,
+          "aiInsights": {
+            "pattern": "Headline links on this site share common traits: they usually use title-cased, descriptive text (often long) and live under /insights-news/ (either /insights/ or /pressreleases/) or the site’s feature/teaser areas. The CSS classes used for headlines include .cmp-insight-column-card__item__title--link (insight cards), .cmp-teaser__title-link (teasers/featured items), .text-link-blck (press releases/compact lists), and .cmp-navigation-featuredcontent__link (promoted featured content). Headlines often contain organization names, event names, or report titles and sometimes point to PDFs or IR pages.",
+            "confidence": 0.9009523809523808
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
+      },
+      {
+        "name": "KKR",
+        "url": "https://www.kkr.com",
+        "commentary": "Global investment company.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.kkr.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a.article-teaser__link, a[href^=\"/insights/\"], a[href*=\"media.kkr.com/news-details\"]",
+          "headlinesFound": 4,
+          "firstArticleUrl": "https://www.kkr.com/insights/thoughts-from-the-road-asia-2025",
+          "articleContentSelector": "article p",
+          "sampleArticleLength": 2123,
+          "aiInsights": {
+            "pattern": "Headline links on this site appear in two primary patterns: 1) Insight/article teasers using the .article-teaser__link class with anchor text that begins with a content category (e.g., 'Macro Insights', 'Investment Insights'), followed by a concise headline and often a month/year and 'Learn More' suffix. These link URLs are under the /insights/ path with a readable slug. 2) Press releases use an external media subdomain (media.kkr.com) and a 'news-details' endpoint with a news_id GUID parameter. Navigation/utility links (about, invest, cookie policy, IR) use different selectors (generic a, cmp-button, .cmp-link) and shorter, non-article text.",
+            "confidence": 0.9374999999999999
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
+      },
+      {
+        "name": "PAI Partners",
+        "url": "https://www.paipartners.com",
+        "commentary": "European private equity firm.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.paipartners.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href*=\"/mediaitem/\"]",
+          "headlinesFound": 5,
+          "firstArticleUrl": "https://www.paipartners.com/mediaitem/2025-annual-general-meetings/",
+          "articleContentSelector": null,
+          "sampleArticleLength": 0,
+          "aiInsights": {
+            "pattern": "Headline links share these characteristics: (1) URLs contain the segment '/mediaitem/' (site's press/news item pattern). (2) Anchor text is natural-language, headline-style (short-to-medium length, often starting with the organisation name or an active verb and containing proper nouns or numeric details). (3) The CSS selector for headline anchors is a plain 'a' within the news listing; navigation CTAs use distinct classes (e.g., 'a.btn') and case studies use different URL paths such as '/case-study/'.",
+            "confidence": 0.95
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
+      },
+      {
+        "name": "EQT Group",
+        "url": "https://www.eqtgroup.com",
+        "commentary": "Global investment organization.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.eqtgroup.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "Prefer URL-prefix + presentation-class combination to capture headlines while avoiding nav: \"a[href^='/thinq/'], a[href^='/news/']\". Optionally restrict to known article classes: \"a.p-6, a.bg-transparent, a.md\\:p-6, a[href^='/thinq/'], a[href^='/news/']\"",
+          "headlinesFound": 18,
+          "firstArticleUrl": "https://www.eqtgroup.com/thinq/private-markets/ipo-report-2025",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 2123,
+          "aiInsights": {
+            "pattern": "Headline links cluster under two main URL patterns: /thinq/ (editorial/insights, case-studies, education, opinion) and /news/ (press releases). Headlines tend to have: longer, descriptive anchor text (often >4 words), question or quoted formats, numeric values or company names, and appear with presentation classes such as a.p-6, a.bg-transparent, or a.md:p-6. Navigation and utility links are shorter (single words or short phrases like 'Private Capital', 'About') and often use a.w-full or a.bg-white selectors.",
+            "confidence": 0.8833333333333332
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
+      },
+      {
+        "name": "Egeria",
+        "url": "https://egeriagroup.com",
+        "commentary": "Dutch private equity firm."
+      },
+      {
+        "name": "Rivean Capital (Gilde)",
+        "url": "https://www.riveancapital.com",
+        "commentary": "Formerly Gilde Equity Management (GEM)."
+      },
+      {
+        "name": "IK Partners (News & Insights)",
+        "url": "https://www.ikpartners.com",
+        "commentary": "Main press releases and portfolio updates."
+      },
+      {
+        "name": "IK Partners (Portfolio News)",
+        "url": "https://www.ikpartners.com/portfolio-company-news",
+        "commentary": "Specific news archive for portfolio companies."
+      },
+      {
+        "name": "Triton Partners",
+        "url": "https://www.triton-partners.com",
+        "commentary": "European private equity investment firm."
+      },
+      {
+        "name": "Bridgepoint (News & Insights)",
+        "url": "https://www.bridgepoint.eu",
+        "commentary": "Corporate news and insights."
+      },
+      {
+        "name": "Bridgepoint (Regulatory News)",
+        "url": "https://www.bridgepoint.eu/shareholder-centre/regulatory-news",
+        "commentary": "Live LSE regulatory news feed."
+      },
+      {
+        "name": "Hg Capital",
+        "url": "https://hgcapital.com",
+        "commentary": "Software and services investor.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://hgcapital.com",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "article h2 a, article h3 a, .card__link, .post-card a, a[href*=\"/insights/\"], a[href*=\"/news/\"], a[href*=\"/case-studies/\"]",
+          "headlinesFound": 1,
+          "firstArticleUrl": "https://hgcapital.com/portfolio/case-studies/visma",
+          "articleContentSelector": "main p",
+          "sampleArticleLength": 3547,
+          "aiInsights": {
+            "pattern": "In this sample, genuine content/headline links are characterized by: (1) non-generic, descriptive anchor text (not repeated section labels like 'News & Insights'); (2) URLs that contain content paths (e.g., /portfolio/case-studies/, /insights/, /news/ or similar slugs) rather than top-level section or utility domains; and (3) selectors that are not the generic 'a' used for utilities (cookie consent) or site-wide buttons. Note the provided CSS selector (a.index-style__ButtonMain-sc-207d00b9-2) appears used for header/CTA buttons and repeated navigation, so it is less reliable alone for distinguishing article headlines.",
+            "confidence": 0.9
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
+      },
+      {
+        "name": "3i Group (Press Releases)",
+        "url": "https://www.3i.com/media/press-releases/",
+        "commentary": "Main corporate press releases."
+      },
+      {
+        "name": "3i Group (Regulatory News)",
+        "url": "https://www.3i.com/investors/regulatory-news/",
+        "commentary": "Investor relations and regulatory news."
+      },
+      {
+        "name": "CVC Capital Partners",
+        "url": "https://www.cvc.com",
+        "commentary": "Global private equity and credit."
+      },
+      {
+        "name": "Ardian (News & Insights)",
+        "url": "https://www.ardian.com/news-insights",
+        "commentary": "Thought leadership and news articles.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ardian.com/news-insights",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^=\"/news-insights/\"]:not(.tag):not(.btn-outline), a[href*=\"-report\"], a[href*=\"-years\"], article h2 a, article h3 a",
+          "headlinesFound": 4,
+          "firstArticleUrl": "https://www.ardian.com/news-insights/responsible-finance?category=202",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 1528,
+          "aiInsights": {
+            "pattern": "True news/headline links in this sample mostly target the '/news-insights/' path or external microsites dedicated to reports/campaigns. Headline-like anchors tend to be simple 'a' elements or prominent CTAs (e.g., 'a.btn-outline'). Tag/filter links use a distinct class ('a.tag') and cookie/privacy/vendor links use cookie dialog-specific selectors—these are not headlines. Headlines and content CTAs use descriptive, content-focused text (topic names, report titles or campaign domains) rather than generic utility/legal phrasing.",
+            "confidence": 0.65
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
+      },
+      {
+        "name": "Ardian (Press Releases)",
+        "url": "https://www.ardian.com/press-releases",
+        "commentary": "Official press releases.",
+        "labCheckPerformed": true,
+        "analysis": {
+          "urlDiscoveryMethod": "initial",
+          "finalUrl": "https://www.ardian.com/press-releases",
+          "technology": "playwright + AI",
+          "headlineSelectorMethod": "AI Structural Analysis",
+          "headlineSelector": "a[href^='/news-insights/press-releases/']",
+          "headlinesFound": 7,
+          "firstArticleUrl": "https://www.ardian.com/news-insights/press-releases/diot-siaci-announces-new-ownership-structure-ardian-burrus-group-and",
+          "articleContentSelector": "div[class*=\"content\"] p",
+          "sampleArticleLength": 7719,
+          "aiInsights": {
+            "pattern": "Headlines are sentence-style, descriptive strings (often starting with firm names or action verbs like 'announces', 'enters', 'launches', 'acquire', 'finalizes') and typically include company names, transaction or product details, and locations/numbers. Their URLs consistently live under the /news-insights/press-releases/ path. The selector in the provided data is a generic 'a', implying these headline links are simple anchor tags within a news/press listing.",
+            "confidence": 0.9585714285714287
+          },
+          "notes": "Handled consent using persistent browser state."
+        }
+      }
+    ]
+  }
+]

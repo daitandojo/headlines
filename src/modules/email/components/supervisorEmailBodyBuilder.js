@@ -1,23 +1,27 @@
-// src/modules/email/components/supervisorEmailBodyBuilder.js (version 2.0)
+// src/modules/email/components/supervisorEmailBodyBuilder.js (version 2.1)
 // src/modules/email/components/supervisorEmailBodyBuilder.js
-import { SUPERVISOR_EMAIL_CONFIG, HEADLINES_RELEVANCE_THRESHOLD } from '../../../config/index.js';
-import { LOGO_URL } from '../constants.js';
-import { truncateString } from '../../../utils/helpers.js';
-import Article from '../../../../models/Article.js';
-import SynthesizedEvent from '../../../../models/SynthesizedEvent.js';
+import {
+  SUPERVISOR_EMAIL_CONFIG,
+  HEADLINES_RELEVANCE_THRESHOLD,
+} from '../../../config/index.js'
+import { LOGO_CID } from '../constants.js' // <-- MODIFIED: Import LOGO_CID
+import { truncateString } from '../../../utils/helpers.js'
+import Article from '../../../../models/Article.js'
+import SynthesizedEvent from '../../../../models/SynthesizedEvent.js'
+import Opportunity from '../../../../models/Opportunity.js'
 
 function escapeHtml(unsafe) {
-    if (unsafe === null || unsafe === undefined) return '';
-    return String(unsafe)
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
+  if (unsafe === null || unsafe === undefined) return ''
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 function createSupervisorEmailWrapper(bodyContent, subject) {
-    return `
+  return `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -51,71 +55,82 @@ function createSupervisorEmailWrapper(bodyContent, subject) {
     <body>
         <div class="container">${bodyContent}</div>
     </body>
-    </html>`;
+    </html>`
 }
 
 function createScraperFailureAlertHtml(enrichmentOutcomes) {
-    if (!enrichmentOutcomes || enrichmentOutcomes.length === 0) return '';
-    
-    const scraperFailures = enrichmentOutcomes.filter(item => 
-        item.outcome === 'Dropped' && item.assessment_article.includes('Enrichment Failed')
-    );
+  if (!enrichmentOutcomes || enrichmentOutcomes.length === 0) return ''
 
-    if (scraperFailures.length === 0) return '';
+  const scraperFailures = enrichmentOutcomes.filter(
+    (item) =>
+      item.outcome === 'Dropped' && item.assessment_article.includes('Enrichment Failed')
+  )
 
-    let listItems = scraperFailures.map(item => `
+  if (scraperFailures.length === 0) return ''
+
+  let listItems = scraperFailures
+    .map(
+      (item) => `
         <li style="margin-bottom: 12px;">
             <strong>${escapeHtml(item.newspaper)}:</strong> 
             <a href="${item.link}" target="_blank">${escapeHtml(item.headline)}</a><br>
             <em style="font-size:13px; color: #555;">${escapeHtml(item.assessment_article)}</em>
         </li>
-    `).join('');
+    `
+    )
+    .join('')
 
-    return `
+  return `
     <div class="alert-box alert-danger">
         <h2 style="margin-top:0;">⚠️ Scraper Action Required</h2>
         <p>The following relevant headlines failed the enrichment stage, likely due to an outdated or incorrect article text selector. Please review the selectors for these sources in <strong>src/config/sources.js</strong>.</p>
         <ul style="padding-left: 20px; margin-top: 15px; font-size: 14px;">${listItems}</ul>
-    </div>`;
+    </div>`
 }
 
 function createScraperHealthTable(healthStats) {
-    if (!healthStats || healthStats.length === 0) return '<h2>Scraper Health Check</h2><p>No health stats available.</p>';
+  if (!healthStats || healthStats.length === 0)
+    return '<h2>Scraper Health Check</h2><p>No health stats available.</p>'
 
-    let tableRows = healthStats.sort((a, b) => a.source.localeCompare(b.source)).map(stat => {
-        const status = stat.success ? '✅ OK' : '❌ FAILED';
-        const statusColor = stat.success ? '#28a745' : '#dc3545';
-        return `
+  let tableRows = healthStats
+    .sort((a, b) => a.source.localeCompare(b.source))
+    .map((stat) => {
+      const status = stat.success ? '✅ OK' : '❌ FAILED'
+      const statusColor = stat.success ? '#28a745' : '#dc3545'
+      return `
             <tr>
                 <td>${escapeHtml(stat.source)}</td>
                 <td style="color: ${statusColor}; font-weight: bold;">${status}</td>
                 <td>${stat.count}</td>
-            </tr>`;
-    }).join('');
+            </tr>`
+    })
+    .join('')
 
-    return `
+  return `
     <h2>Scraper Health Check</h2>
     <table>
         <thead><tr><th>Source</th><th>Status</th><th>Articles Found</th></tr></thead>
         <tbody>${tableRows}</tbody>
-    </table>`;
+    </table>`
 }
 
 function createEnrichmentFunnelHtml(enrichmentOutcomes) {
-    if (!enrichmentOutcomes || enrichmentOutcomes.length === 0) {
-        return `<h2>Enrichment Funnel</h2><p>No headlines were relevant enough for enrichment (scored &lt; ${HEADLINES_RELEVANCE_THRESHOLD}).</p>`;
-    }
+  if (!enrichmentOutcomes || enrichmentOutcomes.length === 0) {
+    return `<h2>Enrichment Funnel</h2><p>No headlines were relevant enough for enrichment (scored &lt; ${HEADLINES_RELEVANCE_THRESHOLD}).</p>`
+  }
 
-    const cardsHtml = enrichmentOutcomes.sort((a, b) => {
-        if (a.outcome === 'Success' && b.outcome !== 'Success') return -1;
-        if (a.outcome !== 'Success' && b.outcome === 'Success') return 1;
-        return (b.headlineScore || 0) - (a.headlineScore || 0);
-    }).map(item => {
-        const isSuccess = item.outcome === 'Success';
-        const statusClass = isSuccess ? 'status-success' : 'status-dropped';
-        const statusIcon = isSuccess ? '✅' : '❌';
+  const cardsHtml = enrichmentOutcomes
+    .sort((a, b) => {
+      if (a.outcome === 'Success' && b.outcome !== 'Success') return -1
+      if (a.outcome !== 'Success' && b.outcome === 'Success') return 1
+      return (b.headlineScore || 0) - (a.headlineScore || 0)
+    })
+    .map((item) => {
+      const isSuccess = item.outcome === 'Success'
+      const statusClass = isSuccess ? 'status-success' : 'status-dropped'
+      const statusIcon = isSuccess ? '✅' : '❌'
 
-        return `
+      return `
         <div class="card">
             <div class="card-header">
                 <h4 style="margin:0; font-size: 16px;">
@@ -135,94 +150,144 @@ function createEnrichmentFunnelHtml(enrichmentOutcomes) {
                     <p style="margin-top: 5px; margin-bottom: 0; white-space: pre-wrap; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;">${escapeHtml(item.content_snippet)}...</p>
                 </div>
             </div>
-        </div>`;
-    }).join('');
+        </div>`
+    })
+    .join('')
 
-    return `<h2>Enrichment Funnel Audit Trail (Lifecycle of ${enrichmentOutcomes.length} relevant headlines)</h2>${cardsHtml}`;
+  return `<h2>Enrichment Funnel Audit Trail (Lifecycle of ${enrichmentOutcomes.length} relevant headlines)</h2>${cardsHtml}`
 }
 
-
 async function createEventsTableHtml(runStartDate) {
-    const recentEvents = await SynthesizedEvent.find({ createdAt: { $gte: runStartDate }})
-                                                 .sort({ createdAt: -1 })
-                                                 .limit(50)
-                                                 .lean();
-    if (recentEvents.length === 0) return `<h2>Synthesized Events from this Run</h2><p>No events were synthesized in this run.</p>`;
+  const recentEvents = await SynthesizedEvent.find({ createdAt: { $gte: runStartDate } })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .lean()
+  if (recentEvents.length === 0)
+    return `<h2>Synthesized Events from this Run</h2><p>No events were synthesized in this run.</p>`
 
-    let tableRows = recentEvents.map(event => `
+  let tableRows = recentEvents
+    .map(
+      (event) => `
         <tr>
             <td>${truncateString(escapeHtml(event.synthesized_headline), 80)}</td>
             <td>${event.highest_relevance_score}</td>
-            <td>${escapeHtml(event.source_articles.map(a => a.newspaper).join(', '))}</td>
-            <td>${escapeHtml(event.key_individuals.map(p => p.name).join(', ') || 'N/A')}</td>
+            <td>${escapeHtml(event.source_articles.map((a) => a.newspaper).join(', '))}</td>
+            <td>${escapeHtml(event.key_individuals.map((p) => p.name).join(', ') || 'N/A')}</td>
             <td>${event.emailed ? 'Yes' : 'No'}</td>
         </tr>
-    `).join('');
+    `
+    )
+    .join('')
 
-    return `
+  return `
     <h2>Synthesized Events (${recentEvents.length})</h2>
     <table>
         <thead><tr><th>Synthesized Headline</th><th>Score</th><th>Sources</th><th>Key Individuals</th><th>Emailed?</th></tr></thead>
         <tbody>${tableRows}</tbody>
-    </table>`;
+    </table>`
 }
 
 async function createArticlesTableHtml(runStartDate) {
-    const freshArticles = await Article.find({ createdAt: { $gte: runStartDate }})
-                                         .sort({ relevance_headline: -1 })
-                                         .limit(100)
-                                         .lean();
-    if (freshArticles.length === 0) return `<h2>All Fresh Articles Processed</h2><p>No new raw articles were processed.</p>`;
+  const freshArticles = await Article.find({ createdAt: { $gte: runStartDate } })
+    .sort({ relevance_headline: -1 })
+    .limit(500)
+    .lean()
+  if (freshArticles.length === 0)
+    return `<h2>All Fresh Articles Processed</h2><p>No new raw articles were processed.</p>`
 
-    let tableRows = freshArticles.map(article => {
-        const status = article.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD ? 'Relevant for Enrichment' : 'Low Relevance';
-        return `
+  const relevantFreshArticles = freshArticles.filter((a) => a.relevance_headline > 0)
+  const irrelevantCount = freshArticles.length - relevantFreshArticles.length
+
+  if (relevantFreshArticles.length === 0) {
+    return `<h2>All Fresh Articles Processed (${freshArticles.length})</h2><p>No headlines were deemed relevant (all scored 0).</p>`
+  }
+
+  let tableRows = relevantFreshArticles
+    .map((article) => {
+      const status =
+        article.relevance_headline >= HEADLINES_RELEVANCE_THRESHOLD
+          ? 'Relevant for Enrichment'
+          : 'Low Relevance'
+      return `
             <tr>
                 <td><a href="${article.link}" target="_blank">${truncateString(escapeHtml(article.headline), 80)}</a></td>
                 <td>${escapeHtml(article.newspaper)}</td>
                 <td>${article.relevance_headline}</td>
                 <td>${status}</td>
-            </tr>`;
-    }).join('');
+            </tr>`
+    })
+    .join('')
 
-    return `
+  let footer = ''
+  if (irrelevantCount > 0) {
+    footer = `<p style="margin-top: 15px; font-size: 13px; color: #6c757d;">... plus ${irrelevantCount} other headlines that were deemed irrelevant (score 0).</p>`
+  }
+
+  return `
     <h2>All Fresh Articles Processed (${freshArticles.length})</h2>
     <table>
         <thead><tr><th>Headline</th><th>Source</th><th>HL Score</th><th>Status</th></tr></thead>
         <tbody>${tableRows}</tbody>
-    </table>`;
+    </table>
+    ${footer}`
 }
 
 export async function createSupervisorEmailBody(runStats) {
-    const runTimestamp = new Date().toLocaleString('en-GB', { timeZone: 'Europe/Copenhagen' });
-    const runStartDate = new Date(Date.now() - 10 * 60 * 1000);
+  const runTimestamp = new Date().toLocaleString('en-GB', {
+    timeZone: 'Europe/Copenhagen',
+  })
+  const runStartDate = new Date(Date.now() - 10 * 60 * 1000) // Check for items created in the last 10 minutes
 
-    let statsHtml = `<h2>Run Statistics</h2><ul>`;
-    const statOrder = ['headlinesScraped', 'freshHeadlinesFound', 'headlinesAssessed', 'relevantHeadlines', 'articlesEnriched', 'relevantArticles', 'eventsClustered', 'eventsSynthesized', 'eventsEmailed'];
-    for (const key of statOrder) {
-        if (runStats.hasOwnProperty(key)) {
-            const value = runStats[key];
-            const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            statsHtml += `<li style="font-size: 15px; margin-bottom: 8px;"><strong>${formattedKey}:</strong> ${value}</li>`;
-        }
+  const [newArticleCount, newEventCount, newOpportunityCount] = await Promise.all([
+    Article.countDocuments({ createdAt: { $gte: runStartDate } }),
+    SynthesizedEvent.countDocuments({ createdAt: { $gte: runStartDate } }),
+    Opportunity.countDocuments({ createdAt: { $gte: runStartDate } }),
+  ])
+
+  let statsHtml = `<h2>Run Statistics</h2><ul>`
+  const statOrder = [
+    'headlinesScraped',
+    'freshHeadlinesFound',
+    'headlinesAssessed',
+    'relevantHeadlines',
+    'articlesEnriched',
+    'relevantArticles',
+  ]
+
+  for (const key of statOrder) {
+    if (runStats.hasOwnProperty(key)) {
+      const value = runStats[key]
+      const formattedKey = key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (str) => str.toUpperCase())
+      statsHtml += `<li style="font-size: 15px; margin-bottom: 8px;"><strong>${formattedKey}:</strong> ${value}</li>`
     }
-     if (runStats.errors && runStats.errors.length > 0) {
-        statsHtml += `<li style="font-size: 15px; margin-bottom: 8px; color: #721c24;"><strong>Errors:</strong> ${runStats.errors.join(', ')}</li>`;
-    }
-    statsHtml += `</ul>`;
+  }
 
-    const scraperFailureAlertHtml = createScraperFailureAlertHtml(runStats.enrichmentOutcomes);
-    const scraperHealthHtml = createScraperHealthTable(runStats.scraperHealth);
-    const enrichmentFunnelHtml = createEnrichmentFunnelHtml(runStats.enrichmentOutcomes);
+  statsHtml += `<li style="font-size: 15px; margin-bottom: 8px; font-weight: bold; color: #0056b3;"><strong>New Articles Created:</strong> ${newArticleCount}</li>`
+  statsHtml += `<li style="font-size: 15px; margin-bottom: 8px; font-weight: bold; color: #0056b3;"><strong>New Events Synthesized:</strong> ${newEventCount}</li>`
+  statsHtml += `<li style="font-size: 15px; margin-bottom: 8px; font-weight: bold; color: #0056b3;"><strong>New Opportunities Generated:</strong> ${newOpportunityCount}</li>`
+  statsHtml += `<li style="font-size: 15px; margin-bottom: 8px;"><strong>Events Emailed to Subscribers:</strong> ${runStats.eventsEmailed || 0}</li>`
 
-    const [eventsTableHtml, articlesTableHtml] = await Promise.all([
-        createEventsTableHtml(runStartDate),
-        createArticlesTableHtml(runStartDate)
-    ]);
-    
-    const bodyContent = `
+  if (runStats.errors && runStats.errors.length > 0) {
+    statsHtml += `<li style="font-size: 15px; margin-bottom: 8px; color: #721c24;"><strong>Errors:</strong> ${runStats.errors.join(', ')}</li>`
+  }
+  statsHtml += `</ul>`
+
+  const scraperFailureAlertHtml = createScraperFailureAlertHtml(
+    runStats.enrichmentOutcomes
+  )
+  const scraperHealthHtml = createScraperHealthTable(runStats.scraperHealth)
+  const enrichmentFunnelHtml = createEnrichmentFunnelHtml(runStats.enrichmentOutcomes)
+
+  const [eventsTableHtml, articlesTableHtml] = await Promise.all([
+    createEventsTableHtml(runStartDate),
+    createArticlesTableHtml(runStartDate),
+  ])
+
+  const bodyContent = `
         <div style="text-align:center; margin-bottom: 30px;">
-            <img src="${LOGO_URL}" alt="Logo" style="max-width:50px; filter: grayscale(1);">
+            <img src="cid:${LOGO_CID}" alt="Logo" style="max-width:50px; filter: grayscale(1);">
             <h1>${SUPERVISOR_EMAIL_CONFIG.subject}</h1>
             <p style="font-size: 16px; color: #6c757d;">Run completed: ${runTimestamp}</p>
         </div>
@@ -237,7 +302,7 @@ export async function createSupervisorEmailBody(runStats) {
         <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; font-size: 12px; color: #6c757d;">
             <p>This is an automated report from the ${SUPERVISOR_EMAIL_CONFIG.brandName}.</p>
         </div>
-    `;
+    `
 
-    return createSupervisorEmailWrapper(bodyContent, SUPERVISOR_EMAIL_CONFIG.subject);
+  return createSupervisorEmailWrapper(bodyContent, SUPERVISOR_EMAIL_CONFIG.subject)
 }

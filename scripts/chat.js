@@ -1,152 +1,241 @@
-// scripts/chat.js (version 2.1)
+// scripts/chat.js (version 10.2 - Transparent RAG & Corrected Threshold)
 import 'dotenv/config';
 import readline from 'readline';
-import client from '../src/modules/ai/client.js'; // Use the new centralized client
+import OpenAI from 'openai';
+import { Pinecone } from '@pinecone-database/pinecone';
 import { connectDatabase, disconnectDatabase } from '../src/database.js';
 import Article from '../models/Article.js';
-import { generateEmbedding, cosineSimilarity } from '../src/utils/vectorUtils.js';
+import { generateEmbedding } from '../src/utils/vectorUtils.js';
 import { logger } from '../src/utils/logger.js';
-import { LLM_MODEL_HEADLINES } from '../src/config/index.js';
+import { PINECONE_API_KEY, PINECONE_INDEX_NAME, GROQ_API_KEY } from '../src/config/index.js';
 
-// --- Configuration ---
-const TOP_K_RESULTS = 7;
-const CANDIDATE_POOL_SIZE = 250;
+// --- Configuration & Clients ---
+const TOP_K_RESULTS = 5;
+const SIMILARITY_THRESHOLD = 0.40; // LOWERED: To be more inclusive of relevant context.
 const DUPLICATE_THRESHOLD = 0.95;
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 
-// --- UI Colors ---
-const colors = { reset: "\x1b[0m", cyan: "\x1b[36m", green: "\x1b[32m", yellow: "\x1b[33m" };
-const USER_PROMPT = `${colors.cyan}You > ${colors.reset}`;
-const AI_PROMPT = `${colors.green}Bot >${colors.reset} `;
+if (!PINECONE_API_KEY || !GROQ_API_KEY) throw new Error('API Keys for Pinecone and Groq are required!');
 
-/** Embeds and stores a structured fact. */
-async function embedAndStoreFact(structuredFact) {
-    const newArticle = new Article({
-        headline: structuredFact.headline,
-        link: `https://user.facts/fact-entry-${Date.now()}`,
-        newspaper: "User-Provided Fact", source: "Conversational Input",
-        relevance_headline: 100, assessment_headline: "Fact provided by user.",
-        relevance_article: 100, assessment_article: "Fact provided by user.",
-        articleContent: { contents: [structuredFact.summary] },
-        key_individuals: [{ name: structuredFact.key_subject, role_in_event: "Subject of Fact" }],
-        emailed: true,
-    });
-    const textToEmbed = `${newArticle.headline}\n${newArticle.articleContent.contents.join(' ')}`;
-    newArticle.embedding = await generateEmbedding(textToEmbed);
-    await newArticle.save();
+const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
+const pineconeIndex = pc.index(PINECONE_INDEX_NAME);
+const groqClient = new OpenAI({ apiKey: GROQ_API_KEY, baseURL: 'https://api.groq.com/openai/v1' });
+
+// --- UI Elements & State ---
+const USER_PROMPT = '\nYou > ';
+const AI_PROMPT = 'Bot > ';
+class ChatState {
+    static STATES = { IDLE: 'IDLE', AWAITING_CONFIRMATION: 'AWAITING_CONFIRMATION', BUSY: 'BUSY' };
+    constructor() { this.currentState = ChatState.STATES.IDLE; this.factToStore = null; }
+    set(state, data = null) { this.currentState = state; if (data) this.factToStore = data; }
+    is(state) { return this.currentState === state; }
+    getFact() { return this.factToStore; }
+    reset() { this.currentState = ChatState.STATES.IDLE; this.factToStore = null; }
 }
 
-/** Main function to run the interactive chat loop. */
-async function main() {
-    console.log('Connecting to database...');
-    await connectDatabase();
-    console.log('Database connected. Wealth Analyst Assistant is ready.\n');
+// --- "Fact-Checking First" System Prompts ---
+const STREAMING_PROMPT = `You are an elite intelligence analyst and fact-checker for a wealth management firm. Your primary directive is to provide accurate, verified information.
 
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const chatHistory = [];
-    let state = { type: 'idle' };
+**Strict Response Protocol:**
+1.  **Prioritize Database:** If the "Database Context" section contains relevant information, you MUST use it as your primary source. Begin your response with "[DB]:".
+2.  **Explain RAG Failure:** If the RAG status is 'LOW_CONFIDENCE', you MUST inform the user. Start with "[DB - Low Confidence]: I found some related information, but it may not be a direct answer. Here's what I found: ...".
+3.  **Cautious General Knowledge:** If the RAG status is 'NO_HITS' or the context is irrelevant, you may use your general knowledge. You MUST begin your response with the prefix "[General Knowledge]:".
+4.  **Do Not Hallucinate:** If you are not highly confident in an answer from general knowledge, state that you cannot answer reliably.
+5.  **Formatting:** Provide a direct, plain-text, natural language response. Do NOT use Markdown.`;
 
-    async function handleUserInput(userInput) {
-        if (state.type === 'waiting_for_confirmation') {
-            const affirmativeRegex = /^(y|yes|yeah|yep|ok|sure|correct)/i;
-            if (affirmativeRegex.test(userInput)) {
-                await embedAndStoreFact(state.factToStore);
+const JSON_ACTION_PROMPT = `You are the logical reasoning part of an AI assistant. Based on the conversation, your task is to determine the correct follow-up action. Your entire response MUST be a single, valid JSON object.
+
+**Your Mandate:**
+1.  Analyze the user's latest input.
+2.  **CRITICAL:** Only set "action" to "CONFIRM_FACT" if the USER has provided NEW, specific, and storable information that is not already present in the context.
+3.  Do NOT ask to confirm facts that you, the assistant, have generated from your own knowledge.
+
+**JSON Output Schema:**
+{
+  "thought": "Your brief thought process. Example: 'The user asked a question, I answered from the database. No new fact was provided. Action is ANSWER.'",
+  "action": "One of: 'ANSWER', 'CONFIRM_FACT', 'CLARIFY'",
+  "factToConfirm": null | { "headline": "...", "summary": "...", "key_subject": "..." }
+}`;
+
+
+// --- Core Chat Functions ---
+
+function cosineSimilarity(vecA, vecB) {
+    if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
+    let dotProduct = 0.0, normA = 0.0, normB = 0.0;
+    for (let i = 0; i < vecA.length; i++) {
+        dotProduct += vecA[i] * vecB[i];
+        normA += vecA[i] * vecA[i];
+        normB += vecB[i] * vecB[i];
+    }
+    if (normA === 0 || normB === 0) return 0;
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+async function retrieveContext(queryEmbedding) {
+    const queryResponse = await pineconeIndex.query({
+        topK: TOP_K_RESULTS,
+        vector: queryEmbedding,
+        includeMetadata: true,
+    });
+    
+    let ragStatus = 'NO_HITS'; // Default status
+    if (queryResponse.matches.length > 0) {
+        ragStatus = 'LOW_CONFIDENCE'; // Assume low confidence until a good match is found
+    }
+
+    const relevantResults = queryResponse.matches.filter(match => match.score >= SIMILARITY_THRESHOLD);
+
+    if (relevantResults.length === 0) {
+        return { context: null, allResults: queryResponse.matches, ragStatus };
+    }
+    
+    ragStatus = 'SUCCESS';
+    const context = "### Database Context:\n" + relevantResults
+        .map(match => `- ${match.metadata.headline}: ${match.metadata.summary}`)
+        .join('\n');
+        
+    return { context, allResults: queryResponse.matches, ragStatus };
+}
+
+async function generateResponseStream(userInput, dbContext, chatHistory, ragStatus) {
+    const conversationContext = "### Conversation History:\n" + chatHistory.slice(-8).map(h => `${h.role}: ${h.content}`).join('\n');
+    const userPrompt = `RAG Status: ${ragStatus}\n\n${dbContext || 'No relevant database context.'}\n\n${conversationContext}\n\n### User's Latest Input:\n"${userInput}"`;
+    const messages = [{ role: 'system', content: STREAMING_PROMPT }, { role: 'user', content: userPrompt }];
+    try {
+        return await groqClient.chat.completions.create({ model: GROQ_MODEL, messages, stream: true });
+    } catch (error) {
+        logger.error({ err: error }, "AI stream initiation failed.");
+        return null;
+    }
+}
+
+async function generateActionJson(userInput, dbContext, chatHistory, assistantResponse) {
+    const fullContext = `### Database Context:\n${dbContext || 'None'}\n\n### Conversation History:\n${chatHistory.map(h => `${h.role}: ${h.content}`).join('\n')}`;
+    const messages = [{ role: 'system', content: JSON_ACTION_PROMPT }, { role: 'user', content: fullContext }];
+    try {
+        const response = await groqClient.chat.completions.create({ model: GROQ_MODEL, messages, response_format: { type: 'json_object' } });
+        return JSON.parse(response.choices[0].message.content);
+    } catch (error) {
+        logger.error({ err: error }, "AI JSON action generation failed.");
+        return { action: 'ANSWER', factToConfirm: null };
+    }
+}
+
+async function embedAndStoreFact(structuredFact) {
+    const newArticle = new Article({
+        headline: structuredFact.headline, link: `https://user.facts/fact-entry-${Date.now()}`,
+        newspaper: "User-Provided Fact", source: "Conversational Input",
+        relevance_headline: 100, assessment_headline: "Fact provided by user.",
+        relevance_article: 100, assessment_article: structuredFact.summary,
+        key_individuals: structuredFact.key_subject ? [{ name: structuredFact.key_subject, role_in_event: "Subject of Fact" }] : [],
+        emailed: true,
+    });
+    const textToEmbed = `${newArticle.headline}\n${newArticle.assessment_article}`;
+    newArticle.embedding = await generateEmbedding(textToEmbed);
+    await newArticle.save();
+    await pineconeIndex.upsert([{
+        id: newArticle._id.toString(), values: newArticle.embedding,
+        metadata: { headline: newArticle.headline, summary: newArticle.assessment_article, newspaper: newArticle.newspaper, country: 'N/A' }
+    }]);
+    logger.info({ id: newArticle._id.toString() }, "Successfully added fact to MongoDB and Pinecone.");
+}
+
+async function executePlan(plan, rl, chatState, allRetrievedArticles) {
+    if (plan.action === 'CONFIRM_FACT' && plan.factToConfirm) {
+        const mostSimilar = allRetrievedArticles.length > 0 ? allRetrievedArticles[0] : null;
+        if (mostSimilar && mostSimilar.score > DUPLICATE_THRESHOLD) {
+            console.log(`${AI_PROMPT}(I already have similar information: "${mostSimilar.metadata.headline}")`);
+        } else {
+            chatState.set(ChatState.STATES.AWAITING_CONFIRMATION, plan.factToConfirm);
+            rl.question(`\n${AI_PROMPT}Should I remember that? (y/n) > `, (answer) => {
+                handleUserInput(answer.trim(), rl, chatState, []);
+            });
+            return;
+        }
+    }
+    chatState.reset();
+    rl.setPrompt(USER_PROMPT);
+    rl.prompt();
+}
+
+async function handleUserInput(userInput, rl, chatState, chatHistory) {
+    if (chatState.is(ChatState.STATES.BUSY)) return;
+    chatState.set(ChatState.STATES.BUSY);
+    try {
+        if (chatState.is(ChatState.STATES.AWAITING_CONFIRMATION)) {
+            const affirmative = /^(y|yes|yeah|yep|ok|sure|correct)/i.test(userInput);
+            if (affirmative) {
+                await embedAndStoreFact(chatState.getFact());
                 console.log(`${AI_PROMPT}Got it. I'll remember that.`);
-                chatHistory.push({ role: 'user', content: userInput });
-                chatHistory.push({ role: 'assistant', content: `Acknowledged. Stored fact: ${state.factToStore.summary}` });
             } else {
-                console.log(`${AI_PROMPT}${colors.yellow}Okay, I won't store that.${colors.reset}`);
+                console.log(`${AI_PROMPT}Okay, I won't store that.`);
             }
-            state = { type: 'idle' };
+            chatState.reset();
             rl.setPrompt(USER_PROMPT);
             rl.prompt();
             return;
         }
 
-        // --- 1. CONTEXT GATHERING ---
         const queryEmbedding = await generateEmbedding(userInput);
-        const candidateArticles = await Article.find({ embedding: { $exists: true, $ne: null } }).sort({ createdAt: -1 }).limit(CANDIDATE_POOL_SIZE).lean();
-        let dbContext = "The database contains no relevant information on this topic.";
-        if (candidateArticles.length > 0) {
-            const scoredArticles = candidateArticles.map(article => ({ ...article, score: cosineSimilarity(queryEmbedding, article.embedding) }));
-            scoredArticles.sort((a, b) => b.score - a.score);
-            const retrievedArticles = scoredArticles.slice(0, TOP_K_RESULTS);
-            if (retrievedArticles.length > 0 && retrievedArticles[0].score > 0.4) {
-                dbContext = "### Database Context:\n" + retrievedArticles.map(article => `- ${article.headline}: ${article.articleContent.contents.join(' ')}`).join('\n');
-            }
+        const { context, allResults, ragStatus } = await retrieveContext(queryEmbedding);
+        const stream = await generateResponseStream(userInput, context, chatHistory, ragStatus);
+
+        if (!stream) {
+            console.log(`${AI_PROMPT}I'm having trouble connecting to my knowledge base. Please try again.`);
+            chatState.reset(); rl.prompt(); return;
         }
-        const conversationContext = "### Conversation History:\n" + chatHistory.slice(-8).map(h => `${h.role}: ${h.content}`).join('\n');
 
-        // --- 2. THE UNIFIED "THINKING" PROMPT ---
-        const systemPrompt = `You are an elite intelligence analyst for a wealth management firm. Your goal is to be a concise, intelligent conversational partner. Analyze the user's LATEST input in the context of the full conversation and database.
-
-        **Your Mandate & Hierarchy of Truth:**
-        1.  **Synthesize All Known Information:** Formulate a concise, direct answer by synthesizing facts from BOTH the "Database Context" AND the "Conversation History". Treat the conversation history as a primary source of truth to avoid amnesia.
-        2.  **Deduce and Infer:** Act like an analyst. Make logical deductions. If someone founded a major company, you can deduce they are wealthy. If you know X advises Y, you can answer questions about Y's advisor.
-        3.  **Use General Knowledge Fluidly:** If the answer is not in your known information, state this clearly and then seamlessly provide the answer from your general knowledge (e.g., "The database doesn't have details on his company, but from my general knowledge, Stig Holledig is the founder of Holledig Capital..."). Do NOT ask for permission.
-        4.  **Handle Corrections Gracefully:** If the user corrects you ("No, that's wrong..."), accept the correction immediately and prioritize their new information as the truth.
-        5.  **Identify New, Valuable Facts:** If the user provides a genuinely new, valuable, non-contradictory fact, identify it for storage. Check if it's a duplicate of existing knowledge first.
-
-        **Your JSON Output:**
-        Respond ONLY with a valid JSON object:
-        {
-          "thought": "Your brief, one-sentence thought process. Example: 'The user is correcting me about John Blem. I will acknowledge the correction and propose storing the new fact.'",
-          "responseText": "The natural, conversational text to display to the user. This is your primary output. Keep it concise.",
-          "action": "One of: 'answer', 'confirm_fact', 'clarify'",
-          "factToConfirm": {
-            "headline": "Structured headline for the new fact",
-            "summary": "Structured summary for the new fact",
-            "key_subject": "Primary person/company"
-          } OR null
-        }`;
-
-        const userPrompt = `${dbContext}\n\n${conversationContext}\n\n### User's Latest Input:\n"${userInput}"`;
-        const messages = [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }];
-
-        // --- 3. EXECUTE AND ACT ---
-        let plan;
-        try {
-            const response = await client.chat.completions.create({ model: LLM_MODEL_HEADLINES, messages, response_format: { type: 'json_object' } });
-            plan = JSON.parse(response.choices[0].message.content);
-        } catch (e) {
-            console.log(`${AI_PROMPT}${colors.yellow}I'm having a little trouble processing that. Could you please rephrase?${colors.reset}`);
-            rl.prompt(); return;
+        process.stdout.write(AI_PROMPT);
+        let fullResponseText = "";
+        for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || "";
+            process.stdout.write(content);
+            fullResponseText += content;
         }
+        process.stdout.write('\n');
 
         chatHistory.push({ role: 'user', content: userInput });
-        if (plan.responseText) {
-            console.log(`${AI_PROMPT}${plan.responseText}`);
-            chatHistory.push({ role: 'assistant', content: plan.responseText });
-        }
+        chatHistory.push({ role: 'assistant', content: fullResponseText });
 
-        if (plan.action === 'confirm_fact' && plan.factToConfirm) {
-            const factSummary = plan.factToConfirm.summary;
-            const factEmbedding = await generateEmbedding(factSummary);
-            const similarities = candidateArticles.map(art => cosineSimilarity(factEmbedding, art.embedding || []));
-            if (similarities.length > 0 && Math.max(...similarities) > DUPLICATE_THRESHOLD) {
-                // It's a duplicate, do nothing further.
-            } else {
-                state = { type: 'waiting_for_confirmation', factToStore: plan.factToConfirm };
-                rl.setPrompt('');
-                rl.question(`${AI_PROMPT}${colors.yellow}Should I remember that? (y/n) > ${colors.reset}`, (answer) => {
-                    handleUserInput(answer);
-                });
-                return;
-            }
-        }
-        rl.prompt();
+        const plan = await generateActionJson(userInput, context, chatHistory, fullResponseText);
+        await executePlan(plan, rl, chatState, allResults);
+
+    } catch (error) {
+        logger.error({ err: error }, 'An error occurred while handling user input.');
+        console.log(`${AI_PROMPT}I encountered an unexpected issue. Please try again.`);
+        chatState.reset(); rl.prompt();
     }
+}
 
+async function main() {
+    console.log("Connecting to databases...");
+    await connectDatabase();
+    const indexStats = await pineconeIndex.describeIndexStats();
+    const vectorCount = indexStats.totalRecordCount || 0;
+    console.log(`Connected to Pinecone. Index '${PINECONE_INDEX_NAME}' contains ${vectorCount} articles.`);
+    if (vectorCount === 0) {
+        logger.warn("Your Pinecone index is empty. Please run the migration script.");
+    }
+    
+    console.log("Wealth Analyst Assistant is ready.");
+    console.log(`Using AI Engine: GROQ (Model: ${GROQ_MODEL})\n`);
+
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const chatState = new ChatState();
+    const chatHistory = [];
     rl.setPrompt(USER_PROMPT);
     rl.prompt();
+
     rl.on('line', (line) => {
         const trimmedLine = line.trim();
         if (trimmedLine.toLowerCase() === 'exit' || trimmedLine.toLowerCase() === 'quit') rl.close();
-        else if (trimmedLine) handleUserInput(trimmedLine);
+        else if (trimmedLine) handleUserInput(trimmedLine, rl, chatState, chatHistory);
         else rl.prompt();
     });
 
     rl.on('close', async () => {
-        console.log('\nExiting. Goodbye!');
+        console.log(`\nGoodbye!`);
         await disconnectDatabase();
         process.exit(0);
     });
