@@ -1,4 +1,4 @@
-// File: src/pipeline/3_assessAndEnrich.js
+// src/pipeline/3_assessAndEnrich.js (version 1.1)
 import { logger } from '../utils/logger.js'
 import {
   assessHeadlinesInBatches,
@@ -14,6 +14,7 @@ import {
   HEADLINES_RELEVANCE_THRESHOLD,
 } from '../config/index.js'
 import { findAlternativeSources } from '../utils/serpapi.js'
+import Source from '../../models/Source.js'
 
 const HIGH_SIGNAL_THRESHOLD = 85
 const SOURCE_BLACKLIST = ['twitter.com', 'facebook.com', 'linkedin.com']
@@ -25,6 +26,19 @@ const VAGUE_NAME_STOP_WORDS = [
   'the owners',
   'management team',
 ]
+
+// Cache for source documents to reduce DB queries
+const sourceCache = new Map()
+async function getSource(newspaperName) {
+  if (sourceCache.has(newspaperName)) {
+    return sourceCache.get(newspaperName)
+  }
+  const source = await Source.findOne({ name: newspaperName }).lean()
+  if (source) {
+    sourceCache.set(newspaperName, source)
+  }
+  return source
+}
 
 async function attemptVerificationAndEnrichment(article) {
   logger.info(
@@ -46,13 +60,20 @@ async function attemptVerificationAndEnrichment(article) {
     )
     const isSameSource = article.newspaper && sourceName.includes(article.newspaper)
     if (isBlacklisted || isSameSource) continue
+
+    const alternativeSource = await getSource(sourceName)
+    if (!alternativeSource) continue
+
     const alternativeArticle = {
       ...article,
       link: alternative.link,
       newspaper: sourceName,
       source: sourceName,
     }
-    const enrichedAlternative = await scrapeArticleContent(alternativeArticle)
+    const enrichedAlternative = await scrapeArticleContent(
+      alternativeArticle,
+      alternativeSource
+    )
     if (enrichedAlternative.articleContent) {
       logger.info(
         `[Verification Agent] SUCCESS! Scraped content from new source: ${sourceName}`
@@ -66,13 +87,19 @@ async function attemptVerificationAndEnrichment(article) {
   return null
 }
 
-// --- NEW, MORE ROBUST enrichment function for a single article ---
 async function processSingleArticle(article, candidatesMap, runStats) {
   try {
     logger.info(`\n--- [ ENRICHING: "${article.headline}" ] ---`)
-    let finalEnrichedArticle = await scrapeArticleContent(article)
+    const source = await getSource(article.newspaper)
+    if (!source) {
+      logger.error(
+        `No source configuration found for "${article.newspaper}". Skipping article.`
+      )
+      return null
+    }
 
-    // Attempt verification if initial scrape fails for a high-signal headline
+    let finalEnrichedArticle = await scrapeArticleContent(article, source)
+
     if (
       !finalEnrichedArticle.articleContent &&
       article.relevance_headline >= HIGH_SIGNAL_THRESHOLD
@@ -83,14 +110,11 @@ async function processSingleArticle(article, candidatesMap, runStats) {
 
     if (finalEnrichedArticle.articleContent) {
       const finalAssessment = await assessArticleContent(finalEnrichedArticle)
-
-      // Store the full assessment back into the central map
       const originalArticleToUpdate = candidatesMap.get(article._id.toString())
       if (originalArticleToUpdate) {
         Object.assign(originalArticleToUpdate, finalAssessment)
       }
 
-      // If the article is relevant, proceed with deep enrichment (contacts, opportunities)
       if (finalAssessment.relevance_article >= ARTICLES_RELEVANCE_THRESHOLD) {
         const initialContactData = await extractKeyContacts(finalAssessment)
         if (initialContactData.key_individuals.length > 0) {
@@ -125,7 +149,6 @@ async function processSingleArticle(article, candidatesMap, runStats) {
         return { article: finalAssessment, opportunities: opportunitiesWithSource }
       }
     } else {
-      // Handle failed enrichment (salvage)
       logger.warn(`Enrichment failed for "${article.headline}". Attempting to salvage.`)
       const salvagedData = await synthesizeFromHeadline(article)
       if (salvagedData && salvagedData.headline) {
@@ -151,10 +174,8 @@ async function processSingleArticle(article, candidatesMap, runStats) {
       { err: error, article: article.headline },
       'A critical error occurred while processing a single article. Skipping it.'
     )
-    // Return null to indicate failure for this article
     return null
   }
-  // Return null if article was not relevant enough after content assessment
   return null
 }
 
@@ -171,13 +192,15 @@ export async function runAssessAndEnrich(pipelinePayload) {
   )
   runStats.relevantHeadlines = relevantCandidates.length
 
+  // Clear the cache at the start of each enrichment run
+  sourceCache.clear()
+
   if (relevantCandidates.length === 0) {
     logger.info('No headlines were relevant enough for full enrichment.')
     pipelinePayload.assessedCandidates = assessedCandidates
     return { success: false, payload: pipelinePayload }
   }
 
-  // --- REWRITTEN FOR ROBUSTNESS: Process articles in parallel with Promise.allSettled ---
   const processingPromises = relevantCandidates.map((article) =>
     processSingleArticle(article, candidatesMap, runStats)
   )
@@ -189,7 +212,6 @@ export async function runAssessAndEnrich(pipelinePayload) {
 
   results.forEach((result) => {
     if (result.status === 'fulfilled' && result.value) {
-      // result.value is { article, opportunities }
       enrichedArticles.push(result.value.article)
       if (result.value.opportunities && result.value.opportunities.length > 0) {
         opportunitiesToSave.push(...result.value.opportunities)
@@ -201,7 +223,6 @@ export async function runAssessAndEnrich(pipelinePayload) {
       )
     }
   })
-  // --- END REWRITE ---
 
   runStats.relevantArticles = enrichedArticles.length
 

@@ -1,12 +1,12 @@
-// src/modules/scraper/index.js (version 3.3)
+// src/modules/scraper/index.js (version 3.5)
 import * as cheerio from 'cheerio'
 import pLimit from 'p-limit'
 import playwright from 'playwright'
 import { logger } from '../../utils/logger.js'
 import { truncateString } from '../../utils/helpers.js'
 import { CONCURRENCY_LIMIT, MIN_ARTICLE_CHARS } from '../../config/index.js'
-import { COUNTRIES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js'
-import Subscriber from '../../../models/Subscriber.js'
+import { extractorRegistry } from './extractors.js'
+import Source from '../../../models/Source.js'
 
 const limit = pLimit(CONCURRENCY_LIMIT)
 
@@ -62,21 +62,25 @@ async function fetchPage(browser, url) {
   }
 }
 
-export async function scrapeSite(browser, site) {
-  const selectorUsed = site.useJsonLd ? 'JSON-LD' : site.selector
+export async function scrapeSite(browser, source) {
+  const selectorUsed =
+    source.extractionMethod === 'json-ld' ? 'JSON-LD' : source.headlineSelector
   logger.debug(
-    { source: site.name, url: site.url, selector: selectorUsed },
+    { source: source.name, url: source.sectionUrl, selector: selectorUsed },
     `Scraping initiated...`
   )
 
-  const html = await fetchPage(browser, site.url)
+  const html = await fetchPage(browser, source.sectionUrl)
 
-  if (!html) return { source: site.name, articles: [], success: false }
+  if (!html) return { source: source.name, articles: [], success: false }
 
   const $ = cheerio.load(html)
   let articles = []
 
-  if (site.useJsonLd) {
+  const extractFunction =
+    extractorRegistry[source.extractorKey] || extractorRegistry['simple']
+
+  if (source.extractionMethod === 'json-ld') {
     $('script[type="application/ld+json"]').each((_, el) => {
       try {
         const jsonData = JSON.parse($(el).html())
@@ -90,10 +94,10 @@ export async function scrapeSite(browser, site) {
               if (headline && url) {
                 articles.push({
                   headline: headline.trim(),
-                  link: new URL(url, site.url).href,
-                  source: site.name,
-                  newspaper: site.newspaper || site.name,
-                  country: site.countryName,
+                  link: new URL(url, source.sectionUrl).href,
+                  source: source.name,
+                  newspaper: source.name,
+                  country: source.country,
                   headline_selector: selectorUsed,
                 })
               }
@@ -105,12 +109,15 @@ export async function scrapeSite(browser, site) {
       }
     })
   } else {
-    $(site.selector).each((_, el) => {
-      const articleData = site.extract($(el), site)
+    $(source.headlineSelector).each((_, el) => {
+      const articleData = extractFunction($(el), {
+        name: source.name,
+        newspaper: source.name,
+      })
       if (articleData && articleData.headline && articleData.link) {
-        articleData.link = new URL(articleData.link, site.url).href
-        articleData.newspaper = site.newspaper || site.name
-        articleData.country = site.countryName
+        articleData.link = new URL(articleData.link, source.sectionUrl).href
+        articleData.newspaper = source.name
+        articleData.country = source.country
         articleData.headline_selector = selectorUsed
         articles.push(articleData)
       }
@@ -118,32 +125,19 @@ export async function scrapeSite(browser, site) {
   }
 
   const uniqueArticles = Array.from(new Map(articles.map((a) => [a.link, a])).values())
-  return { source: site.name, articles: uniqueArticles, success: true }
+  return { source: source.name, articles: uniqueArticles, success: true }
 }
 
 export async function scrapeAllHeadlines() {
-  logger.info(
-    "📰 Determining which sources to scrape based on the 'included' flag in sources.js..."
-  )
+  logger.info('📰 Fetching active sources from database to begin scraping...')
+  const sourcesToScrape = await Source.find({ status: 'active' }).lean()
 
-  const countriesToScrape = COUNTRIES_CONFIG.filter(
-    (country) => country.included === true
-  )
-
-  if (countriesToScrape.length === 0) {
-    logger.warn(
-      "No countries are marked as 'included: true' in sources.js. Halting scraping."
-    )
+  if (sourcesToScrape.length === 0) {
+    logger.warn('No active sources found in the database. Halting scraping.')
     return { allArticles: [], scraperHealth: [] }
   }
 
-  logger.info(
-    `Pipeline will now scrape sources from: [${countriesToScrape.map((c) => c.countryName).join(', ')}]`
-  )
-
-  const allSites = countriesToScrape.flatMap((country) =>
-    country.sites.map((site) => ({ ...site, countryName: country.countryName }))
-  )
+  logger.info(`Pipeline will now scrape ${sourcesToScrape.length} active sources.`)
 
   const allArticles = []
   const scraperHealth = []
@@ -153,9 +147,9 @@ export async function scrapeAllHeadlines() {
     logger.info('[Playwright] Launching shared browser instance for this run...')
     browser = await playwright.chromium.launch()
 
-    const promises = allSites.map((site) =>
+    const promises = sourcesToScrape.map((source) =>
       limit(async () => {
-        const result = await scrapeSite(browser, site)
+        const result = await scrapeSite(browser, source)
         if (result.articles.length === 0) {
           logger.warn(`Scraped 0 unique headlines from ${result.source}.`)
         } else {
@@ -169,9 +163,17 @@ export async function scrapeAllHeadlines() {
           success: result.articles.length > 0,
           count: result.articles.length,
         })
+        await Source.updateOne(
+          { _id: source._id },
+          {
+            $set: {
+              lastScrapedAt: new Date(),
+              ...(result.success && { lastSuccessAt: new Date() }),
+            },
+          }
+        )
       })
     )
-
     await Promise.all(promises)
   } catch (error) {
     logger.fatal({ err: error }, 'A critical error occurred during the scraping stage.')
@@ -182,15 +184,11 @@ export async function scrapeAllHeadlines() {
     }
   }
 
-  logger.info(
-    `Scraping complete. Found a total of ${allArticles.length} headlines from included sources.`
-  )
+  logger.info(`Scraping complete. Found a total of ${allArticles.length} headlines.`)
   return { allArticles, scraperHealth }
 }
 
-export async function scrapeArticleContent(article) {
-  // This function is called individually, so it still needs its own browser instance.
-  // The main headline scraper is where the performance gain is realized.
+export async function scrapeArticleContent(article, source) {
   let browser = null
   try {
     browser = await playwright.chromium.launch()
@@ -199,8 +197,16 @@ export async function scrapeArticleContent(article) {
 
     const $ = cheerio.load(html)
     let contentText = ''
-    let extractedFrom = 'N/A'
 
+    // Image URL Extraction
+    if (source && source.imageUrlSelector) {
+      let imageUrl = $(source.imageUrlSelector).first().attr('src')
+      if (imageUrl) {
+        article.imageUrl = new URL(imageUrl, source.baseUrl).href
+      }
+    }
+
+    // Special Handlers
     if (article.newspaper === 'Børsen') {
       const nextDataScript = $('script[id="__NEXT_DATA__"]').html()
       if (nextDataScript) {
@@ -208,26 +214,11 @@ export async function scrapeArticleContent(article) {
           const jsonData = JSON.parse(nextDataScript)
           const articleBodyHtml = jsonData?.props?.pageProps?.article?.body
           if (articleBodyHtml) {
-            const $article = cheerio.load(articleBodyHtml)
-            contentText = $article.text().replace(/\s+/g, ' ').trim()
-            extractedFrom = '__NEXT_DATA__'
+            contentText = cheerio.load(articleBodyHtml).text().replace(/\s+/g, ' ').trim()
           }
         } catch (e) {
-          /* Ignore parsing errors */
+          /* Ignore */
         }
-      }
-      if (contentText.length >= MIN_ARTICLE_CHARS) {
-        article.articleContent = { contents: [contentText] }
-        logger.debug(
-          {
-            headline: truncateString(article.headline, 40),
-            chars: contentText.length,
-            selector: extractedFrom,
-            snippet: `${contentText.substring(0, 100)}...`,
-          },
-          `✅ Børsen enrichment successful.`
-        )
-        return article
       }
     }
 
@@ -236,66 +227,46 @@ export async function scrapeArticleContent(article) {
       if (nextDataScript) {
         try {
           const jsonData = JSON.parse(nextDataScript)
-          const articleHtml = jsonData?.props?.pageProps?.article?.article?.body
-          if (articleHtml) {
-            const $article = cheerio.load(articleHtml)
-            contentText = $article.text().replace(/\s+/g, ' ').trim()
-            extractedFrom = '__NEXT_DATA__'
-          }
+          contentText = jsonData?.props?.pageProps?.article?.article?.body
+            ? cheerio
+                .load(jsonData.props.pageProps.article.article.body)
+                .text()
+                .replace(/\s+/g, ' ')
+                .trim()
+            : ''
         } catch (e) {
-          /* Ignore parsing errors */
+          /* Ignore */
         }
       }
       if (contentText.length < MIN_ARTICLE_CHARS) {
         contentText =
           $('meta[name="description"]').attr('content')?.replace(/\s+/g, ' ').trim() || ''
-        if (contentText.length > 0) extractedFrom = 'meta[description]'
-      }
-
-      if (contentText.length >= MIN_ARTICLE_CHARS) {
-        article.articleContent = { contents: [contentText] }
-        logger.debug(
-          {
-            headline: truncateString(article.headline, 40),
-            chars: contentText.length,
-            selector: extractedFrom,
-            snippet: `${contentText.substring(0, 100)}...`,
-          },
-          `✅ Finansavisen enrichment successful.`
-        )
-        return article
       }
     }
 
-    let selectors = TEXT_SELECTORS[article.newspaper]
-    if (!selectors)
-      return { ...article, enrichment_error: `No selector for "${article.newspaper}"` }
-    if (!Array.isArray(selectors)) selectors = [selectors]
-
-    let fullText = ''
-    let winningSelector = 'N/A'
-
-    for (const selector of selectors) {
-      if (selector.startsWith('meta[')) {
-        fullText = $(selector).attr('content')?.replace(/\s+/g, ' ').trim() || ''
-      } else {
-        fullText = $(selector).text().replace(/\s+/g, ' ').trim()
-      }
-
-      if (fullText.length >= MIN_ARTICLE_CHARS) {
-        winningSelector = selector
-        break
+    // Generic Selector Logic
+    if (contentText.length < MIN_ARTICLE_CHARS && source && source.articleSelector) {
+      const selectors = source.articleSelector.split(',').map((s) => s.trim())
+      for (const selector of selectors) {
+        if (selector.startsWith('meta[')) {
+          contentText = $(selector).attr('content')?.replace(/\s+/g, ' ').trim() || ''
+        } else {
+          contentText = $(selector).text().replace(/\s+/g, ' ').trim()
+        }
+        if (contentText.length >= MIN_ARTICLE_CHARS) {
+          break
+        }
       }
     }
 
-    if (fullText.length >= MIN_ARTICLE_CHARS) {
-      article.articleContent = { contents: [fullText] }
+    if (contentText.length >= MIN_ARTICLE_CHARS) {
+      article.articleContent = { contents: [contentText] }
       logger.debug(
         {
           headline: truncateString(article.headline, 40),
-          chars: fullText.length,
-          selector: winningSelector,
-          snippet: `${fullText.substring(0, 100)}...`,
+          chars: contentText.length,
+          imageUrl: article.imageUrl,
+          snippet: `${contentText.substring(0, 100)}...`,
         },
         `✅ Enrichment successful.`
       )
@@ -305,8 +276,8 @@ export async function scrapeArticleContent(article) {
         {
           headline: truncateString(article.headline, 60),
           newspaper: article.newspaper,
-          chars: fullText.length,
-          selectors_tried: selectors,
+          chars: contentText.length,
+          selectors_tried: source?.articleSelector || 'N/A',
           link: article.link,
         },
         `❌ Enrichment failed.`

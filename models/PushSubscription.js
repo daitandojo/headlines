@@ -1,10 +1,16 @@
-// models/PushSubscription.js (version 1.0)
-import mongoose from 'mongoose';
+// models/PushSubscription.js (version 1.1)
+import mongoose from 'mongoose'
 
-const { Schema, model, models } = mongoose;
+const { Schema, model, models } = mongoose
 
 const PushSubscriptionSchema = new Schema(
   {
+    subscriberId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Subscriber',
+      required: true,
+      index: true,
+    },
     endpoint: { type: String, required: true, unique: true },
     keys: {
       p256dh: { type: String, required: true },
@@ -15,6 +21,7 @@ const PushSubscriptionSchema = new Schema(
     timestamps: true,
     collection: 'push_subscriptions',
   }
-);
+)
 
-export default models.PushSubscription || model('PushSubscription', PushSubscriptionSchema);
+export default models.PushSubscription ||
+  model('PushSubscription', PushSubscriptionSchema)

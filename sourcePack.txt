@@ -401,10 +401,10 @@ primary_region = 'lhr'
 [processes]
 
 # File: models/Article.js
-// models/Article.js
-import mongoose from 'mongoose';
+// models/Article.js (version 2.4)
+import mongoose from 'mongoose'
 
-const { Schema, model, models } = mongoose;
+const { Schema, model, models } = mongoose
 
 const ArticleSchema = new Schema(
   {
@@ -412,66 +412,58 @@ const ArticleSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      minlength: 10,
+      minlength: 5,
       maxlength: 500,
     },
-    headline_en: { type: String, required: false, trim: true }, // NEW FIELD
+    headline_en: { type: String, trim: true },
     link: { type: String, required: true, unique: true, trim: true },
     newspaper: { type: String, required: true, trim: true },
     source: { type: String, required: true, trim: true },
-    country: { type: String, required: false, trim: true, index: true },
-    headline_selector: { type: String, required: false, trim: true },
-    section: { type: String, required: false, trim: true },
-    author: { type: String, required: false, trim: true },
-    published: { type: String, required: false, trim: true },
-    position: { type: String, required: false, trim: true },
-    raw: { type: Schema.Types.Mixed, required: false },
+    country: { type: String, trim: true, index: true },
+    imageUrl: { type: String, trim: true },
+    headline_selector: { type: String, trim: true },
     relevance_headline: { type: Number, required: true, min: 0, max: 100 },
     assessment_headline: { type: String, required: true, trim: true },
     articleContent: {
-      headlines: { type: [String], required: false, default: [] },
-      subheadings: { type: [String], required: false, default: [] },
-      captions: { type: [String], required: false, default: [] },
-      contents: { type: [String], required: false, default: [] },
+      type: {
+        contents: { type: [String], default: [] },
+      },
+      required: false,
     },
-    topic: { type: String, required: false, trim: true },
-    relevance_article: { type: Number, required: false, min: 0, max: 100 },
-    assessment_article: { type: String, required: false, trim: true },
-    amount: { type: Number, required: false },
-    key_individuals: [{
-        name: String,
-        role_in_event: String,
-        company: String,
-        email_suggestion: { type: String, required: false },
-    }],
-    background: { type: String, required: false, trim: true },
-    error: { type: String, required: false, trim: true, default: null },
-    enrichment_error: { type: String, required: false, trim: true, default: null },
-    storage_error_initial_headline_data: { type: String, required: false, trim: true, default: null },
-    db_operation_status: { type: String, required: false, trim: true },
-    db_error_reason: { type: String, required: false, trim: true },
+    topic: { type: String, trim: true },
+    relevance_article: { type: Number, min: 0, max: 100 },
+    assessment_article: { type: String, trim: true },
+    amount: { type: Number },
+    key_individuals: [
+      {
+        _id: false,
+        name: { type: String, trim: true },
+        role_in_event: { type: String, trim: true },
+        company: { type: String, trim: true },
+        email_suggestion: { type: String, trim: true },
+      },
+    ],
+    enrichment_error: { type: String, trim: true },
     emailed: { type: Boolean, default: false },
-    email_error: { type: String, required: false, trim: true, default: null },
-    email_skipped_reason: { type: String, required: false, trim: true, default: null },
-    embedding: { type: [Number], required: false },
+    embedding: { type: [Number] },
   },
   {
     timestamps: true,
     collection: 'articles',
   }
-);
+)
 
-ArticleSchema.index({ headline: 1 });
-ArticleSchema.index({ newspaper: 1, createdAt: -1 });
-ArticleSchema.index({ relevance_article: -1, createdAt: -1 });
-ArticleSchema.index({ relevance_headline: -1, createdAt: -1 });
-ArticleSchema.index({ country: 1, createdAt: -1 });
+ArticleSchema.index({ headline: 'text', headline_en: 'text', assessment_article: 'text' })
+ArticleSchema.index({ newspaper: 1, createdAt: -1 })
+ArticleSchema.index({ relevance_article: -1, createdAt: -1 })
+ArticleSchema.index({ relevance_headline: -1, createdAt: -1 })
+ArticleSchema.index({ country: 1, createdAt: -1 })
 
+export default models.Article || model('Article', ArticleSchema)
 
-export default models.Article || model('Article', ArticleSchema);
 
 # File: models/Opportunity.js
-// models/Opportunity.js (version 3.0)
+// src/models/Opportunity.js (version 3.1)
 import mongoose from 'mongoose'
 
 const { Schema, model, models } = mongoose
@@ -499,11 +491,11 @@ const OpportunitySchema = new Schema(
       index: true,
     },
     sourceEventId: {
-        type: Schema.Types.ObjectId,
-        ref: 'SynthesizedEvent',
-        required: false,
-        index: true
-    }
+      type: Schema.Types.ObjectId,
+      ref: 'SynthesizedEvent',
+      required: true, // MADE REQUIRED
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -513,14 +505,21 @@ const OpportunitySchema = new Schema(
 
 export default models.Opportunity || model('Opportunity', OpportunitySchema)
 
-# File: models/PushSubscription.js
-// models/PushSubscription.js (version 1.0)
-import mongoose from 'mongoose';
 
-const { Schema, model, models } = mongoose;
+# File: models/PushSubscription.js
+// models/PushSubscription.js (version 1.1)
+import mongoose from 'mongoose'
+
+const { Schema, model, models } = mongoose
 
 const PushSubscriptionSchema = new Schema(
   {
+    subscriberId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Subscriber',
+      required: true,
+      index: true,
+    },
     endpoint: { type: String, required: true, unique: true },
     keys: {
       p256dh: { type: String, required: true },
@@ -531,9 +530,53 @@ const PushSubscriptionSchema = new Schema(
     timestamps: true,
     collection: 'push_subscriptions',
   }
-);
+)
 
-export default models.PushSubscription || model('PushSubscription', PushSubscriptionSchema);
+export default models.PushSubscription ||
+  model('PushSubscription', PushSubscriptionSchema)
+
+
+# File: models/Source.js
+// models/Source.js (version 1.0)
+import mongoose from 'mongoose'
+
+const { Schema, model, models } = mongoose
+
+const SourceSchema = new Schema(
+  {
+    name: { type: String, required: true, unique: true, trim: true },
+    baseUrl: { type: String, required: true, trim: true },
+    sectionUrl: { type: String, required: true, trim: true },
+    country: { type: String, required: true, trim: true, index: true },
+    language: { type: String, required: true, trim: true, default: 'en' },
+    status: {
+      type: String,
+      enum: ['active', 'paused', 'under_review'],
+      default: 'active',
+      required: true,
+      index: true,
+    },
+    extractionMethod: {
+      type: String,
+      enum: ['custom', 'llm', 'json-ld'],
+      required: true,
+    },
+    extractorKey: { type: String, required: false, trim: true },
+    headlineSelector: { type: String, required: false, trim: true },
+    articleSelector: { type: String, required: false, trim: true },
+    imageUrlSelector: { type: String, required: false, trim: true },
+    lastScrapedAt: { type: Date, required: false },
+    lastSuccessAt: { type: Date, required: false },
+    notes: { type: String, required: false, trim: true },
+  },
+  {
+    timestamps: true,
+    collection: 'sources',
+  }
+)
+
+export default models.Source || model('Source', SourceSchema)
+
 
 # File: models/Subscriber.js
 // File: models/Subscriber.js (NEW FILE)
@@ -639,28 +682,30 @@ export default models.Subscriber || model('Subscriber', SubscriberSchema)
 
 
 # File: models/SynthesizedEvent.js
-// models/SynthesizedEvent.js (version 2.1 - Simplified Schema)
-import mongoose from 'mongoose';
+// models/SynthesizedEvent.js (version 2.2)
+import mongoose from 'mongoose'
 
-const { Schema, model, models } = mongoose;
+const { Schema, model, models } = mongoose
 
-// --- BUG FIX: SIMPLIFIED SUB-SCHEMA ---
-// Removed `article_id` to prevent the race condition during the save process.
-// The `headline`, `link`, and `newspaper` are all that's needed for email generation
-// and are stored directly, making the process more robust.
-const SourceArticleSchema = new Schema({
-  headline: { type: String, required: true },
-  link: { type: String, required: true },
-  newspaper: { type: String, required: true },
-}, { _id: false });
-// --- END BUG FIX ---
+const SourceArticleSchema = new Schema(
+  {
+    headline: { type: String, required: true, trim: true },
+    link: { type: String, required: true, trim: true },
+    newspaper: { type: String, required: true, trim: true },
+    imageUrl: { type: String, trim: true },
+  },
+  { _id: false }
+)
 
-const KeyIndividualSchema = new Schema({
-    name: String,
-    role_in_event: String,
-    company: String,
-    email_suggestion: { type: String, required: false },
-}, { _id: false });
+const KeyIndividualSchema = new Schema(
+  {
+    name: { type: String, trim: true },
+    role_in_event: { type: String, trim: true },
+    company: { type: String, trim: true },
+    email_suggestion: { type: String, trim: true },
+  },
+  { _id: false }
+)
 
 const SynthesizedEventSchema = new Schema(
   {
@@ -670,15 +715,14 @@ const SynthesizedEventSchema = new Schema(
       unique: true,
       trim: true,
       index: true,
-      description: "A unique key for the event, e.g., 'acquisition-visma-innovateai-2024-05-20'",
     },
     synthesized_headline: { type: String, required: true, trim: true },
     synthesized_summary: { type: String, required: true, trim: true },
-    ai_assessment_reason: { type: String, required: false },
+    ai_assessment_reason: { type: String, trim: true },
     country: { type: String, required: true, index: true },
     source_articles: { type: [SourceArticleSchema], required: true },
-    highest_relevance_score: { type: Number, required: true },
-    key_individuals: { type: [KeyIndividualSchema], required: true },
+    highest_relevance_score: { type: Number, required: true, min: 0, max: 100 },
+    key_individuals: { type: [KeyIndividualSchema], default: [] },
     event_date: { type: Date, default: Date.now },
     emailed: { type: Boolean, default: false },
     email_sent_at: { type: Date },
@@ -687,12 +731,19 @@ const SynthesizedEventSchema = new Schema(
     timestamps: true,
     collection: 'synthesized_events',
   }
-);
+)
 
-SynthesizedEventSchema.index({ event_date: -1 });
-SynthesizedEventSchema.index({ country: 1, createdAt: -1 });
+SynthesizedEventSchema.index({
+  synthesized_headline: 'text',
+  synthesized_summary: 'text',
+})
+SynthesizedEventSchema.index({ event_date: -1 })
+SynthesizedEventSchema.index({ country: 1, createdAt: -1 })
+SynthesizedEventSchema.index({ highest_relevance_score: -1 })
 
-export default models.SynthesizedEvent || model('SynthesizedEvent', SynthesizedEventSchema);
+export default models.SynthesizedEvent ||
+  model('SynthesizedEvent', SynthesizedEventSchema)
+
 
 # File: package.json
 {
@@ -1089,6 +1140,70 @@ main().catch(err => {
   }
 ]
 
+# File: src/config/dynamicConfig.js
+// src/config/dynamicConfig.js (version 1.0)
+import Source from '../../models/Source.js'
+import { logger } from '../utils/logger.js'
+
+export const configStore = {
+  newspaperToCountryMap: new Map(),
+  countryNameToFlagMap: new Map(),
+}
+
+const COUNTRY_FLAG_MAP = {
+  Denmark: '🇩🇰',
+  Norway: '🇳🇴',
+  Sweden: '🇸🇪',
+  Finland: '🇫🇮',
+  Netherlands: '🇳🇱',
+  'Global PE': '🌐',
+  'M&A Aggregators': '🤝',
+}
+
+let isInitialized = false
+
+/**
+ * Connects to the database, fetches all sources, and builds the global
+ * configuration maps needed by various pipeline stages.
+ */
+export async function initializeConfig() {
+  if (isInitialized) {
+    return
+  }
+  try {
+    logger.info('Initializing dynamic configuration from database...')
+    const sources = await Source.find().lean()
+
+    if (sources.length === 0) {
+      logger.warn(
+        'No sources found in the database. Configuration maps will be empty. Did you run the migration script?'
+      )
+    }
+
+    for (const source of sources) {
+      configStore.newspaperToCountryMap.set(source.name, source.country)
+      if (
+        !configStore.countryNameToFlagMap.has(source.country) &&
+        COUNTRY_FLAG_MAP[source.country]
+      ) {
+        configStore.countryNameToFlagMap.set(
+          source.country,
+          COUNTRY_FLAG_MAP[source.country]
+        )
+      }
+    }
+
+    isInitialized = true
+    logger.info(
+      `Dynamic configuration initialized successfully. Loaded ${sources.length} sources.`
+    )
+  } catch (error) {
+    logger.fatal({ err: error }, 'Failed to initialize dynamic configuration from DB.')
+    throw error // Propagate error to halt the pipeline
+  }
+}
+
+
 # File: src/config/index.js
 // src/config/index.js (version 2.3 - Pinecone Integration)
 import dotenv from 'dotenv';
@@ -1178,984 +1293,6 @@ export const SUPERVISOR_EMAIL_CONFIG = {
   language: 'en',
   brandName: 'Headlines Processing Bot',
 };
-
-# File: src/config/sources.js
-// File: src/config/sources.js
-
-// src/config/sources.js (version 3.5)
-// Centralized configuration for web scraping sources, now grouped by country.
-
-const simpleExtractor = (el, site) => {
-  const headline = el.text().trim().replace(/\s+/g, ' ')
-  const link = el.attr('href')
-  if (headline && link) {
-    return { headline, link, source: site.name, newspaper: site.newspaper || site.name }
-  }
-  return null
-}
-
-export const COUNTRIES_CONFIG = [
-  // --- Denmark ---
-  {
-    countryName: 'Denmark',
-    included: true,
-    flag: '🇩🇰',
-    sites: [
-      // == Tier 1: High-Signal M&A and PE/VC News ==
-      {
-        static: false,
-        key: 'okonomisk_ugebrev',
-        name: 'Økonomisk Ugebrev',
-        url: 'https://ugebrev.dk/',
-        newspaper: 'Økonomisk Ugebrev',
-        selector:
-          '.jet-listing-grid__item h3 a, .jet-listing-grid__item h5 a, .jet-listing-grid__item h6 a, .elementor-posts-container h3 a',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'kapitalwatch',
-        name: 'KapitalWatch.dk',
-        url: 'https://kapwatch.dk/latest',
-        newspaper: 'KapitalWatch',
-        selector: 'a.group\\/latest-news',
-        extract: (el, site) => {
-          const headline = el.find('h1').text().trim().replace(/\s+/g, ' ')
-          const link = el.attr('href')
-          if (headline && link) {
-            return { headline, link, source: site.name, newspaper: site.name }
-          }
-          return null
-        },
-      },
-      {
-        static: false,
-        key: 'insidebusiness_ma',
-        name: 'InsideBusiness M&A',
-        newspaper: 'InsideBusiness',
-        url: 'https://ib.dk/tema/ma/',
-        selector: 'div.post',
-        extract: (el, site) => {
-          const headlineElement = el.find('h2 a')
-          const headline = headlineElement.text().trim().replace(/\s+/g, ' ')
-          const link = headlineElement.attr('href')
-          if (headline && link) {
-            return { headline, link, source: site.name, newspaper: site.newspaper }
-          }
-          return null
-        },
-      },
-      {
-        static: false,
-        key: 'insidebusiness_business',
-        name: 'InsideBusiness Business',
-        newspaper: 'InsideBusiness',
-        url: 'https://ib.dk/tema/business/',
-        selector: 'div.post',
-        extract: (el, site) => {
-          const headlineElement = el.find('h2 a')
-          const headline = headlineElement.text().trim().replace(/\s+/g, ' ')
-          const link = headlineElement.attr('href')
-          if (headline && link) {
-            return { headline, link, source: site.name, newspaper: site.newspaper }
-          }
-          return null
-        },
-      },
-
-      // == Tier 2: Direct from PE/VC Firms & Advisors ==
-      {
-        static: true,
-        key: 'axcel',
-        name: 'Axcel',
-        url: 'https://axcel.com/news',
-        newspaper: 'Axcel',
-        selector: 'div.news-mask a',
-        extract: (el, site) => ({
-          headline: el.find('h3').text().trim(),
-          link: el.attr('href'),
-          source: site.name,
-          newspaper: site.name,
-        }),
-      },
-      {
-        static: true,
-        key: 'polaris',
-        name: 'Polaris',
-        url: 'https://polarisequity.dk/news',
-        newspaper: 'Polaris',
-        selector: 'div.fl-post-feed-post',
-        extract: (el, site) => {
-          const linkEl = el.find('h3.fl-post-feed-title a')
-          const headline = linkEl.text().trim()
-          const href = linkEl.attr('href')
-          if (headline && href) {
-            return { headline, link: href, source: site.name, newspaper: site.name }
-          }
-          return null
-        },
-      },
-      // CORRECTED: The site's news page has moved. This now points to the correct URL and uses the new selector.
-      {
-        static: true,
-        key: 'maj_invest',
-        name: 'Maj Invest',
-        url: 'https://www.majinvest.com/en/news-and-press/',
-        newspaper: 'Maj Invest',
-        selector: 'a.news-list-item',
-        extract: (el, site) => {
-          const headline = el.find('.news-list-item__title').text().trim()
-          const link = el.attr('href')
-          if (headline && link) {
-            return { headline, link, source: site.name, newspaper: site.name }
-          }
-          return null
-        },
-      },
-      {
-        static: true,
-        key: 'gro_capital',
-        name: 'Gro Capital',
-        url: 'https://www.grocapital.dk/archive',
-        newspaper: 'Gro Capital',
-        selector: 'a.link-block, a.link-block-6',
-        extract: (el, site) => {
-          const headline = el
-            .find('div[class^="heading-"]')
-            .text()
-            .trim()
-            .replace(/\s+/g, ' ')
-          const link = el.attr('href')
-          if (headline && link) {
-            return {
-              headline: headline,
-              link: link,
-              source: site.name,
-              newspaper: site.name,
-            }
-          }
-          return null
-        },
-      },
-      {
-        static: true,
-        key: 'eifo_dk',
-        name: 'EIFO',
-        url: 'https://eifo.dk/viden/nyheder/',
-        newspaper: 'EIFO',
-        selector: 'a.teaser-item.link',
-        extract: (el, site) => {
-          const headline = el.find('h4').text().trim()
-          const link = el.attr('href')
-          if (headline && link) {
-            return {
-              headline: headline,
-              link: link,
-              source: site.name,
-              newspaper: site.newspaper,
-            }
-          }
-          return null
-        },
-      },
-      // CORRECTED: The previous selector was failing. This new selector targets the collection grid items directly.
-      {
-        static: true,
-        key: 'byfounders',
-        name: 'byFounders',
-        url: 'https://www.byfounders.vc/portfolio',
-        newspaper: 'byFounders',
-        selector: 'a.w-inline-block[href*="/portfolio/"]',
-        extract: (el, site) => {
-          const companyName = el.find('h3').text().trim()
-          const link = el.attr('href')
-          if (companyName && link && !companyName.includes('byFounders')) {
-            return {
-              headline: `byFounders Investment: ${companyName}`,
-              link: link,
-              source: site.name,
-              newspaper: site.name,
-            }
-          }
-          return null
-        },
-      },
-      {
-        static: true,
-        key: 'clearwater_dk',
-        name: 'Clearwater International',
-        url: 'https://www.clearwatercf.com/dk/experience/transactions/country/denmark/',
-        newspaper: 'Clearwater International',
-        selector: 'a.transaction-list-page__resource-inner',
-        extract: (el, site) => {
-          const headline = el
-            .find('h3.transaction-list-page__resource-title')
-            .text()
-            .trim()
-          const link = el.attr('href')
-          if (headline && link) {
-            return {
-              headline: headline,
-              link: link,
-              source: site.name,
-              newspaper: site.newspaper,
-            }
-          }
-          return null
-        },
-      },
-
-      // == Tier 3: Major Business Dailies ==
-      {
-        static: false,
-        key: 'borsen_frontpage',
-        name: 'Børsen Frontpage',
-        newspaper: 'Børsen',
-        url: 'https://borsen.dk/',
-        useJsonLd: true,
-      },
-      {
-        static: false,
-        key: 'borsen_finans',
-        name: 'Børsen Finans',
-        newspaper: 'Børsen',
-        url: 'https://borsen.dk/nyheder/finans',
-        useJsonLd: true,
-      },
-      {
-        static: false,
-        key: 'borsen_virksomheder',
-        name: 'Børsen Virksomheder',
-        newspaper: 'Børsen',
-        url: 'https://borsen.dk/nyheder/virksomheder',
-        useJsonLd: true,
-      },
-      {
-        static: false,
-        key: 'berlingske',
-        name: 'Berlingske',
-        url: 'https://www.berlingske.dk/business',
-        newspaper: 'Berlingske',
-        selector: 'h4.teaser__title a.teaser__title-link',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'finans_dk',
-        name: 'Finans.dk',
-        url: 'https://finans.dk/seneste-nyt',
-        newspaper: 'Finans.dk',
-        selector: 'article a h3',
-        extract: (el, site) => ({
-          headline: el.text().trim(),
-          link: el.closest('a').attr('href'),
-          source: site.name,
-          newspaper: site.name,
-        }),
-      },
-      {
-        static: false,
-        key: 'politiken',
-        name: 'Politiken',
-        url: 'https://politiken.dk/danmark/oekonomi/',
-        newspaper: 'Politiken',
-        selector: 'article',
-        extract: (el, site) => {
-          const h = el.find('h2, h3, h4').first().text().trim()
-          const a = el.find('a[href*="/art"]').first().attr('href')
-          return h && a
-            ? { headline: h, link: a, source: site.name, newspaper: site.name }
-            : null
-        },
-      },
-    ],
-  },
-  // --- Norway ---
-  {
-    countryName: 'Norway',
-    flag: '🇳🇴',
-    included: true, 
-    sites: [
-      {
-        static: false,
-        key: 'finansavisen',
-        name: 'Finansavisen',
-        url: 'https://www.finansavisen.no',
-        newspaper: 'Finansavisen',
-        selector: 'a.sc-d5e32014-1',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'e24',
-        name: 'E24',
-        url: 'https://e24.no/',
-        newspaper: 'E24',
-        selector: 'a._teaser_bizto_1',
-        extract: (el, site) => {
-          const headlineEl = el.find('h3._mainTitle_qsmm2_16').clone()
-          headlineEl.find('style').remove()
-          const headline = headlineEl.text().trim()
-          const href = el.attr('href')
-          if (headline && href) {
-            return { headline, link: href, source: site.name, newspaper: site.newspaper }
-          }
-          return null
-        },
-      },
-      {
-        static: true,
-        key: 'fsn_capital',
-        name: 'FSN Capital',
-        url: 'https://fsncapital.com/en/news/',
-        newspaper: 'FSN Capital',
-        selector: 'div.newsitem',
-        extract: (el, site) => {
-          const linkEl = el.find('h4.title a')
-          return {
-            headline: linkEl.text().trim(),
-            link: linkEl.attr('href'),
-            source: site.name,
-            newspaper: site.newspaper,
-          }
-        },
-      },
-      {
-        static: true,
-        key: 'verdane',
-        name: 'Verdane',
-        url: 'https://verdane.com/portfolio/',
-        newspaper: 'Verdane',
-        selector: 'li.wp-block-post.portfolio',
-        extract: (el, site) => {
-          const linkEl = el.find('a.wp-block-klingit-the-product-block-link')
-          const companyName = linkEl.find('h3.wp-block-post-title').text().trim()
-          if (companyName) {
-            return {
-              headline: `Verdane invests in ${companyName}`,
-              link: linkEl.attr('href'),
-              source: site.name,
-              newspaper: site.newspaper,
-            }
-          }
-          return null
-        },
-      },
-      {
-        static: false,
-        key: 'dagens_naeringsliv',
-        name: 'Dagens Næringsliv',
-        url: 'https://www.dn.no',
-        newspaper: 'Dagens Næringsliv',
-        selector:
-          "a.dn-link[href^='/'], a.dn-link[href*='dn.no/video'], a.dn-link[href*='/2-1-']",
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'nrk_okonomi',
-        name: 'NRK',
-        url: 'https://www.nrk.no/nyheter/okonomi/',
-        newspaper: 'NRK',
-        selector: 'article a',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'aftenposten_okonomi',
-        name: 'Aftenposten',
-        url: 'https://www.aftenposten.no/okonomi/',
-        newspaper: 'Aftenposten',
-        selector: 'a.teaser-link',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'nettavisen_okonomi',
-        name: 'Nettavisen',
-        url: 'https://www.nettavisen.no/okonomi/',
-        newspaper: 'Nettavisen',
-        selector: 'a[href*="/okonomi/"]',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'tv2_okonomi',
-        name: 'TV 2',
-        url: 'https://www.tv2.no/nyheter/okonomi/',
-        newspaper: 'TV 2',
-        selector: 'a.article__link',
-        extract: simpleExtractor,
-      },
-    ],
-  },
-  // --- Sweden ---
-  {
-    countryName: 'Sweden',
-    flag: '🇸🇪',
-    included: false,
-    sites: [
-      {
-        static: false,
-        key: 'dagens_industri',
-        name: 'Dagens Industri',
-        url: 'https://www.di.se',
-        newspaper: 'Dagens Industri',
-        selector:
-          'a[href^="/nyheter/"], a[href^="/live/"], a[href^="/analys/"], a[href^="/digital/"], .js_watch-teaser, a.panorama-content__item',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'svenska_dagbladet',
-        name: 'Svenska Dagbladet',
-        url: 'https://www.svd.se/',
-        newspaper: 'Svenska Dagbladet',
-        selector:
-          'a[class*="TeaserLink"], a[class*="CarouselEntry"], article h2 a, article h3 a, a[href^="/a/"]',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'dagens_nyheter',
-        name: 'Dagens Nyheter',
-        url: 'https://www.dn.se/ekonomi/',
-        newspaper: 'Dagens Nyheter',
-        selector: '.ds-teaser a, a.ds-teaser',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'breakit',
-        name: 'Breakit',
-        url: 'https://www.breakit.se',
-        newspaper: 'Breakit',
-        selector:
-          "a[href*='/artikel/'], a.ArticleLarge_article_large__link__Hce3q, .Entries_link__eHglX, .NewsWidget_article__UVMN7",
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'efn_ekonomikanalen',
-        name: 'EFN Ekonomikanalen',
-        url: 'https://www.efn.se',
-        newspaper: 'EFN Ekonomikanalen',
-        selector: 'a.group, a.block, a.flex, a.relative',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'svt_nyheter',
-        name: 'SVT Nyheter',
-        url: 'https://www.svt.se/nyheter/ekonomi',
-        newspaper: 'SVT Nyheter',
-        selector: 'a[href^="/nyheter/ekonomi/"]',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'affarsvarlden',
-        name: 'Affärsvärlden',
-        url: 'https://www.affarsvarlden.se',
-        newspaper: 'Affärsvärlden',
-        selector:
-          'a.article-text-content__heading__link, .frontpage-main-article__related-articles-links__link, .sidebar-news__list_li__link, article h2 a, article h3 a',
-        extract: simpleExtractor,
-      },
-    ],
-  },
-  // --- Finland ---
-  {
-    countryName: 'Finland',
-    included: true,
-    flag: '🇫🇮',
-    sites: [
-      {
-        static: false,
-        key: 'talouselama',
-        name: 'Talouselämä',
-        url: 'https://www.talouselama.fi',
-        newspaper: 'Talouselämä',
-        selector: "a[href^='/uutiset/a/']",
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'kauppalehti',
-        name: 'Kauppalehti',
-        url: 'https://www.kauppalehti.fi/uutiset/talous',
-        newspaper: 'Kauppalehti',
-        selector: 'a[href*="/uutiset/a/"]',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'helsingin_sanomat',
-        name: 'Helsingin Sanomat',
-        url: 'https://www.hs.fi/talous/',
-        newspaper: 'Helsingin Sanomat',
-        selector: 'a.block',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'iltalehti',
-        name: 'Iltalehti',
-        url: 'https://www.iltalehti.fi/talous/',
-        newspaper: 'Iltalehti',
-        selector:
-          'a.latest-pala, a.news-ticker-item, .half-article-content a, .half-article-content',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'taloussanomat_ilta_sanomat',
-        name: 'Taloussanomat (Ilta-Sanomat)',
-        url: 'https://www.is.fi/taloussanomat/',
-        newspaper: 'Taloussanomat (Ilta-Sanomat)',
-        selector: 'a.block[href^="/taloussanomat/"], a[href^="/autot/"]',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'yle',
-        name: 'Yle',
-        url: 'https://yle.fi/uutiset/18-190125',
-        newspaper: 'Yle',
-        selector: 'a[href*="/a/"]',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'mtv_uutiset',
-        name: 'MTV Uutiset',
-        url: 'https://www.mtvuutiset.fi/aihe/uutiset/2309200',
-        newspaper: 'MTV Uutiset',
-        selector: "a[href^='/artikkeli/']",
-        extract: simpleExtractor,
-      },
-    ],
-  },
-  // --- Netherlands ---
-  {
-    countryName: 'Netherlands',
-    included: true,
-    flag: '🇳🇱',
-    sites: [
-      {
-        static: false,
-        key: 'fd_nl',
-        name: 'Het Financieele Dagblad (FD.nl)',
-        url: 'https://fd.nl/',
-        newspaper: 'Het Financieele Dagblad (FD.nl)',
-        selector: "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'de_telegraaf_dft',
-        name: 'De Telegraaf – DFT',
-        url: 'https://www.telegraaf.nl/financieel',
-        newspaper: 'De Telegraaf – DFT',
-        selector: "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'business_insider_nederland',
-        name: 'Business Insider Nederland',
-        url: 'https://www.businessinsider.nl/category/finance/',
-        newspaper: 'Business Insider Nederland',
-        selector: "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'quotenet_nl',
-        name: 'Quote.nl',
-        url: 'https://www.quotenet.nl/financien/',
-        newspaper: 'Quote.nl',
-        selector:
-          'section[data-vars-block-type="4 Across Block"] a, section[data-vars-block-type="3 Column Block"] a',
-        extract: (el, site) => {
-          // Find the headline, which is usually in an h3 tag with a specific data-theme-key.
-          const headline = el.find('h3[data-theme-key="custom-item-title"]').text().trim()
-          const link = el.attr('href')
-
-          if (headline && link) {
-            return { headline, link, source: site.name, newspaper: site.name }
-          }
-          return null
-        },
-      },
-      {
-        static: false,
-        key: 'iex_nl',
-        name: 'IEX.nl',
-        url: 'https://www.iex.nl/nieuws/default.aspx',
-        newspaper: 'IEX.nl',
-        selector: 'h3 a',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'nrc_handelsblad',
-        name: 'NRC Handelsblad',
-        url: 'https://www.nrc.nl/nieuws/',
-        newspaper: 'NRC Handelsblad',
-        selector: 'div[class*="teaser"] a',
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'de_volkskrant',
-        name: 'De Volkskrant',
-        url: 'https://www.volkskrant.nl/economie/',
-        newspaper: 'De Volkskrant',
-        useJsonLd: false, // Important: turn this off
-        selector: 'a[data-gtm="teaser-link"]',
-        extract: (el, site) => {
-          const link = el.attr('href')
-          const headline = el.find('h3, h4, h2').first().text().trim()
-          if (headline && link) {
-            return { headline, link, source: site.name, newspaper: site.name }
-          }
-          return null
-        },
-      },
-      {
-        static: false,
-        key: 'trouw_nl',
-        name: 'Trouw.nl',
-        url: 'https://www.trouw.nl/economie/',
-        newspaper: 'Trouw.nl',
-        useJsonLd: false, // Important: turn this off
-        selector: 'a[data-gtm="teaser-link"]',
-        extract: (el, site) => {
-          const headline = el.find('h3, h4, h2').first().text().trim()
-          const link = el.attr('href')
-          if (headline && link) {
-            return { headline, link, source: site.name, newspaper: site.name }
-          }
-          return null
-        },
-      },
-      {
-        static: false,
-        key: 'algemeen_dagblad',
-        name: 'Algemeen Dagblad (ad.nl)',
-        url: 'https://www.ad.nl/economie/',
-        newspaper: 'Algemeen Dagblad (ad.nl)',
-        useJsonLd: false, // Important: turn this off
-        selector: 'a.ankeiler__link',
-        extract: (el, site) => {
-          // The headline text is inside a div with the ankeiler__title class.
-          const headline = el
-            .find('div.ankeiler__title')
-            .text()
-            .trim()
-            .replace(/\s+/g, ' ')
-          const link = el.attr('href')
-
-          if (headline && link) {
-            return { headline, link, source: site.name, newspaper: site.name }
-          }
-          return null
-        },
-      },
-      {
-        static: false,
-        key: 'follow_the_money',
-        name: 'Follow the Money (ftm.nl)',
-        url: 'https://www.ftm.nl',
-        newspaper: 'Follow the Money (ftm.nl)',
-        selector: "article a[href]:not([href^='#']):not([rel~='nofollow'])",
-        extract: simpleExtractor,
-      },
-      {
-        static: false,
-        key: 'pensioen_pro',
-        name: 'Pensioen Pro',
-        url: 'https://pensioenpro.nl',
-        newspaper: 'Pensioen Pro',
-        selector: "a.absolute-link[href*='pensioenpro.nl']",
-        extract: simpleExtractor,
-      },
-    ],
-  },
-  // --- Global PE Firms ---
-  // --- FIX: Updated selectors for all failing PE firms based on PEFirms.json and best practices ---
-  {
-    countryName: 'Global PE',
-    included: true,
-    flag: '🌐',
-    sites: [
-      {
-        static: true,
-        key: 'nordic_capital',
-        name: 'Nordic Capital',
-        url: 'https://www.nordiccapital.com/news-views/',
-        newspaper: 'Nordic Capital',
-        selector: 'article.masonry-card--component a',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'altor',
-        name: 'Altor',
-        url: 'https://www.altor.com/news/',
-        newspaper: 'Altor',
-        selector: 'a.g-content-card.g-news__item',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'apollo',
-        name: 'Apollo',
-        url: 'https://www.apollo.com/insights',
-        selector:
-          'a.cmp-insight-column-card__item__title--link, a.cmp-teaser__title-link, a.text-link-blck',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'kkr',
-        name: 'KKR',
-        url: 'https://www.kkr.com/news',
-        selector: 'a.article-teaser__link',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'pai',
-        name: 'PAI Partners',
-        url: 'https://www.paipartners.com/news/',
-        selector: 'a[href*="/mediaitem/"]',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'eqt_group',
-        name: 'EQT Group',
-        url: 'https://www.eqtgroup.com/news',
-        newspaper: 'EQT Group',
-        selector: "a[href^='/news/'], a[href^='/thinq/']",
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'egeria',
-        name: 'Egeria',
-        url: 'https://egeriagroup.com/news/',
-        newspaper: 'Egeria',
-        selector: 'div.item',
-        extract: (el, site) => {
-          const headline = el.find('.item-content h3').text().trim()
-          const link = el.find('.item-footer a').attr('href')
-          if (headline && link) {
-            return { headline, link, source: site.name, newspaper: site.name }
-          }
-          return null
-        },
-      },
-      {
-        static: true,
-        key: 'rivean_capital',
-        name: 'Rivean Capital (Gilde)',
-        url: 'https://riveancapital.com/news/',
-        newspaper: 'Rivean Capital (Gilde)',
-        selector: 'div.item a',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'ik_partners_news',
-        name: 'IK Partners',
-        url: 'https://ikpartners.com/news/',
-        newspaper: 'IK Partners',
-        selector: 'a.card-news',
-        extract: (el, site) => ({
-          headline: el.find('h3').text().trim(),
-          link: el.attr('href'),
-          source: site.name,
-          newspaper: site.name,
-        }),
-      },
-      {
-        static: true,
-        key: 'triton_partners',
-        name: 'Triton Partners',
-        url: 'https://www.triton-partners.com/news/',
-        newspaper: 'Triton Partners',
-        selector: '.news-list__item a',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'bridgepoint_news',
-        name: 'Bridgepoint',
-        url: 'https://www.bridgepoint.eu/news-and-insights/',
-        newspaper: 'Bridgepoint',
-        selector: 'a.news-card',
-        extract: (el, site) => ({
-          headline: el.find('h3').text().trim(),
-          link: el.attr('href'),
-          source: site.name,
-          newspaper: site.name,
-        }),
-      },
-      {
-        static: true,
-        key: 'hg_capital',
-        name: 'Hg Capital',
-        url: 'https://hgcapital.com/insight/',
-        newspaper: 'Hg Capital',
-        selector: 'a.card__link, a.post-card',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: '3i_group_portfolio',
-        name: '3i Group',
-        url: 'https://www.3i.com/media/press-releases/',
-        newspaper: '3i Group',
-        selector: 'a.search-result-item',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'cvc_capital_portfolio',
-        name: 'CVC Capital Partners',
-        url: 'https://www.cvc.com/news-and-views/press-releases/',
-        newspaper: 'CVC Capital Partners',
-        selector: 'a.news-listing-item',
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'ardian_news',
-        name: 'Ardian News',
-        newspaper: 'Ardian',
-        url: 'https://www.ardian.com/news-insights',
-        selector: `a[href^="/news-insights/"]:not([class*="tag"]):not([class*="btn"])`,
-        extract: simpleExtractor,
-      },
-      {
-        static: true,
-        key: 'ardian_press_releases',
-        name: 'Ardian Press Releases',
-        newspaper: 'Ardian',
-        url: 'https://www.ardian.com/press-releases',
-        selector: `a[href^='/news-insights/press-releases/']`,
-        extract: simpleExtractor,
-      },
-    ],
-  },
-  // --- M&A Aggregators ---
-  {
-    countryName: 'M&A Aggregators',
-    included: true,
-    flag: '🤝',
-    sites: [
-      {
-        static: false,
-        key: 'mergermarket',
-        name: 'Mergermarket',
-        url: 'https://www.mergermarket.com/homepage',
-        newspaper: 'Mergermarket',
-        selector: 'a.item-title',
-        extract: simpleExtractor,
-      },
-    ],
-  },
-]
-// --- END FIX ---
-
-// --- Create and export maps ---
-export const newspaperToCountryMap = new Map()
-export const countryNameToFlagMap = new Map()
-
-COUNTRIES_CONFIG.forEach((country) => {
-  countryNameToFlagMap.set(country.countryName, country.flag)
-  country.sites.forEach((site) => {
-    const newspaperName = site.newspaper || site.name
-    if (!newspaperToCountryMap.has(newspaperName)) {
-      newspaperToCountryMap.set(newspaperName, country.countryName)
-    }
-  })
-})
-
-export const TEXT_SELECTORS = {
-  '3i Group': 'div.content-body p',
-  Affärsvärlden: 'div.article-body p',
-  Aftenposten: 'article p',
-  'Algemeen Dagblad (ad.nl)': 'div.article__body',
-  Altor: 'div.g-wysiwyg p',
-  Apollo: 'main p',
-  Ardian: 'div[class*="content"] p',
-  Axcel: 'div.article-content p',
-  Berlingske: '.article-body p',
-  'Bootstrapping.dk': 'div[data-widget_type="theme-post-content.default"]',
-  // CORRECTED: Added 'article' as a fallback to catch different layouts.
-  Børsen: ['div[id^="article-anchor-"]', '.article-content', 'article'],
-  Breakit: 'article p',
-  Bridgepoint: 'main p',
-  'Business Insider Nederland': 'div[class*="content"] p',
-  byFounders: 'main p',
-  'Clearwater International': 'div.transaction-page__main-content',
-  'CVC Capital Partners': 'div.rte p',
-  'Dagens Industri': 'div[class*="content"] p, div.di_body-text',
-  'Dagens Næringsliv': 'div[class*="content"] p, .dn-article-body',
-  'Dagens Nyheter': 'div.article-body-text p',
-  'De Telegraaf – DFT': 'div[class*="content"] p',
-  'De Volkskrant': 'section[data-initial-of-type="ARTICLE"] p, div.article__body p',
-  E24: 'article p[data-test-tag="lead-text"], article p.hyperion-css-1lemvax',
-  'EFN Ekonomikanalen': '.prose p',
-  Egeria: 'main p',
-  EIFO: 'div.article-content',
-  EQT: '.body-l-body-m p',
-  'EQT Group': 'main p',
-  'Finans.dk': 'p.container-text:not([class*="italic"])',
-  Finansavisen: '.article-body__text p, meta[name="description"]',
-  'Follow the Money (ftm.nl)': 'main p',
-  'FSN Capital': 'div.newspage__content p',
-  'Gro Capital': 'div.richtext--basic',
-  'Helsingin Sanomat': 'main p',
-  'Het Financieele Dagblad (FD.nl)': 'div[class*="content"] p',
-  'Hg Capital': 'main p',
-  'IEX.nl': 'div[class*="content"] p',
-  'IK Partners': 'div.entry-content',
-  Iltalehti: 'div[data-testid="article-body"] p',
-  InsideBusiness: 'h3.post-intro-text',
-  KapitalWatch: 'div[data-sentry-component="ArticleContent"]',
-  Kauppalehti: 'div[class*="content"] p',
-  KKR: '.body-text p',
-  'Maj Invest': '.prose p',
-  Mergermarket: 'div.item-body p',
-  'MTV Uutiset': 'main p',
-  Nettavisen: 'main p',
-  'Nordic Capital': '.multi-column-rich-text--content-block .block-content p',
-  'NRC Handelsblad': 'main p',
-  NRK: 'main p',
-  'Økonomisk Ugebrev': 'div.elementor-widget-theme-post-content',
-  'PAI Partners': 'div.wysiwyg p',
-  'Pensioen Pro': '.post-content p',
-  Polaris: 'div.fl-module-fl-post-content p',
-  Politiken: 'section#js-article-body .font-serif-body-20 p',
-  'Quote.nl': 'div.article-body-content',
-  // CORRECTED: The previous selector was incorrect for article pages.
-  'Rivean Capital (Gilde)': '.news-detail__content',
-  'Svenska Dagbladet': 'main p',
-  'SVT Nyheter': 'div[class*="story-body"] p',
-  'Taloussanomat (Ilta-Sanomat)': 'main p',
-  Talouselämä: 'article p',
-  'Triton Partners': '.news-article__content',
-  'Trouw.nl': 'section[data-initial-of-type="ARTICLE"] p, div.article__body p',
-  'TV 2': 'main p',
-  Verdane: '.entry-content p',
-  Yle: 'body.cleaned',
-}
-
 
 # File: src/database.js
 // src/database.js (version 1.0)
@@ -4119,98 +3256,21 @@ export const LOGO_CID = 'logo@wealthevents.email';
 export const LOGO_PATH = './public/bullion.png';
 
 # File: src/modules/email/index.js
-// File: src/modules/email/index.js
-// src/modules/email/index.js (version 2.1 - Add User Event Count Logging)
+// src/modules/email/index.js (version 2.2)
 import { logger } from '../../utils/logger.js'
-import { sendPersonalizedEmail, performActualSupervisorEmailSend } from './mailer.js'
+import { performActualSupervisorEmailSend } from './mailer.js'
 import Subscriber from '../../../models/Subscriber.js'
-import { newspaperToCountryMap, countryNameToFlagMap } from '../../config/sources.js'
-import { createPersonalizedEmailBody } from './components/emailBodyBuilder.js'
 
 /**
- * Main function to send personalized wealth event emails for newly synthesized events.
- * @param {Array<Object>} newEvents - The array of event objects that were just created in this pipeline run.
- * @returns {Promise<{eventsSentCount: number}>} An object containing the count of events processed for email.
+ * DEPRECATED - This function is no longer used.
+ * All user-facing email logic is now handled by the central notification orchestrator.
+ * Kept for historical reference during transition, will be removed later.
  */
-export async function sendWealthEventsEmail(newEvents) {
-  if (!newEvents || newEvents.length === 0) {
-    logger.info('No new synthesized events were provided for emailing.')
-    return { eventsSentCount: 0 }
-  }
-
-  const subscribersToEmail = await Subscriber.find({
-    isActive: true,
-    emailNotificationsEnabled: true,
-  }).lean()
-
-  if (subscribersToEmail.length === 0) {
-    logger.info(
-      'No active subscribers with email notifications enabled. Skipping emails.'
-    )
-    return { eventsSentCount: 0 }
-  }
-
-  logger.info(
-    `📧 Processing ${newEvents.length} new synthesized events for ${subscribersToEmail.length} users...`
+export async function sendWealthEventsEmail() {
+  logger.warn(
+    'DEPRECATED: sendWealthEventsEmail function was called. This should not happen.'
   )
-
-  const eventsByCountry = {}
-  for (const event of newEvents) {
-    const country = event.country || 'Other'
-    if (!eventsByCountry[country]) {
-      eventsByCountry[country] = []
-    }
-    eventsByCountry[country].push(event)
-  }
-
-  let anyEmailSent = false
-
-  for (const user of subscribersToEmail) {
-    const userSpecificEventsByCountry = {}
-    let eventCountForUser = 0
-
-    // Ensure user.countries is an array before iterating
-    const userCountries = user.countries || []
-    for (const country of userCountries) {
-      if (eventsByCountry[country]) {
-        userSpecificEventsByCountry[country] = eventsByCountry[country]
-        eventCountForUser += eventsByCountry[country].length
-      }
-    }
-
-    if (eventCountForUser === 0) {
-      logger.info(
-        `No new events for ${user.firstName}'s subscribed countries. Skipping email.`
-      )
-      continue
-    }
-
-    // --- NEW: Log how many events a user is about to receive ---
-    logger.info(
-      `Preparing to send email to ${user.firstName} with ${eventCountForUser} event(s).`
-    )
-    // --- END NEW LOGGING ---
-
-    const includedFlags = Object.keys(userSpecificEventsByCountry)
-      .map((country) => countryNameToFlagMap.get(country) || '')
-      .join(' ')
-
-    const subject = `${includedFlags} New Wealth Opportunities`.trim()
-    const body = createPersonalizedEmailBody(user, userSpecificEventsByCountry, subject)
-
-    if (body) {
-      const emailSentSuccessfully = await sendPersonalizedEmail({ user, subject, body })
-      if (emailSentSuccessfully) {
-        anyEmailSent = true
-      }
-    }
-  }
-
-  if (anyEmailSent) {
-    logger.info(`Successfully sent emails containing ${newEvents.length} new events.`)
-  }
-
-  return { eventsSentCount: newEvents.length }
+  return { eventsSentCount: 0 }
 }
 
 /**
@@ -4225,21 +3285,21 @@ export async function sendSupervisorReportEmail(runStats) {
 
   logger.info('Preparing supervisor report email...')
 
-  const superUsers = await Subscriber.find({
-    isActive: true,
-    role: 'admin',
-  })
-    .select('email')
-    .lean()
-
-  const superUserEmails = superUsers.map((user) => user.email)
-
-  if (superUserEmails.length === 0) {
-    logger.warn('No admin users found. Skipping supervisor report.')
-    return
-  }
-
   try {
+    const superUsers = await Subscriber.find({
+      isActive: true,
+      role: 'admin',
+    })
+      .select('email')
+      .lean()
+
+    const superUserEmails = superUsers.map((user) => user.email)
+
+    if (superUserEmails.length === 0) {
+      logger.warn('No admin users found. Skipping supervisor report.')
+      return
+    }
+
     await performActualSupervisorEmailSend(runStats, superUserEmails)
     logger.info('✅ Supervisor report email successfully sent/queued to all superusers.')
   } catch (error) {
@@ -4357,104 +3417,310 @@ export async function performActualSupervisorEmailSend(runStats, recipients) {
 }
 
 
-# File: src/modules/push/index.js
-// src/modules/push/index.js (version 2.0)
-import webpush from 'web-push';
-import { logger } from '../../utils/logger.js';
-import PushSubscription from '../../../models/PushSubscription.js';
-import { truncateString } from '../../utils/helpers.js';
+# File: src/modules/notifications/emailService.js
+// src/modules/notifications/emailService.js (version 1.0)
+import nodemailer from 'nodemailer'
+import { logger } from '../../utils/logger.js'
+import { SMTP_CONFIG, IS_PRODUCTION, FORCE_EMAIL_SEND_DEV } from '../../config/index.js'
+import { configStore } from '../../config/dynamicConfig.js'
 
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT;
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const transporter =
+  SMTP_CONFIG?.auth?.user && SMTP_CONFIG?.auth?.pass
+    ? nodemailer.createTransport(SMTP_CONFIG)
+    : null
 
-let isPushConfigured = false;
-if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT) {
-    webpush.setVapidDetails(
-        VAPID_SUBJECT,
-        VAPID_PUBLIC_KEY,
-        VAPID_PRIVATE_KEY
-    );
-    isPushConfigured = true;
-    logger.info('Push notification service configured successfully.');
-} else {
-    logger.warn('VAPID keys not configured. Push notifications will be disabled.');
+function createEmailBody(user, events, opportunities) {
+  let body = `
+    <html><body>
+    <p>Hi ${user.firstName},</p>
+    <p>Here is your personalized intelligence briefing:</p>
+  `
+
+  if (events.length > 0) {
+    body += '<h2>New Synthesized Events</h2>'
+    events.forEach((event) => {
+      const flag = configStore.countryNameToFlagMap.get(event.country) || '🌍'
+      body += `
+        <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
+          <h3>${flag} ${event.synthesized_headline} [Score: ${event.highest_relevance_score}]</h3>
+          <p><em>${event.synthesized_summary}</em></p>
+          <p><strong>Source Articles:</strong></p>
+          <ul>
+            ${event.source_articles
+              .map(
+                (article) =>
+                  `<li><a href="${article.link}">${article.headline}</a> (${article.newspaper})</li>`
+              )
+              .join('')}
+          </ul>
+        </div>
+      `
+    })
+  }
+
+  if (opportunities.length > 0) {
+    body += '<h2>New Opportunities</h2>'
+    opportunities.forEach((opp) => {
+      const flag = configStore.countryNameToFlagMap.get(opp.basedIn) || '🌍'
+      body += `
+        <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
+          <h3>${flag} Contact: ${opp.reachOutTo} (~$${opp.likelyMMDollarWealth}M)</h3>
+          <p><strong>Reason:</strong> ${opp.whyContact[0]}</p>
+          <p>Based in: ${opp.basedIn}</p>
+          ${
+            opp.sourceArticleId
+              ? `<p><a href="${opp.sourceArticleId.link}">View Source Article</a></p>`
+              : ''
+          }
+        </div>
+      `
+    })
+  }
+
+  body += '</body></html>'
+  return body
 }
 
-/**
- * A generic helper to send a given payload to all subscribed users.
- * @param {object} payload The notification payload object to be sent.
- */
-async function sendNotificationToAll(payload) {
-    if (!isPushConfigured) return;
+export async function sendBulkEmails(emailQueue) {
+  if (!transporter) {
+    logger.error('SMTP transport not configured. Cannot send emails.')
+    return 0
+  }
+  if (emailQueue.length === 0) return 0
+
+  logger.info(`Dispatching ${emailQueue.length} personalized emails...`)
+  let successCount = 0
+
+  for (const { user, events, opportunities } of emailQueue) {
+    const subject = `New Intelligence: ${events.length} Events, ${opportunities.length} Opportunities`
+    const htmlBody = createEmailBody(user, events, opportunities)
+
+    const mailOptions = {
+      from: `"${SMTP_CONFIG.fromName}" <${SMTP_CONFIG.fromAddress}>`,
+      to: user.email,
+      subject,
+      html: htmlBody,
+    }
+
+    if (!IS_PRODUCTION && !FORCE_EMAIL_SEND_DEV) {
+      logger.warn(`[DEV MODE] Skipping actual email send to: ${user.email}`)
+      successCount++
+      continue
+    }
 
     try {
-        const subscriptions = await PushSubscription.find().lean();
-        if (subscriptions.length === 0) return;
-
-        logger.info(`📢 Sending push notification to ${subscriptions.length} subscriber(s)...`);
-        
-        const notificationPayload = JSON.stringify(payload);
-
-        const promises = subscriptions.map(subscription => 
-            webpush.sendNotification(subscription, notificationPayload)
-                .catch(error => {
-                    if (error.statusCode === 410 || error.statusCode === 404) {
-                        logger.info(`Subscription expired or invalid for endpoint: ${subscription.endpoint}. Deleting.`);
-                        return PushSubscription.deleteOne({ _id: subscription._id });
-                    } else {
-                        logger.error({ err: error }, `Failed to send push notification to ${subscription.endpoint}`);
-                    }
-                })
-        );
-        
-        await Promise.all(promises);
-
+      await transporter.sendMail(mailOptions)
+      logger.info(`✅ Email sent successfully to ${user.email}`)
+      successCount++
     } catch (error) {
-        logger.error({ err: error }, 'A critical error occurred while sending push notifications.');
+      logger.error({ err: error }, `❌ Failed to send email to ${user.email}`)
     }
+  }
+
+  return successCount
 }
+
+
+# File: src/modules/notifications/index.js
+// src/modules/notifications/index.js (version 1.0)
+import { logger } from '../../utils/logger.js'
+import Subscriber from '../../../models/Subscriber.js'
+import PushSubscription from '../../../models/PushSubscription.js'
+import { sendBulkEmails } from './emailService.js'
+import { sendBulkPushNotifications } from './pushService.js'
 
 /**
- * Sends push notifications for newly created events to all subscribed users.
- * @param {Array<Object>} newEvents - An array of newly synthesized event objects.
+ * Main orchestrator to send personalized notifications for new events and opportunities.
+ * @param {Array<Object>} newEvents - Array of newly created SynthesizedEvent documents.
+ * @param {Array<Object>} newOpportunities - Array of newly created Opportunity documents.
  */
-export async function sendEventPushNotifications(newEvents) {
-    if (!newEvents || newEvents.length === 0) return;
-    
-    const payload = {
-        title: `New Intelligence Alert: ${newEvents.length} Event(s)`,
-        body: `Headline: "${newEvents[0].synthesized_headline}"`,
-        url: '/events',
-        icon: '/icons/icon-192x192.png',
-    };
-    await sendNotificationToAll(payload);
+export async function sendNotifications(newEvents, newOpportunities) {
+  logger.info(
+    `📧 Starting personalized notification dispatch for ${newEvents.length} events and ${newOpportunities.length} opportunities.`
+  )
+
+  // 1. Fetch all active subscribers and their push subscriptions in one go.
+  const [activeSubscribers, allPushSubscriptions] = await Promise.all([
+    Subscriber.find({ isActive: true }).lean(),
+    PushSubscription.find().lean(),
+  ])
+
+  if (activeSubscribers.length === 0) {
+    logger.info('No active subscribers found. Skipping notification dispatch.')
+    return { emailSentCount: 0, pushSentCount: 0 }
+  }
+
+  // 2. Create a map for efficient lookup of push subscriptions per user.
+  const pushSubsByUserId = allPushSubscriptions.reduce((acc, sub) => {
+    const userId = sub.subscriberId.toString()
+    if (!acc[userId]) acc[userId] = []
+    acc[userId].push(sub)
+    return acc
+  }, {})
+
+  // 3. Prepare data payloads grouped by country for efficient filtering.
+  const eventsByCountry = groupItemsByCountry(newEvents, 'country')
+  const opportunitiesByCountry = groupItemsByCountry(newOpportunities, 'basedIn')
+
+  const emailQueue = []
+  const pushQueue = []
+
+  // 4. Iterate through each subscriber to build personalized notification payloads.
+  for (const user of activeSubscribers) {
+    const userCountries = new Set(user.countries || [])
+    if (userCountries.size === 0) continue // Skip users with no subscribed countries.
+
+    const userEvents = filterItemsForUser(eventsByCountry, userCountries)
+    const userOpportunities = filterItemsForUser(opportunitiesByCountry, userCountries)
+
+    if (userEvents.length === 0 && userOpportunities.length === 0) continue
+
+    // 5. Queue emails for users with email notifications enabled.
+    if (user.emailNotificationsEnabled) {
+      emailQueue.push({
+        user,
+        events: userEvents,
+        opportunities: userOpportunities,
+      })
+    }
+
+    // 6. Queue push notifications for users with push enabled and active subscriptions.
+    const userPushSubs = pushSubsByUserId[user._id.toString()] || []
+    if (user.pushNotificationsEnabled && userPushSubs.length > 0) {
+      pushQueue.push({
+        subscriptions: userPushSubs,
+        events: userEvents,
+        opportunities: userOpportunities,
+      })
+    }
+  }
+
+  // 7. Dispatch notifications in bulk.
+  const [emailSentCount, pushSentCount] = await Promise.all([
+    sendBulkEmails(emailQueue),
+    sendBulkPushNotifications(pushQueue),
+  ])
+
+  logger.info(
+    `✅ Notification dispatch complete. Emails Sent: ${emailSentCount}, Push Notifications Sent: ${pushSentCount}.`
+  )
+  return { emailSentCount, pushSentCount }
 }
 
-/**
- * Sends a push notification for a single, highly relevant article.
- * @param {Object} article - The article object that met the relevance threshold.
- */
-export async function sendArticlePushNotification(article) {
-    if (!article || !article._id) return;
+// --- Helper Functions ---
 
-    logger.info(`Preparing push notification for relevant article: "${truncateString(article.headline, 50)}"`);
-
-    const payload = {
-        title: 'New Relevant Article',
-        body: article.headline_en || article.headline,
-        url: article.link,
-        icon: '/icons/icon-192x192.png',
-        // --- NEW: Add properties for stacking and persistence ---
-        // `requireInteraction: true` makes the notification persistent until the user dismisses it.
-        requireInteraction: true,
-        // `tag` ensures that if the same article is processed again, the notification is updated
-        // instead of creating a new one. A unique tag per article allows different article
-        // notifications to stack.
-        tag: `article-id-${article._id.toString()}`
-    };
-    await sendNotificationToAll(payload);
+function groupItemsByCountry(items, countryField) {
+  return items.reduce((acc, item) => {
+    const country = item[countryField]
+    if (country) {
+      if (!acc[country]) acc[country] = []
+      acc[country].push(item)
+    }
+    return acc
+  }, {})
 }
+
+function filterItemsForUser(itemsByCountry, userCountries) {
+  const userItems = []
+  for (const country of userCountries) {
+    if (itemsByCountry[country]) {
+      userItems.push(...itemsByCountry[country])
+    }
+  }
+  return userItems
+}
+
+
+# File: src/modules/notifications/pushService.js
+// src/modules/notifications/pushService.js (version 1.0)
+import webpush from 'web-push'
+import { logger } from '../../utils/logger.js'
+import PushSubscription from '../../../models/PushSubscription.js'
+
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
+
+let isPushConfigured = false
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT) {
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+  isPushConfigured = true
+} else {
+  logger.warn('VAPID keys not configured. Push notifications will be disabled.')
+}
+
+function createPushPayload(events, opportunities) {
+  let title = 'New Intelligence Alert'
+  let body = ''
+  let url = '/events' // Default URL
+
+  const eventCount = events.length
+  const oppCount = opportunities.length
+
+  if (eventCount > 0 && oppCount > 0) {
+    title = `${eventCount} New Event(s), ${oppCount} New Opportunity/ies`
+    body = `Primary Event: ${events[0].synthesized_headline}`
+    url = `/events`
+  } else if (eventCount > 0) {
+    title = `${eventCount} New Wealth Event(s) Detected`
+    body = events[0].synthesized_headline
+    url = `/events`
+  } else if (oppCount > 0) {
+    title = `${oppCount} New Opportunity/ies Identified`
+    body = `New contact: ${opportunities[0].reachOutTo} (~$${opportunities[0].likelyMMDollarWealth}M)`
+    url = `/opportunities`
+  }
+
+  return {
+    title,
+    body,
+    url,
+    icon: '/icons/icon-192x192.png',
+  }
+}
+
+export async function sendBulkPushNotifications(pushQueue) {
+  if (!isPushConfigured || pushQueue.length === 0) {
+    return 0
+  }
+
+  logger.info(`Dispatching push notifications to ${pushQueue.length} user group(s)...`)
+  let successCount = 0
+
+  const allPromises = []
+
+  for (const { subscriptions, events, opportunities } of pushQueue) {
+    const payload = createPushPayload(events, opportunities)
+    const notificationPayload = JSON.stringify(payload)
+
+    for (const subscription of subscriptions) {
+      const pushPromise = webpush
+        .sendNotification(subscription, notificationPayload)
+        .then(() => {
+          successCount++
+          logger.info(`✅ Pushed to endpoint for user ${subscription.subscriberId}`)
+        })
+        .catch((error) => {
+          if (error.statusCode === 410 || error.statusCode === 404) {
+            logger.info(
+              `Subscription expired or invalid for endpoint. Deleting: ${subscription.endpoint}`
+            )
+            return PushSubscription.deleteOne({ _id: subscription._id })
+          } else {
+            logger.error(
+              { err: { message: error.message, statusCode: error.statusCode } },
+              `Failed to send push notification to user ${subscription.subscriberId}`
+            )
+          }
+        })
+      allPromises.push(pushPromise)
+    }
+  }
+
+  await Promise.all(allPromises)
+  return successCount
+}
+
 
 # File: src/modules/realtime/index.js
 // File: src/modules/realtime/index.js
@@ -4531,17 +3797,240 @@ export async function streamNewArticle(article) {
     await streamNewItem('articles-channel', 'new-article', lightweightArticle);
 }
 
+# File: src/modules/scraper/extractor.js
+// src/modules/scraper/extractors.js (version 1.0)
+// This file contains a registry of custom data extraction functions for specific websites.
+
+const simpleExtractor = (el, site) => {
+  const headline = el.text().trim().replace(/\s+/g, ' ')
+  const link = el.attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.newspaper || site.name }
+  }
+  return null
+}
+
+const kapitalWatchExtractor = (el, site) => {
+  const headline = el.find('h1').text().trim().replace(/\s+/g, ' ')
+  const link = el.attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.name }
+  }
+  return null
+}
+
+const insideBusinessExtractor = (el, site) => {
+  const headlineElement = el.find('h2 a')
+  const headline = headlineElement.text().trim().replace(/\s+/g, ' ')
+  const link = headlineElement.attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.newspaper }
+  }
+  return null
+}
+
+const axcelExtractor = (el, site) => ({
+  headline: el.find('h3').text().trim(),
+  link: el.attr('href'),
+  source: site.name,
+  newspaper: site.name,
+})
+
+const polarisExtractor = (el, site) => {
+  const linkEl = el.find('h3.fl-post-feed-title a')
+  const headline = linkEl.text().trim()
+  const href = linkEl.attr('href')
+  if (headline && href) {
+    return { headline, link: href, source: site.name, newspaper: site.name }
+  }
+  return null
+}
+
+const majInvestExtractor = (el, site) => {
+  const headline = el.find('.news-list-item__title').text().trim()
+  const link = el.attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.name }
+  }
+  return null
+}
+
+const groCapitalExtractor = (el, site) => {
+  const headline = el.find('div[class^="heading-"]').text().trim().replace(/\s+/g, ' ')
+  const link = el.attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.name }
+  }
+  return null
+}
+
+const eifoExtractor = (el, site) => {
+  const headline = el.find('h4').text().trim()
+  const link = el.attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.newspaper }
+  }
+  return null
+}
+
+const byFoundersExtractor = (el, site) => {
+  const companyName = el.find('h3').text().trim()
+  const link = el.attr('href')
+  if (companyName && link && !companyName.includes('byFounders')) {
+    return {
+      headline: `byFounders Investment: ${companyName}`,
+      link,
+      source: site.name,
+      newspaper: site.name,
+    }
+  }
+  return null
+}
+
+const clearwaterExtractor = (el, site) => {
+  const headline = el.find('h3.transaction-list-page__resource-title').text().trim()
+  const link = el.attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.newspaper }
+  }
+  return null
+}
+
+const finansDkExtractor = (el, site) => ({
+  headline: el.text().trim(),
+  link: el.closest('a').attr('href'),
+  source: site.name,
+  newspaper: site.name,
+})
+
+const politikenExtractor = (el, site) => {
+  const h = el.find('h2, h3, h4').first().text().trim()
+  const a = el.find('a[href*="/art"]').first().attr('href')
+  return h && a ? { headline: h, link: a, source: site.name, newspaper: site.name } : null
+}
+
+const e24Extractor = (el, site) => {
+  const headlineEl = el.find('h3._mainTitle_qsmm2_16').clone()
+  headlineEl.find('style').remove()
+  const headline = headlineEl.text().trim()
+  const href = el.attr('href')
+  if (headline && href) {
+    return { headline, link: href, source: site.name, newspaper: site.newspaper }
+  }
+  return null
+}
+
+const fsnCapitalExtractor = (el, site) => {
+  const linkEl = el.find('h4.title a')
+  return {
+    headline: linkEl.text().trim(),
+    link: linkEl.attr('href'),
+    source: site.name,
+    newspaper: site.newspaper,
+  }
+}
+
+const verdaneExtractor = (el, site) => {
+  const linkEl = el.find('a.wp-block-klingit-the-product-block-link')
+  const companyName = linkEl.find('h3.wp-block-post-title').text().trim()
+  if (companyName) {
+    return {
+      headline: `Verdane invests in ${companyName}`,
+      link: linkEl.attr('href'),
+      source: site.name,
+      newspaper: site.newspaper,
+    }
+  }
+  return null
+}
+
+const quoteNlExtractor = (el, site) => {
+  const headline = el.find('h3[data-theme-key="custom-item-title"]').text().trim()
+  const link = el.attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.name }
+  }
+  return null
+}
+
+const deVolkskrantExtractor = (el, site) => {
+  const link = el.attr('href')
+  const headline = el.find('h3, h4, h2').first().text().trim()
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.name }
+  }
+  return null
+}
+
+const algemeenDagbladExtractor = (el, site) => {
+  const headline = el.find('div.ankeiler__title').text().trim().replace(/\s+/g, ' ')
+  const link = el.attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.name }
+  }
+  return null
+}
+
+const egeriaExtractor = (el, site) => {
+  const headline = el.find('.item-content h3').text().trim()
+  const link = el.find('.item-footer a').attr('href')
+  if (headline && link) {
+    return { headline, link, source: site.name, newspaper: site.name }
+  }
+  return null
+}
+
+const ikPartnersExtractor = (el, site) => ({
+  headline: el.find('h3').text().trim(),
+  link: el.attr('href'),
+  source: site.name,
+  newspaper: site.name,
+})
+
+const bridgepointExtractor = (el, site) => ({
+  headline: el.find('h3').text().trim(),
+  link: el.attr('href'),
+  source: site.name,
+  newspaper: site.name,
+})
+
+export const extractorRegistry = {
+  simple: simpleExtractor,
+  kapitalwatch: kapitalWatchExtractor,
+  insidebusiness_ma: insideBusinessExtractor,
+  insidebusiness_business: insideBusinessExtractor,
+  axcel: axcelExtractor,
+  polaris: polarisExtractor,
+  maj_invest: majInvestExtractor,
+  gro_capital: groCapitalExtractor,
+  eifo_dk: eifoExtractor,
+  byfounders: byFoundersExtractor,
+  clearwater_dk: clearwaterExtractor,
+  finans_dk: finansDkExtractor,
+  politiken: politikenExtractor,
+  e24: e24Extractor,
+  fsn_capital: fsnCapitalExtractor,
+  verdane: verdaneExtractor,
+  quotenet_nl: quoteNlExtractor,
+  de_volkskrant: deVolkskrantExtractor,
+  trouw_nl: deVolkskrantExtractor, // Reuses de_volkskrant logic
+  algemeen_dagblad: algemeenDagbladExtractor,
+  egeria: egeriaExtractor,
+  ik_partners_news: ikPartnersExtractor,
+  bridgepoint_news: bridgepointExtractor,
+}
+
+
 # File: src/modules/scraper/index.js
-// File: src/modules/scraper/index.js
-// src/modules/scraper/index.js (version 3.2 - Add Content Snippet Logging)
+// src/modules/scraper/index.js (version 3.4)
 import * as cheerio from 'cheerio'
 import pLimit from 'p-limit'
 import playwright from 'playwright'
 import { logger } from '../../utils/logger.js'
 import { truncateString } from '../../utils/helpers.js'
 import { CONCURRENCY_LIMIT, MIN_ARTICLE_CHARS } from '../../config/index.js'
-import { COUNTRIES_CONFIG, TEXT_SELECTORS } from '../../config/sources.js'
-import Subscriber from '../../../models/Subscriber.js'
+import { extractorRegistry } from './extractors.js'
+import Source from '../../../models/Source.js'
 
 const limit = pLimit(CONCURRENCY_LIMIT)
 
@@ -4554,12 +4043,11 @@ const BROWSER_HEADERS = {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
 }
 
-async function fetchPage(url) {
-  let browser = null
+async function fetchPage(browser, url) {
+  let page
   try {
-    browser = await playwright.chromium.launch()
     const context = await browser.newContext({ userAgent: BROWSER_HEADERS['User-Agent'] })
-    const page = await context.newPage()
+    page = await context.newPage()
 
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForTimeout(2000)
@@ -4594,25 +4082,29 @@ async function fetchPage(url) {
     logger.error(`[Playwright] Fetch failed for ${url}: ${error.message.split('\n')[0]}`)
     return null
   } finally {
-    if (browser) await browser.close()
+    if (page) await page.close()
   }
 }
 
-export async function scrapeSite(site) {
-  const selectorUsed = site.useJsonLd ? 'JSON-LD' : site.selector
+export async function scrapeSite(browser, source) {
+  const selectorUsed =
+    source.extractionMethod === 'json-ld' ? 'JSON-LD' : source.headlineSelector
   logger.debug(
-    { source: site.name, url: site.url, selector: selectorUsed },
+    { source: source.name, url: source.sectionUrl, selector: selectorUsed },
     `Scraping initiated...`
   )
 
-  const html = await fetchPage(site.url)
+  const html = await fetchPage(browser, source.sectionUrl)
 
-  if (!html) return { source: site.name, articles: [], success: false }
+  if (!html) return { source: source.name, articles: [], success: false }
 
   const $ = cheerio.load(html)
   let articles = []
 
-  if (site.useJsonLd) {
+  const extractFunction =
+    extractorRegistry[source.extractorKey] || extractorRegistry['simple']
+
+  if (source.extractionMethod === 'json-ld') {
     $('script[type="application/ld+json"]').each((_, el) => {
       try {
         const jsonData = JSON.parse($(el).html())
@@ -4626,10 +4118,10 @@ export async function scrapeSite(site) {
               if (headline && url) {
                 articles.push({
                   headline: headline.trim(),
-                  link: new URL(url, site.url).href,
-                  source: site.name,
-                  newspaper: site.newspaper || site.name,
-                  country: site.countryName,
+                  link: new URL(url, source.sectionUrl).href,
+                  source: source.name,
+                  newspaper: source.name,
+                  country: source.country,
                   headline_selector: selectorUsed,
                 })
               }
@@ -4641,12 +4133,15 @@ export async function scrapeSite(site) {
       }
     })
   } else {
-    $(site.selector).each((_, el) => {
-      const articleData = site.extract($(el), site)
+    $(source.headlineSelector).each((_, el) => {
+      const articleData = extractFunction($(el), {
+        name: source.name,
+        newspaper: source.name,
+      })
       if (articleData && articleData.headline && articleData.link) {
-        articleData.link = new URL(articleData.link, site.url).href
-        articleData.newspaper = site.newspaper || site.name
-        articleData.country = site.countryName
+        articleData.link = new URL(articleData.link, source.sectionUrl).href
+        articleData.newspaper = source.name
+        articleData.country = source.country
         articleData.headline_selector = selectorUsed
         articles.push(articleData)
       }
@@ -4654,252 +4149,208 @@ export async function scrapeSite(site) {
   }
 
   const uniqueArticles = Array.from(new Map(articles.map((a) => [a.link, a])).values())
-  return { source: site.name, articles: uniqueArticles, success: true }
+  return { source: source.name, articles: uniqueArticles, success: true }
 }
 
 export async function scrapeAllHeadlines() {
-  logger.info(
-    "📰 Determining which sources to scrape based on the 'included' flag in sources.js..."
-  )
+  logger.info('📰 Fetching active sources from database to begin scraping...')
+  const sourcesToScrape = await Source.find({ status: 'active' }).lean()
 
-  const countriesToScrape = COUNTRIES_CONFIG.filter(
-    (country) => country.included === true
-  )
-
-  if (countriesToScrape.length === 0) {
-    logger.warn(
-      "No countries are marked as 'included: true' in sources.js. Halting scraping."
-    )
+  if (sourcesToScrape.length === 0) {
+    logger.warn('No active sources found in the database. Halting scraping.')
     return { allArticles: [], scraperHealth: [] }
   }
 
-  logger.info(
-    `Pipeline will now scrape sources from: [${countriesToScrape.map((c) => c.countryName).join(', ')}]`
-  )
-
-  const allSites = countriesToScrape.flatMap((country) =>
-    country.sites.map((site) => ({ ...site, countryName: country.countryName }))
-  )
+  logger.info(`Pipeline will now scrape ${sourcesToScrape.length} active sources.`)
 
   const allArticles = []
   const scraperHealth = []
 
-  const promises = allSites.map((site) =>
-    limit(async () => {
-      const result = await scrapeSite(site)
-      if (result.articles.length === 0) {
-        logger.warn(`Scraped 0 unique headlines from ${result.source}.`)
-      } else {
-        logger.info(
-          `Scraped ${result.articles.length} unique headlines from ${result.source}.`
+  let browser = null
+  try {
+    logger.info('[Playwright] Launching shared browser instance for this run...')
+    browser = await playwright.chromium.launch()
+
+    const promises = sourcesToScrape.map((source) =>
+      limit(async () => {
+        const result = await scrapeSite(browser, source)
+        if (result.articles.length === 0) {
+          logger.warn(`Scraped 0 unique headlines from ${result.source}.`)
+        } else {
+          logger.info(
+            `Scraped ${result.articles.length} unique headlines from ${result.source}.`
+          )
+        }
+        allArticles.push(...result.articles)
+        scraperHealth.push({
+          source: result.source,
+          success: result.articles.length > 0,
+          count: result.articles.length,
+        })
+        await Source.updateOne(
+          { _id: source._id },
+          {
+            $set: {
+              lastScrapedAt: new Date(),
+              ...(result.success && { lastSuccessAt: new Date() }),
+            },
+          }
         )
-      }
-      allArticles.push(...result.articles)
-      scraperHealth.push({
-        source: result.source,
-        success: result.articles.length > 0,
-        count: result.articles.length,
       })
-    })
-  )
+    )
+    await Promise.all(promises)
+  } catch (error) {
+    logger.fatal({ err: error }, 'A critical error occurred during the scraping stage.')
+  } finally {
+    if (browser) {
+      logger.info('[Playwright] Closing shared browser instance.')
+      await browser.close()
+    }
+  }
 
-  await Promise.all(promises)
-
-  logger.info(
-    `Scraping complete. Found a total of ${allArticles.length} headlines from included sources.`
-  )
+  logger.info(`Scraping complete. Found a total of ${allArticles.length} headlines.`)
   return { allArticles, scraperHealth }
 }
 
-export async function scrapeArticleContent(article) {
-  const html = await fetchPage(article.link)
-  if (!html) return { ...article, enrichment_error: 'Failed to fetch page' }
+export async function scrapeArticleContent(article, source) {
+  let browser = null
+  try {
+    browser = await playwright.chromium.launch()
+    const html = await fetchPage(browser, article.link)
+    if (!html) return { ...article, enrichment_error: 'Failed to fetch page' }
 
-  const $ = cheerio.load(html)
-  let contentText = ''
-  let extractedFrom = 'N/A'
+    const $ = cheerio.load(html)
+    let contentText = ''
 
-  if (article.newspaper === 'Børsen') {
-    const nextDataScript = $('script[id="__NEXT_DATA__"]').html()
-    if (nextDataScript) {
-      try {
-        const jsonData = JSON.parse(nextDataScript)
-        const articleBodyHtml = jsonData?.props?.pageProps?.article?.body
-        if (articleBodyHtml) {
-          const $article = cheerio.load(articleBodyHtml)
-          contentText = $article.text().replace(/\s+/g, ' ').trim()
-          extractedFrom = '__NEXT_DATA__'
-        }
-      } catch (e) {
-        /* Ignore parsing errors */
+    // Image URL Extraction
+    if (source && source.imageUrlSelector) {
+      let imageUrl = $(source.imageUrlSelector).first().attr('src')
+      if (imageUrl) {
+        article.imageUrl = new URL(imageUrl, source.baseUrl).href
       }
     }
+
+    // Special Handlers
+    if (article.newspaper === 'Børsen') {
+      const nextDataScript = $('script[id="__NEXT_DATA__"]').html()
+      if (nextDataScript) {
+        try {
+          const jsonData = JSON.parse(nextDataScript)
+          const articleBodyHtml = jsonData?.props?.pageProps?.article?.body
+          if (articleBodyHtml) {
+            contentText = cheerio.load(articleBodyHtml).text().replace(/\s+/g, ' ').trim()
+          }
+        } catch (e) {
+          /* Ignore */
+        }
+      }
+    }
+
+    if (article.newspaper === 'Finansavisen') {
+      const nextDataScript = $('script[id="__NEXT_DATA__"]').html()
+      if (nextDataScript) {
+        try {
+          const jsonData = JSON.parse(nextDataScript)
+          contentText = jsonData?.props?.pageProps?.article?.article?.body
+            ? cheerio
+                .load(jsonData.props.pageProps.article.article.body)
+                .text()
+                .replace(/\s+/g, ' ')
+                .trim()
+            : ''
+        } catch (e) {
+          /* Ignore */
+        }
+      }
+      if (contentText.length < MIN_ARTICLE_CHARS) {
+        contentText =
+          $('meta[name="description"]').attr('content')?.replace(/\s+/g, ' ').trim() || ''
+      }
+    }
+
+    // Generic Selector Logic
+    if (contentText.length < MIN_ARTICLE_CHARS && source && source.articleSelector) {
+      const selectors = source.articleSelector.split(',').map((s) => s.trim())
+      for (const selector of selectors) {
+        if (selector.startsWith('meta[')) {
+          contentText = $(selector).attr('content')?.replace(/\s+/g, ' ').trim() || ''
+        } else {
+          contentText = $(selector).text().replace(/\s+/g, ' ').trim()
+        }
+        if (contentText.length >= MIN_ARTICLE_CHARS) {
+          break
+        }
+      }
+    }
+
     if (contentText.length >= MIN_ARTICLE_CHARS) {
       article.articleContent = { contents: [contentText] }
       logger.debug(
         {
           headline: truncateString(article.headline, 40),
           chars: contentText.length,
-          selector: extractedFrom,
+          imageUrl: article.imageUrl,
           snippet: `${contentText.substring(0, 100)}...`,
         },
-        `✅ Børsen enrichment successful.`
+        `✅ Enrichment successful.`
       )
-      return article
-    }
-  }
-
-  if (article.newspaper === 'Finansavisen') {
-    const nextDataScript = $('script[id="__NEXT_DATA__"]').html()
-    if (nextDataScript) {
-      try {
-        const jsonData = JSON.parse(nextDataScript)
-        const articleHtml = jsonData?.props?.pageProps?.article?.article?.body
-        if (articleHtml) {
-          const $article = cheerio.load(articleHtml)
-          contentText = $article.text().replace(/\s+/g, ' ').trim()
-          extractedFrom = '__NEXT_DATA__'
-        }
-      } catch (e) {
-        /* Ignore parsing errors */
-      }
-    }
-    if (contentText.length < MIN_ARTICLE_CHARS) {
-      contentText =
-        $('meta[name="description"]').attr('content')?.replace(/\s+/g, ' ').trim() || ''
-      if (contentText.length > 0) extractedFrom = 'meta[description]'
-    }
-
-    if (contentText.length >= MIN_ARTICLE_CHARS) {
-      article.articleContent = { contents: [contentText] }
-      logger.debug(
-        {
-          headline: truncateString(article.headline, 40),
-          chars: contentText.length,
-          selector: extractedFrom,
-          snippet: `${contentText.substring(0, 100)}...`,
-        },
-        `✅ Finansavisen enrichment successful.`
-      )
-      return article
-    }
-  }
-
-  let selectors = TEXT_SELECTORS[article.newspaper]
-  if (!selectors)
-    return { ...article, enrichment_error: `No selector for "${article.newspaper}"` }
-  if (!Array.isArray(selectors)) selectors = [selectors]
-
-  let fullText = ''
-  let winningSelector = 'N/A'
-
-  for (const selector of selectors) {
-    if (selector.startsWith('meta[')) {
-      fullText = $(selector).attr('content')?.replace(/\s+/g, ' ').trim() || ''
     } else {
-      fullText = $(selector).text().replace(/\s+/g, ' ').trim()
+      article.enrichment_error = 'Content not found or too short'
+      logger.warn(
+        {
+          headline: truncateString(article.headline, 60),
+          newspaper: article.newspaper,
+          chars: contentText.length,
+          selectors_tried: source?.articleSelector || 'N/A',
+          link: article.link,
+        },
+        `❌ Enrichment failed.`
+      )
     }
-
-    if (fullText.length >= MIN_ARTICLE_CHARS) {
-      winningSelector = selector
-      break
-    }
+    return article
+  } finally {
+    if (browser) await browser.close()
   }
-
-  if (fullText.length >= MIN_ARTICLE_CHARS) {
-    article.articleContent = { contents: [fullText] }
-    // --- NEW: Detailed logging with content snippet ---
-    logger.debug(
-      {
-        headline: truncateString(article.headline, 40),
-        chars: fullText.length,
-        selector: winningSelector,
-        snippet: `${fullText.substring(0, 100)}...`,
-      },
-      `✅ Enrichment successful.`
-    )
-  } else {
-    article.enrichment_error = 'Content not found or too short'
-    logger.warn(
-      {
-        headline: truncateString(article.headline, 60),
-        newspaper: article.newspaper,
-        chars: fullText.length,
-        selectors_tried: selectors,
-        link: article.link,
-      },
-      `❌ Enrichment failed.`
-    )
-  }
-  return article
 }
 
 
 # File: src/pipeline/1_preflight.js
-// src/pipeline/1_preflight.js (version 1.0)
-import { logger } from '../utils/logger.js';
-import { connectDatabase } from '../database.js';
-import { performAiSanityCheck, checkModelPermissions } from '../modules/ai/index.js';
-import { LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES } from '../config/index.js';
-import Article from '../../models/Article.js';
-import { COUNTRIES_CONFIG } from '../config/sources.js';
+// src/pipeline/1_preflight.js (version 1.1)
+import { logger } from '../utils/logger.js'
+import { connectDatabase } from '../database.js'
+import { performAiSanityCheck, checkModelPermissions } from '../modules/ai/index.js'
+import { LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES } from '../config/index.js'
+import { initializeConfig } from '../config/dynamicConfig.js'
 
 /**
- * Stage 1: Performs pre-flight checks, connects to the database, and runs housekeeping.
+ * Stage 1: Performs pre-flight checks, connects to the database, and initializes dynamic config.
  * @param {object} pipelinePayload - The main pipeline payload object.
  * @returns {Promise<{success: boolean, payload: object}>}
  */
 export async function runPreFlightChecks(pipelinePayload) {
-    logger.info('--- STAGE 1: PRE-FLIGHT ---');
-    
-    // AI Sanity Checks
-    const requiredModels = [...new Set([LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES])];
-    if (!await performAiSanityCheck() || !await checkModelPermissions(requiredModels)) {
-        logger.fatal('AI service checks failed. Aborting pipeline.');
-        return { success: false, payload: pipelinePayload };
-    }
-    
-    // Database Connection
-    const isDbConnected = await connectDatabase();
-    if (!isDbConnected) {
-        // The detailed error is already logged by connectDatabase, so we just provide context here.
-        logger.fatal('Database connection failed. Aborting pipeline.');
-        return { success: false, payload: pipelinePayload };
-    }
-    pipelinePayload.dbConnection = true;
+  logger.info('--- STAGE 1: PRE-FLIGHT ---')
 
-    // Database Housekeeping
-    logger.info('🧹 Performing database housekeeping...');
-    try {
-        const dynamicNewspapers = [];
-        COUNTRIES_CONFIG.forEach(country => {
-            country.sites.forEach(site => {
-                if (site.static === false) {
-                    dynamicNewspapers.push(site.newspaper || site.name);
-                }
-            });
-        });
+  // AI Sanity Checks
+  const requiredModels = [...new Set([LLM_MODEL_TRIAGE, LLM_MODEL_ARTICLES])]
+  if (!(await performAiSanityCheck()) || !(await checkModelPermissions(requiredModels))) {
+    logger.fatal('AI service checks failed. Aborting pipeline.')
+    return { success: false, payload: pipelinePayload }
+  }
 
-        const fourteenDaysAgo = new Date();
-        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+  // Database Connection
+  const isDbConnected = await connectDatabase()
+  if (!isDbConnected) {
+    logger.fatal('Database connection failed. Aborting pipeline.')
+    return { success: false, payload: pipelinePayload }
+  }
+  pipelinePayload.dbConnection = true
 
-        const result = await Article.deleteMany({
-            newspaper: { $in: dynamicNewspapers },
-            createdAt: { $lt: fourteenDaysAgo },
-            relevance_headline: 0
-        });
+  // Dynamic Configuration Initialization from Database
+  await initializeConfig()
 
-        if (result.deletedCount > 0) {
-            logger.info(`Housekeeping complete. Deleted ${result.deletedCount} irrelevant articles from dynamic sources.`);
-        } else {
-            logger.info('Housekeeping complete. No old, irrelevant articles to delete.');
-        }
-    } catch (cleanupError) {
-        logger.warn({ err: cleanupError }, 'Database housekeeping step failed. The pipeline will continue.');
-    }
-    
-    return { success: true, payload: pipelinePayload };
+  return { success: true, payload: pipelinePayload }
 }
+
 
 # File: src/pipeline/2_scrapeAndFilter.js
 // src/pipeline/2_scrapeAndFilter.js (version 1.1 - Add Fresh Headline Logging)
@@ -4957,7 +4408,7 @@ export async function runScrapeAndFilter(pipelinePayload) {
 }
 
 # File: src/pipeline/3_assessAndEnrich.js
-// File: src/pipeline/3_assessAndEnrich.js
+// src/pipeline/3_assessAndEnrich.js (version 1.1)
 import { logger } from '../utils/logger.js'
 import {
   assessHeadlinesInBatches,
@@ -4973,6 +4424,7 @@ import {
   HEADLINES_RELEVANCE_THRESHOLD,
 } from '../config/index.js'
 import { findAlternativeSources } from '../utils/serpapi.js'
+import Source from '../../models/Source.js'
 
 const HIGH_SIGNAL_THRESHOLD = 85
 const SOURCE_BLACKLIST = ['twitter.com', 'facebook.com', 'linkedin.com']
@@ -4984,6 +4436,19 @@ const VAGUE_NAME_STOP_WORDS = [
   'the owners',
   'management team',
 ]
+
+// Cache for source documents to reduce DB queries
+const sourceCache = new Map()
+async function getSource(newspaperName) {
+  if (sourceCache.has(newspaperName)) {
+    return sourceCache.get(newspaperName)
+  }
+  const source = await Source.findOne({ name: newspaperName }).lean()
+  if (source) {
+    sourceCache.set(newspaperName, source)
+  }
+  return source
+}
 
 async function attemptVerificationAndEnrichment(article) {
   logger.info(
@@ -5005,13 +4470,20 @@ async function attemptVerificationAndEnrichment(article) {
     )
     const isSameSource = article.newspaper && sourceName.includes(article.newspaper)
     if (isBlacklisted || isSameSource) continue
+
+    const alternativeSource = await getSource(sourceName)
+    if (!alternativeSource) continue
+
     const alternativeArticle = {
       ...article,
       link: alternative.link,
       newspaper: sourceName,
       source: sourceName,
     }
-    const enrichedAlternative = await scrapeArticleContent(alternativeArticle)
+    const enrichedAlternative = await scrapeArticleContent(
+      alternativeArticle,
+      alternativeSource
+    )
     if (enrichedAlternative.articleContent) {
       logger.info(
         `[Verification Agent] SUCCESS! Scraped content from new source: ${sourceName}`
@@ -5025,13 +4497,19 @@ async function attemptVerificationAndEnrichment(article) {
   return null
 }
 
-// --- NEW, MORE ROBUST enrichment function for a single article ---
 async function processSingleArticle(article, candidatesMap, runStats) {
   try {
     logger.info(`\n--- [ ENRICHING: "${article.headline}" ] ---`)
-    let finalEnrichedArticle = await scrapeArticleContent(article)
+    const source = await getSource(article.newspaper)
+    if (!source) {
+      logger.error(
+        `No source configuration found for "${article.newspaper}". Skipping article.`
+      )
+      return null
+    }
 
-    // Attempt verification if initial scrape fails for a high-signal headline
+    let finalEnrichedArticle = await scrapeArticleContent(article, source)
+
     if (
       !finalEnrichedArticle.articleContent &&
       article.relevance_headline >= HIGH_SIGNAL_THRESHOLD
@@ -5042,14 +4520,11 @@ async function processSingleArticle(article, candidatesMap, runStats) {
 
     if (finalEnrichedArticle.articleContent) {
       const finalAssessment = await assessArticleContent(finalEnrichedArticle)
-
-      // Store the full assessment back into the central map
       const originalArticleToUpdate = candidatesMap.get(article._id.toString())
       if (originalArticleToUpdate) {
         Object.assign(originalArticleToUpdate, finalAssessment)
       }
 
-      // If the article is relevant, proceed with deep enrichment (contacts, opportunities)
       if (finalAssessment.relevance_article >= ARTICLES_RELEVANCE_THRESHOLD) {
         const initialContactData = await extractKeyContacts(finalAssessment)
         if (initialContactData.key_individuals.length > 0) {
@@ -5084,7 +4559,6 @@ async function processSingleArticle(article, candidatesMap, runStats) {
         return { article: finalAssessment, opportunities: opportunitiesWithSource }
       }
     } else {
-      // Handle failed enrichment (salvage)
       logger.warn(`Enrichment failed for "${article.headline}". Attempting to salvage.`)
       const salvagedData = await synthesizeFromHeadline(article)
       if (salvagedData && salvagedData.headline) {
@@ -5110,10 +4584,8 @@ async function processSingleArticle(article, candidatesMap, runStats) {
       { err: error, article: article.headline },
       'A critical error occurred while processing a single article. Skipping it.'
     )
-    // Return null to indicate failure for this article
     return null
   }
-  // Return null if article was not relevant enough after content assessment
   return null
 }
 
@@ -5130,13 +4602,15 @@ export async function runAssessAndEnrich(pipelinePayload) {
   )
   runStats.relevantHeadlines = relevantCandidates.length
 
+  // Clear the cache at the start of each enrichment run
+  sourceCache.clear()
+
   if (relevantCandidates.length === 0) {
     logger.info('No headlines were relevant enough for full enrichment.')
     pipelinePayload.assessedCandidates = assessedCandidates
     return { success: false, payload: pipelinePayload }
   }
 
-  // --- REWRITTEN FOR ROBUSTNESS: Process articles in parallel with Promise.allSettled ---
   const processingPromises = relevantCandidates.map((article) =>
     processSingleArticle(article, candidatesMap, runStats)
   )
@@ -5148,7 +4622,6 @@ export async function runAssessAndEnrich(pipelinePayload) {
 
   results.forEach((result) => {
     if (result.status === 'fulfilled' && result.value) {
-      // result.value is { article, opportunities }
       enrichedArticles.push(result.value.article)
       if (result.value.opportunities && result.value.opportunities.length > 0) {
         opportunitiesToSave.push(...result.value.opportunities)
@@ -5160,7 +4633,6 @@ export async function runAssessAndEnrich(pipelinePayload) {
       )
     }
   })
-  // --- END REWRITE ---
 
   runStats.relevantArticles = enrichedArticles.length
 
@@ -5180,131 +4652,171 @@ export async function runAssessAndEnrich(pipelinePayload) {
 
 
 # File: src/pipeline/4_clusterAndSynthesize.js
-// src/pipeline/4_clusterAndSynthesize.js (version 2.0)
-import { logger } from '../utils/logger.js';
-import { clusterArticlesIntoEvents, synthesizeEvent, extractEntities } from '../modules/ai/eventProcessing.js';
-import { findSimilarArticles } from '../modules/ai/rag.js';
-import SynthesizedEvent from '../../models/SynthesizedEvent.js';
-import { fetchWikipediaSummary } from '../utils/wikipedia.js';
-import { truncateString } from '../utils/helpers.js';
+// src/pipeline/4_clusterAndSynthesize.js (version 2.1)
+import { logger } from '../utils/logger.js'
+import {
+  clusterArticlesIntoEvents,
+  synthesizeEvent,
+  extractEntities,
+} from '../modules/ai/eventProcessing.js'
+import { findSimilarArticles } from '../modules/ai/rag.js'
+import SynthesizedEvent from '../../models/SynthesizedEvent.js'
+import { fetchWikipediaSummary } from '../utils/wikipedia.js'
+import { truncateString } from '../utils/helpers.js'
 
 export async function runClusterAndSynthesize(pipelinePayload) {
-    logger.info('--- STAGE 4: CLUSTER & SYNTHESIZE ---');
-    const { enrichedArticles, fullArticleMap, runStats, synthesizedEventsToSave = [] } = pipelinePayload;
+  logger.info('--- STAGE 4: CLUSTER & SYNTHESIZE ---')
+  const {
+    enrichedArticles,
+    fullArticleMap,
+    runStats,
+    synthesizedEventsToSave = [],
+  } = pipelinePayload
 
-    if (!enrichedArticles || enrichedArticles.length === 0) {
-        logger.info("No relevant articles were enriched, skipping cluster and synthesis stage.");
-        pipelinePayload.synthesizedEventsToSave = synthesizedEventsToSave;
-        return { success: true, payload: pipelinePayload };
+  if (!enrichedArticles || enrichedArticles.length === 0) {
+    logger.info(
+      'No relevant articles were enriched, skipping cluster and synthesis stage.'
+    )
+    pipelinePayload.synthesizedEventsToSave = synthesizedEventsToSave
+    return { success: true, payload: pipelinePayload }
+  }
+
+  const articlesForClustering = enrichedArticles.map((a) => ({
+    _id: a._id.toString(),
+    headline: a.headline,
+    source: a.newspaper,
+    summary: a.topic || a.assessment_article,
+  }))
+
+  const eventClusters = await clusterArticlesIntoEvents(articlesForClustering)
+  runStats.eventsClustered = eventClusters.length
+
+  if (eventClusters.length === 0) {
+    logger.info('No unique events were clustered from the relevant articles.')
+    pipelinePayload.synthesizedEventsToSave = synthesizedEventsToSave
+    return { success: false, payload: pipelinePayload }
+  }
+  logger.info(
+    `Clustered ${enrichedArticles.length} articles into ${eventClusters.length} unique events.`
+  )
+
+  for (const [index, cluster] of eventClusters.entries()) {
+    const articlesInCluster = cluster.article_ids
+      .map((id) => fullArticleMap.get(id))
+      .filter(Boolean)
+    if (articlesInCluster.length === 0) continue
+
+    const primaryHeadline = articlesInCluster[0]?.headline || cluster.event_key
+    logger.info(
+      `\n--- [ Synthesizing Event ${index + 1} of ${eventClusters.length}: "${truncateString(primaryHeadline, 70)}" ] ---`
+    )
+
+    const uniqueArticlesInCluster = Array.from(
+      new Map(articlesInCluster.map((a) => [a.link, a])).values()
+    )
+
+    const combinedTextForEntityExtraction = uniqueArticlesInCluster
+      .map((a) => {
+        const contentSnippet = (a.articleContent?.contents || [])
+          .join(' ')
+          .substring(0, 1500)
+        return `${a.headline}\n${a.assessment_article}\n${contentSnippet}`
+      })
+      .join('\n\n')
+
+    const entities = await extractEntities(combinedTextForEntityExtraction)
+
+    let wikipediaContext = 'Not available.'
+    if (entities.length > 0) {
+      logger.info(
+        `[Query Planner Agent] Decided to query Wikipedia for: [${entities.join(', ')}]`
+      )
+      const wikiPromises = entities.map((e) => fetchWikipediaSummary(e))
+      const wikiResults = await Promise.all(wikiPromises)
+      const summaries = wikiResults.filter((r) => r.success).map((r) => r.summary)
+      if (summaries.length > 0) {
+        wikipediaContext = summaries.join('\n---\n')
+      } else {
+        logger.warn(
+          'Query Planner identified entities, but no Wikipedia summaries could be fetched.'
+        )
+      }
+    } else {
+      logger.info(
+        'Query Planner Agent found no high-value entities for Wikipedia lookup.'
+      )
     }
 
-    const articlesForClustering = enrichedArticles.map(a => ({
-        _id: a._id.toString(),
+    const historicalContext = await findSimilarArticles(uniqueArticlesInCluster)
+
+    const payloadForLogging = {
+      todays_articles: uniqueArticlesInCluster.map((a) => ({
         headline: a.headline,
-        source: a.newspaper,
-        summary: a.topic || a.assessment_article,
-    }));
-
-    const eventClusters = await clusterArticlesIntoEvents(articlesForClustering);
-    runStats.eventsClustered = eventClusters.length;
-
-    if (eventClusters.length === 0) {
-        logger.info('No unique events were clustered from the relevant articles.');
-        pipelinePayload.synthesizedEventsToSave = synthesizedEventsToSave;
-        return { success: false, payload: pipelinePayload };
+        content_snippet: `${(a.articleContent?.contents?.join(' ') || '[NO CONTENT]').substring(0, 100)}...`,
+      })),
+      historical_articles_found: historicalContext.length,
+      wikipedia_context_chars: wikipediaContext.length,
     }
-    logger.info(`Clustered ${enrichedArticles.length} articles into ${eventClusters.length} unique events.`);
-    
-    for (const [index, cluster] of eventClusters.entries()) {
-        const articlesInCluster = cluster.article_ids.map(id => fullArticleMap.get(id)).filter(Boolean);
-        if (articlesInCluster.length === 0) continue;
+    logger.info(payloadForLogging, 'Preparing payload for Synthesis Agent...')
 
-        const primaryHeadline = articlesInCluster[0]?.headline || cluster.event_key;
-        logger.info(`\n--- [ Synthesizing Event ${index + 1} of ${eventClusters.length}: "${truncateString(primaryHeadline, 70)}" ] ---`);
+    const synthesizedData = await synthesizeEvent(
+      uniqueArticlesInCluster,
+      historicalContext,
+      wikipediaContext
+    )
 
-        const uniqueArticlesInCluster = Array.from(new Map(articlesInCluster.map(a => [a.link, a])).values());
-        
-        // **CONSOLIDATED LOGIC**: Entity extraction and Wikipedia lookups now happen here, once per event.
-        const combinedTextForEntityExtraction = uniqueArticlesInCluster.map(a => {
-            const contentSnippet = (a.articleContent?.contents || []).join(' ').substring(0, 1500);
-            return `${a.headline}\n${a.assessment_article}\n${contentSnippet}`;
-        }).join('\n\n');
-        
-        const entities = await extractEntities(combinedTextForEntityExtraction);
+    if (synthesizedData && !synthesizedData.error) {
+      runStats.eventsSynthesized++
+      const highestScoringArticle = uniqueArticlesInCluster.reduce(
+        (max, current) =>
+          current.relevance_article > max.relevance_article ? current : max,
+        uniqueArticlesInCluster[0]
+      )
 
-        let wikipediaContext = 'Not available.';
-        if (entities.length > 0) {
-            logger.info(`[Query Planner Agent] Decided to query Wikipedia for: [${entities.join(', ')}]`);
-            const wikiPromises = entities.map(e => fetchWikipediaSummary(e));
-            const wikiResults = await Promise.all(wikiPromises);
-            const summaries = wikiResults.filter(r => r.success).map(r => r.summary);
-            if (summaries.length > 0) {
-                wikipediaContext = summaries.join('\n---\n');
-            } else {
-                logger.warn("Query Planner identified entities, but no Wikipedia summaries could be fetched.");
-            }
-        } else {
-             logger.info("Query Planner Agent found no high-value entities for Wikipedia lookup.");
-        }
-
-        const historicalContext = await findSimilarArticles(uniqueArticlesInCluster);
-
-        const payloadForLogging = {
-            todays_articles: uniqueArticlesInCluster.map(a => ({
-                headline: a.headline,
-                content_snippet: `${(a.articleContent?.contents?.join(' ') || '[NO CONTENT]').substring(0, 100)}...`
-            })),
-            historical_articles_found: historicalContext.length,
-            wikipedia_context_chars: wikipediaContext.length,
-        };
-        logger.info(payloadForLogging, 'Preparing payload for Synthesis Agent...');
-
-        const synthesizedData = await synthesizeEvent(uniqueArticlesInCluster, historicalContext, wikipediaContext);
-
-        if (synthesizedData && !synthesizedData.error) {
-            runStats.eventsSynthesized++;
-            const highestScoringArticle = uniqueArticlesInCluster.reduce((max, current) => (current.relevance_article > max.relevance_article) ? current : max, uniqueArticlesInCluster[0]);
-            
-            const eventToSave = new SynthesizedEvent({
-                event_key: cluster.event_key,
-                synthesized_headline: synthesizedData.headline,
-                synthesized_summary: synthesizedData.summary,
-                ai_assessment_reason: highestScoringArticle.assessment_article || highestScoringArticle.assessment_headline,
-                country: highestScoringArticle.country,
-                highest_relevance_score: Math.max(...uniqueArticlesInCluster.map(a => a.relevance_article)),
-                key_individuals: synthesizedData.key_individuals || [],
-                source_articles: uniqueArticlesInCluster.map(a => ({ headline: a.headline, link: a.link, newspaper: a.newspaper })),
-            });
-            synthesizedEventsToSave.push(eventToSave);
-            runStats.synthesizedEventsForReport.push({ synthesized_headline: eventToSave.synthesized_headline, highest_relevance_score: eventToSave.highest_relevance_score });
-        }
+      const eventToSave = new SynthesizedEvent({
+        event_key: cluster.event_key,
+        synthesized_headline: synthesizedData.headline,
+        synthesized_summary: synthesizedData.summary,
+        ai_assessment_reason:
+          highestScoringArticle.assessment_article ||
+          highestScoringArticle.assessment_headline,
+        country: highestScoringArticle.country,
+        highest_relevance_score: Math.max(
+          ...uniqueArticlesInCluster.map((a) => a.relevance_article)
+        ),
+        key_individuals: synthesizedData.key_individuals || [],
+        // MODIFIED: Include imageUrl in the source article data
+        source_articles: uniqueArticlesInCluster.map((a) => ({
+          headline: a.headline,
+          link: a.link,
+          newspaper: a.newspaper,
+          imageUrl: a.imageUrl,
+        })),
+      })
+      synthesizedEventsToSave.push(eventToSave)
+      runStats.synthesizedEventsForReport.push({
+        synthesized_headline: eventToSave.synthesized_headline,
+        highest_relevance_score: eventToSave.highest_relevance_score,
+      })
     }
-    
-    pipelinePayload.synthesizedEventsToSave = synthesizedEventsToSave;
+  }
 
-    return { success: true, payload: pipelinePayload };
+  pipelinePayload.synthesizedEventsToSave = synthesizedEventsToSave
+
+  return { success: true, payload: pipelinePayload }
 }
 
-# File: src/pipeline/5_commitAndNotify.js
-// File: src/pipeline/5_commitAndNotify.js
 
-// src/pipeline/5_commitAndNotify.js (version 4.0)
+# File: src/pipeline/5_commitAndNotify.js
+// src/pipeline/5_commitAndNotify.js (version 4.1)
 import { logger } from '../utils/logger.js'
 import { savePipelineResults } from '../modules/dataStore/index.js'
-import {
-  sendWealthEventsEmail,
-  sendSupervisorReportEmail,
-} from '../modules/email/index.js'
-import {
-  sendEventPushNotifications,
-  sendArticlePushNotification,
-} from '../modules/push/index.js'
+import { sendSupervisorReportEmail } from '../modules/email/index.js'
 import { streamNewEvent, streamNewArticle } from '../modules/realtime/index.js'
 import SynthesizedEvent from '../../models/SynthesizedEvent.js'
-import Opportunity from '../../models/Opportunity.js' // NEW
+import Opportunity from '../../models/Opportunity.js'
 import { ARTICLES_RELEVANCE_THRESHOLD } from '../config/index.js'
-
-const MIN_EMAIL_RELEVANCE_SCORE = 50
+import { sendNotifications } from '../modules/notifications/index.js'
 
 /**
  * Stage 5: Commits all results to the database and sends notifications.
@@ -5321,75 +4833,91 @@ export async function runCommitAndNotify(pipelinePayload) {
     dbConnection,
   } = pipelinePayload
 
+  let savedEvents = []
+  let savedOpportunities = []
+
   if (dbConnection && (!runStats.errors || runStats.errors.length === 0)) {
-    const { success, savedEvents } = await savePipelineResults(
+    // --- DATABASE COMMIT PHASE ---
+    const commitResult = await savePipelineResults(
       assessedCandidates,
       synthesizedEventsToSave || []
     )
 
-    // --- NEW: UPSERT and LINK opportunities ---
-    if (
-      opportunitiesToSave &&
-      opportunitiesToSave.length > 0 &&
-      savedEvents &&
-      savedEvents.length > 0
-    ) {
-      logger.info('Upserting and linking opportunities...')
-      const articleToEventMap = new Map()
-      savedEvents.forEach((event) => {
-        event.source_articles.forEach((article) => {
-          articleToEventMap.set(article.link, event._id)
+    if (commitResult.success) {
+      savedEvents = commitResult.savedEvents
+
+      // --- UPSERT and LINK opportunities ---
+      if (
+        opportunitiesToSave &&
+        opportunitiesToSave.length > 0 &&
+        savedEvents.length > 0
+      ) {
+        logger.info('Upserting and linking opportunities...')
+        const articleToEventMap = new Map()
+        savedEvents.forEach((event) => {
+          ;(event.source_articles || []).forEach((article) => {
+            articleToEventMap.set(article.link, event._id)
+          })
         })
-      })
 
-      const articleIdToLinkMap = new Map()
-      ;(assessedCandidates || []).forEach((article) => {
-        articleIdToLinkMap.set(article._id.toString(), article.link)
-      })
+        const articleIdToLinkMap = new Map()
+        ;(assessedCandidates || []).forEach((article) => {
+          articleIdToLinkMap.set(article._id.toString(), article.link)
+        })
 
-      const ops = opportunitiesToSave.map((opp) => {
-        const articleLink = articleIdToLinkMap.get(opp.sourceArticleId.toString())
-        const eventId = articleToEventMap.get(articleLink)
+        const ops = opportunitiesToSave
+          .map((opp) => {
+            const articleLink = articleIdToLinkMap.get(opp.sourceArticleId.toString())
+            const eventId = articleToEventMap.get(articleLink)
+            if (!eventId) {
+              logger.warn(
+                { opp },
+                'Could not find parent event for opportunity. Skipping event link.'
+              )
+              return null // Skip this operation
+            }
 
-        const updatePayload = {
-          $set: {
-            contactDetails: opp.contactDetails,
-            basedIn: opp.basedIn,
-            sourceArticleId: opp.sourceArticleId,
-            ...(eventId && { sourceEventId: eventId }),
-          },
-          $push: {
-            whyContact: {
-              $each: [opp.whyContact],
-              $position: 0,
-            },
-          },
-          // Only update wealth if the new event suggests a higher amount
-          $max: { likelyMMDollarWealth: opp.likelyMMDollarWealth },
+            const updatePayload = {
+              $set: {
+                contactDetails: opp.contactDetails,
+                basedIn: opp.basedIn,
+                sourceArticleId: opp.sourceArticleId,
+                sourceEventId: eventId,
+              },
+              $push: { whyContact: { $each: [opp.whyContact].flat(), $position: 0 } },
+              $max: { likelyMMDollarWealth: opp.likelyMMDollarWealth },
+            }
+
+            return {
+              updateOne: {
+                filter: { reachOutTo: opp.reachOutTo },
+                update: updatePayload,
+                upsert: true,
+              },
+            }
+          })
+          .filter(Boolean) // Filter out null operations
+
+        if (ops.length > 0) {
+          try {
+            const result = await Opportunity.bulkWrite(ops)
+            const opportunityNames = opportunitiesToSave.map((o) => o.reachOutTo)
+            savedOpportunities = await Opportunity.find({
+              reachOutTo: { $in: opportunityNames },
+            })
+              .populate('sourceArticleId', 'link')
+              .lean()
+            logger.info(
+              `Opportunities processed. Created: ${result.upsertedCount}, Updated: ${result.modifiedCount}.`
+            )
+          } catch (error) {
+            logger.error({ err: error }, 'Failed to save/update opportunities.')
+          }
         }
-
-        return {
-          updateOne: {
-            filter: { reachOutTo: opp.reachOutTo },
-            update: updatePayload,
-            upsert: true,
-          },
-        }
-      })
-
-      try {
-        const result = await Opportunity.bulkWrite(ops)
-        logger.info(
-          `Opportunities processed. Created: ${result.upsertedCount}, Updated: ${result.modifiedCount}.`
-        )
-      } catch (error) {
-        logger.error({ err: error }, 'Failed to save/update opportunities.')
       }
-    }
-    // --- END NEW LOGIC ---
 
-    if (success) {
-      if (savedEvents && savedEvents.length > 0) {
+      // --- REALTIME STREAMING PHASE ---
+      if (savedEvents.length > 0) {
         for (const event of savedEvents) await streamNewEvent(event)
       }
       if (assessedCandidates && assessedCandidates.length > 0) {
@@ -5401,23 +4929,16 @@ export async function runCommitAndNotify(pipelinePayload) {
         for (const article of relevantArticles) await streamNewArticle(article)
       }
 
-      const relevantArticlesForPush = (assessedCandidates || []).filter(
-        (article) =>
-          article.relevance_article &&
-          article.relevance_article >= ARTICLES_RELEVANCE_THRESHOLD
-      )
-      for (const article of relevantArticlesForPush)
-        await sendArticlePushNotification(article)
-
-      if (savedEvents && savedEvents.length > 0) {
-        const eventsForNotification = savedEvents.filter(
-          (event) => event.highest_relevance_score >= MIN_EMAIL_RELEVANCE_SCORE
+      // --- PERSONALIZED NOTIFICATION PHASE ---
+      if (savedEvents.length > 0 || savedOpportunities.length > 0) {
+        const { emailSentCount, pushSentCount } = await sendNotifications(
+          savedEvents,
+          savedOpportunities
         )
-        if (eventsForNotification.length > 0) {
-          await sendEventPushNotifications(eventsForNotification)
-          const emailResult = await sendWealthEventsEmail(eventsForNotification)
-          runStats.eventsEmailed = emailResult.eventsSentCount || 0
-          const eventIds = eventsForNotification.map((e) => e._id)
+        runStats.eventsEmailed = emailSentCount // Keep this stat for supervisor report consistency
+
+        if (emailSentCount > 0) {
+          const eventIds = savedEvents.map((e) => e._id)
           await SynthesizedEvent.updateMany(
             { _id: { $in: eventIds } },
             { $set: { emailed: true, email_sent_at: new Date() } }
@@ -5427,11 +4948,10 @@ export async function runCommitAndNotify(pipelinePayload) {
     } else {
       runStats.errors.push('CRITICAL: Failed to commit pipeline results.')
     }
-
-    await sendSupervisorReportEmail(runStats)
-  } else if (dbConnection) {
-    await sendSupervisorReportEmail(runStats)
   }
+
+  // --- SUPERVISOR REPORT PHASE ---
+  await sendSupervisorReportEmail(runStats)
 
   return { success: true, payload: pipelinePayload }
 }
